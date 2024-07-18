@@ -319,21 +319,4 @@ class SQLiteChunkStore(ChunkStore):
                 select(func.count()).select_from(obj.chunk_table)
             ).scalar()
 
-        # read the custom_id_type
-        if chunk_count == 0:
-            obj.custom_id_type = CustomIDType.NotSet
-        elif obj.custom_id_table is None:
-            obj.custom_id_type = CustomIDType.NoneType
-        else:
-            inspector = inspect(obj.engine)
-            col_type = inspector.get_columns(
-                "neural_db_custom_ids", column_name="custom_id"
-            )[0]["type"]
-            if isinstance(col_type, Integer):
-                obj.custom_id_type = CustomIDType.Integer
-            elif isinstance(col_type, String):
-                obj.custom_id_type = CustomIDType.String
-            else:
-                raise ValueError("Cannot read custom id table type.")
-
         return obj
