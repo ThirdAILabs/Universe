@@ -1,5 +1,4 @@
 # Python
-import os
 import shutil
 import sqlite3
 import uuid
