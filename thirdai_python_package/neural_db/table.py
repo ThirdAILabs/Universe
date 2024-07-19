@@ -178,8 +178,7 @@ class SQLiteTable(Table):
 
     def __init__(self, df: pd.DataFrame):
         # TODO: Reset index first?
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.db_path = os.path.join(current_dir, f"{uuid.uuid4()}.db")
+        self.db_path = Path(f"{uuid.uuid4()}.db").resolve()
         self.db_columns = df.columns
         self.db_size = len(df)
 
