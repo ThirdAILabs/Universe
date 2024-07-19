@@ -48,7 +48,7 @@ def get_string_categorical_column(
         if select_tokens_from:
             # Select tokens from the provided set
             row = delimiter.join(
-                random.choice(select_tokens_from) for _ in range(number_tokens_per_row)
+                random.choices(select_tokens_from, k=number_tokens_per_row)
             )
         else:
             # Generate random alphanumeric tokens if no set is provided
