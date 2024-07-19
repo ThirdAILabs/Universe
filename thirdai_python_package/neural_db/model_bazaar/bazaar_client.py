@@ -116,7 +116,7 @@ class NeuralDBClient:
 
     @check_deployment_decorator
     def search(
-        self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = None
+        self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = {}
     ):
         """
         Searches the ndb model for similar queries.
@@ -159,18 +159,27 @@ class NeuralDBClient:
         Returns:
             Dict: A dict of search results containing keys: `query_text` and `references`.
         """
+        print(self.base_url)
+        
+        base_params = {
+            "query": query,
+            "top_k": top_k
+        }
+        
+        ndb_params = {
+            "constraints": constraints
+        }
 
         response = http_post_with_error(
             urljoin(self.base_url, "predict"),
-            params={"query_text": query, "top_k": top_k},
-            json=constraints,
+            json={"base_params": base_params, "ndb_params": ndb_params},
             headers=auth_header(self.bazaar._access_token),
         )
 
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, documents: list[dict[str, Any]]):
+    def insert(self, documents: list[dict[str, Any]], input_mode = "sync"):
         """
         Inserts documents into the ndb model.
 
@@ -262,6 +271,7 @@ class NeuralDBClient:
                 files.append(("files", open(doc["path"], "rb")))
 
         files.append(("documents", (None, json.dumps(documents), "application/json")))
+        files.append(("input_mode", (None, input_mode)))
 
         response = http_post_with_error(
             urljoin(self.base_url, "insert"),
@@ -675,7 +685,7 @@ class ModelBazaar(Bazaar):
             docs.append(test_doc)
             file_details_list.append({"mode": "test", "location": doc_type})
 
-        url = urljoin(self._base_url, f"jobs/train")
+        url = urljoin(self._base_url, f"train/ndb")
         files = [
             (
                 ("files", open(file_path, "rb"))
@@ -707,8 +717,6 @@ class ModelBazaar(Bazaar):
             url,
             params={
                 "model_name": model_name,
-                "doc_type": doc_type,
-                "sharded": sharded,
                 "base_model_identifier": base_model_identifier,
             },
             files=files,
@@ -843,7 +851,7 @@ class ModelBazaar(Bazaar):
             model (Model): The Model instance.
         """
 
-        url = urljoin(self._base_url, f"jobs/train-status")
+        url = urljoin(self._base_url, f"train/status")
 
         response = http_get_with_error(
             url,
@@ -894,7 +902,7 @@ class ModelBazaar(Bazaar):
         Returns:
             NeuralDBClient: A NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/deploy")
+        url = urljoin(self._base_url, f"deploy/run")
         params = {
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
@@ -928,7 +936,7 @@ class ModelBazaar(Bazaar):
         Args:
             ndb_client (NeuralDBClient): The NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/deploy-status")
+        url = urljoin(self._base_url, f"deploy/status")
 
         params = {"deployment_identifier": ndb_client.deployment_identifier}
         while True:
@@ -951,7 +959,7 @@ class ModelBazaar(Bazaar):
         Args:
             ndb_client (NeuralDBClient): The NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/undeploy")
+        url = urljoin(self._base_url, f"deploy/stop")
         params = {
             "deployment_identifier": ndb_client.deployment_identifier,
         }
