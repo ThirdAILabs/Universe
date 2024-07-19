@@ -52,7 +52,7 @@ class ChunkStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         raise NotImplementedError
 
     @abstractmethod

@@ -95,11 +95,10 @@ class NeuralDB:
             if keep_latest_version
             else float("inf")
         )
-        chunk_ids = list(
-            self.chunk_store.get_doc_chunks(
-                doc_id=doc_id, before_version=before_version
-            )
+        chunk_ids = self.chunk_store.get_doc_chunks(
+            doc_id=doc_id, before_version=before_version
         )
+
         self.retriever.delete(chunk_ids)
         self.chunk_store.delete(chunk_ids)
 

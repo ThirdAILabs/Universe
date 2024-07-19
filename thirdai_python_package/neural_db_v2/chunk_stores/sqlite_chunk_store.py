@@ -352,14 +352,14 @@ class SQLiteChunkStore(ChunkStore):
 
         return remapped_batches
 
-    def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(
             (self.chunk_table.c.doc_id == doc_id)
             & (self.chunk_table.c.doc_version < before_version)
         )
 
         with self.engine.connect() as conn:
-            return set(row.chunk_id for row in conn.execute(stmt))
+            return [row.chunk_id for row in conn.execute(stmt)]
 
     def max_version_for_doc(self, doc_id: str) -> int:
         stmt = select(func.max(self.chunk_table.c.doc_version)).where(

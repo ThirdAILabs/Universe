@@ -503,12 +503,14 @@ def test_get_doc_chunks(chunk_store):
         ]
     )
 
-    assert set([]) == store.get_doc_chunks(doc_id="new_id", before_version=10)
-    assert set([5]) == store.get_doc_chunks(doc_id="new_id", before_version=11)
-    assert set([5, 6]) == store.get_doc_chunks(doc_id="new_id", before_version=12)
-    assert set([5, 6, 7]) == store.get_doc_chunks(doc_id="new_id", before_version=13)
-    assert set([5, 6, 7]) == store.get_doc_chunks(
-        doc_id="new_id", before_version=float("inf")
+    assert set([]) == set(store.get_doc_chunks(doc_id="new_id", before_version=10))
+    assert set([5]) == set(store.get_doc_chunks(doc_id="new_id", before_version=11))
+    assert set([5, 6]) == set(store.get_doc_chunks(doc_id="new_id", before_version=12))
+    assert set([5, 6, 7]) == set(
+        store.get_doc_chunks(doc_id="new_id", before_version=13)
+    )
+    assert set([5, 6, 7]) == set(
+        store.get_doc_chunks(doc_id="new_id", before_version=float("inf"))
     )
 
     clean_up_sql_lite_db(store)

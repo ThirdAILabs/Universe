@@ -183,12 +183,10 @@ class PandasChunkStore(ChunkStore):
         ]
 
     def get_doc_chunks(self, doc_id: str, before_version: int) -> Set[ChunkId]:
-        return set(
-            self.chunk_df["chunk_id"][
-                (self.chunk_df["doc_id"] == doc_id)
-                & (self.chunk_df["doc_version"] < before_version)
-            ]
-        )
+        return self.chunk_df["chunk_id"][
+            (self.chunk_df["doc_id"] == doc_id)
+            & (self.chunk_df["doc_version"] < before_version)
+        ].to_list()
 
     def max_version_for_doc(self, doc_id: str) -> int:
         version = self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
