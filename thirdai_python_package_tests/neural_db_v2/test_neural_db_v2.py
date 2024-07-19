@@ -34,6 +34,10 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
         shutil.rmtree(save_file)
 
     db.save(save_file)
+
+    if isinstance(db.chunk_store, SQLiteChunkStore):
+        os.remove(os.path.basename(db.chunk_store.db_name))
+
     db = ndb.NeuralDB.load(save_file)
 
     results_after = db.search_batch(queries, top_k=10)
@@ -43,9 +47,6 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=1)
 
     shutil.rmtree(save_file)
-
-    if isinstance(db.chunk_store, SQLiteChunkStore):
-        os.remove(os.path.basename(db.chunk_store.db_name))
 
 
 @pytest.mark.parametrize(
