@@ -2,12 +2,11 @@ import thirdai._thirdai.bolt
 from thirdai._thirdai.bolt import *
 
 from .ner_modifications import modify_ner
-from .udt_modifications import (
+from .udt_modifications import (  # these two are exposed to make it easier to write test cases.
     modify_graph_udt,
     modify_mach_udt,
     modify_udt,
     modify_udt_constructor,
-    # these two are exposed to make it easier to write test cases.
 )
 
 modify_udt()
