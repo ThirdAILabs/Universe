@@ -50,7 +50,7 @@ class NerUDTModel final : public NerModelInterface {
             /*dyadic_num_intervals=*/_dyadic_num_intervals,
             /*target_word_tokenizers=*/_target_word_tokenizers,
             /*feature_enhancement_config=*/_feature_enhancement_config,
-            /*tag_to_label=*/_tag_to_label)});
+            /*tag_to_label=*/_tag_to_label, /*token_tag_counter=*/nullptr)});
     transform = transform->then(std::make_shared<data::TextTokenizer>(
         /*input_column=*/_featurized_sentence_column,
         /*output_indices=*/_featurized_tokens_indices_column,
