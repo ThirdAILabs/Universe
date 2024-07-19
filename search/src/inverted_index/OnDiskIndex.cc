@@ -91,6 +91,10 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
   _db->updateTokenToDocs(coalesced_counts);
 }
 
+// TODO(Nicholas): This logic is similar to that of the regular inverted index,
+// except it uses the hashes of the tokens in place of the tokens themselves.
+// The regular index should be updated to do this as well, and then this logic
+// can be consolidated into a helper function.
 std::pair<std::vector<uint32_t>,
           std::vector<std::unordered_map<HashedToken, uint32_t>>>
 OnDiskIndex::countTokenOccurences(const std::vector<std::string>& docs) const {

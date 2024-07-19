@@ -37,7 +37,7 @@ RocksDbReadOnlyAdapter::RocksDbReadOnlyAdapter(const std::string& save_path) {
   }
 
   if (handles.size() != 3) {
-    throw std::runtime_error("Expected 2 handles to be created. Received " +
+    throw std::runtime_error("Expected 3 handles to be created. Received " +
                              std::to_string(handles.size()) + " handles.");
   }
 
