@@ -11,6 +11,7 @@
 #include <rocksdb/table.h>
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
+#include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/inverted_index/adapters/RocksDbAdapter.h>
@@ -155,8 +156,8 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
       const DocId doc_id = counts[i].doc_id;
 
       if (doc_scores.count(doc_id)) {
-        const float score =
-            bm25(token_idf, counts[i].count, doc_lens.at(doc_id), avg_doc_len);
+        const float score = bm25(token_idf, counts[i].count,
+                                 doc_lens.at(doc_id), avg_doc_len, _k1, _b);
         doc_scores[counts[i].doc_id] += score;
       } else if (doc_scores.size() < _max_docs_to_score) {
         uint32_t doc_len;
@@ -168,7 +169,7 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
         }
 
         const float score =
-            bm25(token_idf, counts[i].count, doc_len, avg_doc_len);
+            bm25(token_idf, counts[i].count, doc_len, avg_doc_len, _k1, _b);
         doc_scores[counts[i].doc_id] += score;
       }
     }

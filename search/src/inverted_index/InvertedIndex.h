@@ -85,13 +85,6 @@ class InvertedIndex final : public Retriever {
 
   bool containsDoc(DocId doc_id) const;
 
-  inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
-    const float num = cnt_in_doc * (_k1 + 1);
-    const float denom =
-        cnt_in_doc + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
-    return idf * num / denom;
-  }
-
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 
   struct Shard {

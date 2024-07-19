@@ -9,11 +9,11 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/Utils.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
-#include <cmath>
 #include <exception>
 #include <limits>
 #include <memory>
@@ -117,15 +117,6 @@ std::unordered_map<Token, size_t> InvertedIndex::tokenCountsAcrossShards()
   }
 
   return counts;
-}
-
-inline float idf(size_t n_docs, size_t docs_w_token) {
-  const float num = n_docs - docs_w_token + 0.5;
-  const float denom = docs_w_token + 0.5;
-  // This is technically different from the BM25 definition, the added 1 is to
-  // ensure that this does not yield a negative value. This trick is how apache
-  // lucene solves the problem.
-  return std::log(1.0 + num / denom);
 }
 
 void InvertedIndex::computeIdfs() {
@@ -233,7 +224,8 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       // will change. So if we do not need to support small incremental
       // additions then it might make sense to precompute these values.
       if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
-        doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+        doc_scores[doc_id] +=
+            bm25(token_idf, cnt_in_doc, doc_len, _avg_doc_length, _k1, _b);
       }
     }
   }
