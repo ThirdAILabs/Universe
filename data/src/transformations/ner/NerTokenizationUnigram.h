@@ -28,7 +28,8 @@ class NerTokenizerUnigram final : public Transformation {
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
       std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
-          std::nullopt);
+          std::nullopt,
+      ner::TokenTagCounterPtr token_tag_counter = nullptr);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
 
