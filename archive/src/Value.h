@@ -67,6 +67,7 @@ class Value final : public Archive {
   EXPR(std::unordered_map<uint64_t, std::vector<float>>)       \
   EXPR(std::unordered_map<std::string, uint64_t>)              \
   EXPR(std::unordered_map<std::string, int64_t>)               \
+  EXPR(std::unordered_map<std::string, uint32_t>)              \
   EXPR(std::unordered_map<std::string, std::vector<uint64_t>>) \
   EXPR(std::unordered_map<int64_t, std::vector<std::string>>)
 

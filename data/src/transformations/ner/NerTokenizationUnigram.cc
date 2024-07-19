@@ -17,6 +17,34 @@
 
 namespace thirdai::data {
 
+std::vector<std::string> cleanAndLowerCase(
+    const std::vector<std::string>& tokens) {
+  /*
+   * Converts the tokens to lower case and trims punctuations.
+   */
+  auto lower_tokens = tokens;
+  for (auto& token : lower_tokens) {
+    for (char& c : token) {
+      c = std::tolower(c);
+    }
+  }
+  for (auto& token : lower_tokens) {
+    token = trimPunctuation(token);
+  }
+  return lower_tokens;
+}
+
+void throwTokenTagSizeMismatchErro(uint32_t row_id, uint32_t tokens_size,
+                                   uint32_t tags_size) {
+  std::stringstream error_message;
+  error_message << "Mismatch between the number of tokens and tags in row "
+                << row_id << ":\n"
+                << "  - Number of tokens: " << tokens_size << "\n"
+                << "  - Number of tags: " << tags_size << "\n"
+                << "Please ensure each token has a corresponding tag.";
+  throw std::out_of_range(error_message.str());
+}
+
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
     std::optional<std::string> target_column,
@@ -29,20 +57,23 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_column(std::move(target_column)),
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
-                 std::move(feature_enhancement_config)),
+                 std::move(feature_enhancement_config),
+                 target_column.has_value()),
       _tag_to_label(std::move(tag_to_label)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
 
   auto text_tokens = columns.getArrayColumn<std::string>(_tokens_column);
+  auto sample_offsets = computeOffsets(text_tokens);
 
   ArrayColumnBasePtr<std::string> tags;
   if (_target_column) {
     tags = columns.getArrayColumn<std::string>(*_target_column);
   }
 
-  auto sample_offsets = computeOffsets(text_tokens);
+  // a no-op if token_tag_counter is null or if featurizing for inference
+  updateTokenTagCounter(text_tokens, tags);
 
   std::vector<std::string> featurized_sentences(sample_offsets.back());
   std::vector<uint32_t> targets(sample_offsets.back());
@@ -57,28 +88,22 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       size_t sample_offset = sample_offsets[i];
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
+      auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
+
+      // processing the tokens in the sentence
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
         size_t featurized_sentence_offset = sample_offset + target;
         featurized_sentences[featurized_sentence_offset] =
-            _processor.processToken(row_token_vectors, target);
+            _processor.processToken(row_token_vectors, target,
+                                    lower_cased_tokens);
+
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {
-            std::stringstream error_message;
-            error_message
-                << "Mismatch between the number of tokens and tags in row " << i
-                << ":\n"
-                << "  - Number of tokens: " << row_token_vectors.size() << "\n"
-                << "  - Number of tags: " << tags->row(i).size() << "\n"
-                << "Please ensure each token has a corresponding tag.";
-            throw std::out_of_range(error_message.str());
+            throwTokenTagSizeMismatchErro(i, row_token_vectors.size(),
+                                          tags->row(i).size());
           }
-          if (_tag_to_label.has_value()) {
-            targets[featurized_sentence_offset] =
-                findTagValueForString(tags->row(i)[target]);
-          } else {
-            targets[featurized_sentence_offset] =
-                std::stoi(tags->row(i)[target]);
-          }
+          targets[featurized_sentence_offset] =
+              findTagValueForString(tags->row(i)[target]);
         }
       }
     } catch (...) {

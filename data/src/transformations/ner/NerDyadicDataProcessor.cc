@@ -8,39 +8,40 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <optional>
+#include <random>
 #include <regex>
 
 namespace thirdai::data {
 
-std::string trimPunctuation(const std::string& str) {
-  const std::string punctuation = ".,?-!;:";
-  size_t start = str.find_first_not_of(punctuation);
-  if (start == std::string::npos) {
-    return str;
+bool is_number_with_punct(const std::string& s,
+                          const std::unordered_set<char>& exception_chars) {
+  bool has_digit = false;
+
+  for (char c : s) {
+    if (std::isdigit(c)) {
+      has_digit = true;
+    } else if (!std::ispunct(c) && exception_chars.count(c) == 0) {
+      return false;
+    }
   }
-  size_t end = str.find_last_not_of(punctuation);
-  return str.substr(start, end - start + 1);
+
+  return has_digit;
 }
 
-std::vector<std::string> cleanAndLowerCase(
-    const std::vector<std::string>& tokens) {
-  /*
-   * Converts the tokens to lower case and trims punctuations.
-   */
-  std::vector<std::string> lower_tokens(tokens.size());
-  std::transform(tokens.begin(), tokens.end(), lower_tokens.begin(),
-                 [](const std::string& token) {
-                   std::string lower_token;
-                   lower_token.reserve(token.size());
-                   std::transform(token.begin(), token.end(),
-                                  std::back_inserter(lower_token), ::tolower);
-                   return lower_token;
-                 });
-  for (auto& token : lower_tokens) {
-    token = trimPunctuation(token);
+std::string trimWhiteSpace(const std::string& str) {
+  auto start = str.begin();
+  while (start != str.end() && std::isspace(*start)) {
+    start++;
   }
-  return lower_tokens;
+
+  auto end = str.end();
+  while (end != start && std::isspace(*(end - 1))) {
+    end--;
+  }
+
+  return std::string(start, end);
 }
 
 bool containsKeywordInRange(const std::vector<std::string>& tokens,
@@ -62,22 +63,11 @@ std::string stripNonDigits(const std::string& input) {
   return digits;
 }
 
-bool containsAlphabets(const std::string& input) {
-  return std::any_of(input.begin(), input.end(), ::isalpha);
-}
-
-bool is_number_with_punct(const std::string& s) {
-  bool has_digit = false;
-
-  for (char c : s) {
-    if (std::isdigit(c)) {
-      has_digit = true;
-    } else if (!std::ispunct(c)) {
-      return false;
-    }
-  }
-
-  return has_digit;
+bool containsAlphabets(const std::string& input,
+                       const std::unordered_set<char>& exception_chars) {
+  return std::any_of(input.begin(), input.end(), [exception_chars](char c) {
+    return std::isalpha(c) && exception_chars.count(c) == 0;
+  });
 }
 
 bool luhnCheck(const std::string& number) {
@@ -112,7 +102,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
     return "";
   }
 
-  if (!is_number_with_punct(v[index])) {
+  if (!is_number_with_punct(v[index], {'e', 'x', 't'})) {
     return "";
   }
 
@@ -121,7 +111,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
 
   std::vector<std::string> left_window, right_window;
   for (int i = index - 1; i >= start; --i) {
-    if (is_number_with_punct(v[i])) {
+    if (is_number_with_punct(v[index], {'e', 'x', 't'})) {
       left_window.push_back(v[i]);
     } else {
       break;
@@ -131,7 +121,7 @@ std::string find_contiguous_numbers(const std::vector<std::string>& v,
   std::reverse(left_window.begin(), left_window.end());
 
   for (int i = index + 1; i <= end; ++i) {
-    if (is_number_with_punct(v[i])) {
+    if (is_number_with_punct(v[index], {'e', 'x', 't'})) {
       right_window.push_back(v[i]);
     } else {
       break;
@@ -157,14 +147,8 @@ std::string getNumericalFeatures(const std::string& input) {
   std::string strippedInput = stripNonDigits(input);
 
   if (!strippedInput.empty()) {
-    // useful for credit cards or other account numbers
-    if ((luhnCheck(strippedInput) && strippedInput.size() >= 10) ||
-        strippedInput.size() > 12) {
-      return "IS_ACCOUNT_NUMBER";
-    }
-
     // if a token contains both alphabets and numbers, it is probably some uin
-    if (containsAlphabets(input) && input.size() >= 6) {
+    if (containsAlphabets(input, {'e', 'x', 't'}) && input.size() >= 6) {
       return "IS_UIN";
     }
 
@@ -175,7 +159,7 @@ std::string getNumericalFeatures(const std::string& input) {
     }
 
     // phone numbers
-    if ((strippedInput.size() >= 10 && strippedInput.size() <= 12) ||
+    if ((strippedInput.size() >= 10 && strippedInput.size() <= 16) ||
         input[0] == '+' || input[0] == '(' || input.back() == ')') {  // NOLINT
       return "MAYBE_PHONE";
     }
@@ -190,20 +174,13 @@ std::string getNumericalFeatures(const std::string& input) {
     if (strippedInput.size() == input.size() && strippedInput.size() >= 5) {
       return "IS_NUMBER_OR_UIN";
     }
-
-    /*month or day or year(between 1800 to 2199)*/
-    if ((strippedInput.size() <= 2 && std::stoi(strippedInput) <= 31) ||
-        (strippedInput.size() == 4 &&
-         (std::stoi(strippedInput.substr(0, 2)) <= 21 ||
-          std::stoi(strippedInput.substr(0, 2)) >= 18))) {
-      return "A_DATE";
-    }
   }
   return "";
 }
 
 std::string NerDyadicDataProcessor::getExtraFeatures(
-    const std::vector<std::string>& tokens, uint32_t index) const {
+    const std::vector<std::string>& tokens, uint32_t index,
+    const std::vector<std::string>& lower_cased_tokens) const {
   if (!_feature_enhancement_config.has_value()) {
     return "";
   }
@@ -212,7 +189,6 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 
   // clean the tokens to be able to match regex and apply heuristics
   std::string current_token = trimPunctuation(tokens[index]);
-  auto lower_cased_tokens = cleanAndLowerCase(tokens);
 
   /*
    * start, end, start_long are indices in the vector that mark the boundary of
@@ -233,14 +209,6 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
                        _feature_enhancement_config->date_regex)) {
     extra_features += "A_VALID_DATE ";
     return extra_features;
-  }
-
-  if (_feature_enhancement_config->find_emails) {
-    if (std::regex_match(lower_cased_tokens[index],
-                         _feature_enhancement_config->email_regex)) {
-      extra_features += "IS_VALID_EMAIL ";
-      return extra_features;
-    }
   }
 
   if (_feature_enhancement_config->enhance_numerical_features) {
@@ -327,22 +295,26 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
 NerDyadicDataProcessor::NerDyadicDataProcessor(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config)
+    std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+    bool for_inference)
     : _target_word_tokenizers(std::move(target_word_tokenizers)),
       _dyadic_num_intervals(dyadic_num_intervals),
-      _feature_enhancement_config(std::move(feature_enhancement_config)) {}
+      _feature_enhancement_config(std::move(feature_enhancement_config)),
+      _for_inference(for_inference) {}
 
 std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     uint32_t dyadic_num_intervals,
-    std::optional<FeatureEnhancementConfig> feature_enhancement_config) {
+    std::optional<FeatureEnhancementConfig> feature_enhancement_config,
+    bool for_inference) {
   return std::make_shared<NerDyadicDataProcessor>(
       std::move(target_word_tokenizers), dyadic_num_intervals,
-      std::move(feature_enhancement_config));
+      std::move(feature_enhancement_config), for_inference);
 }
 
 std::string NerDyadicDataProcessor::processToken(
-    const std::vector<std::string>& tokens, uint32_t index) const {
+    const std::vector<std::string>& tokens, uint32_t index,
+    const std::vector<std::string>& lower_cased_tokens) const {
   /*
    * Returns a featurized string for the target token and it's context in the
    * sentence.
@@ -368,12 +340,14 @@ std::string NerDyadicDataProcessor::processToken(
 
   std::vector<std::string> tokenized_target_token;
 
-  for (const auto& tokenizer : _target_word_tokenizers) {
-    auto tokens = tokenizer->toStrings(target_token);
-    tokenized_target_token.reserve(tokenized_target_token.size() +
-                                   tokens.size());
-    tokenized_target_token.insert(tokenized_target_token.end(), tokens.begin(),
-                                  tokens.end());
+  if (_for_inference || rand() % 2 == 0) {
+    for (const auto& tokenizer : _target_word_tokenizers) {
+      auto tokens = tokenizer->toStrings(target_token);
+      tokenized_target_token.reserve(tokenized_target_token.size() +
+                                     tokens.size());
+      tokenized_target_token.insert(tokenized_target_token.end(),
+                                    tokens.begin(), tokens.end());
+    }
   }
 
   /*
@@ -388,7 +362,7 @@ std::string NerDyadicDataProcessor::processToken(
   repr += generateDyadicWindows(tokens, index);
 
   if (_feature_enhancement_config.has_value()) {
-    repr += " " + getExtraFeatures(tokens, index);
+    repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
   repr += " " + std::to_string(n_alpha) + "_ALPHA";
@@ -455,6 +429,8 @@ ar::ConstArchivePtr NerDyadicDataProcessor::toArchive() const {
   map->set("dyadic_previous_prefix", ar::str(_dyadic_previous_prefix));
   map->set("dyadic_next_prefix", ar::str(_dyadic_next_prefix));
 
+  map->set("for_inference", ar::boolean(_for_inference));
+
   return map;
 }
 
@@ -469,6 +445,12 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
         FeatureEnhancementConfig(*archive.get("feature_enhancement_config"));
   } else {
     _feature_enhancement_config = std::nullopt;
+  }
+
+  if (archive.contains("for_inference")) {
+    _for_inference = archive.boolean("for_inference");
+  } else {
+    _for_inference = true;
   }
 
   _target_prefix = archive.str("target_prefix");

@@ -212,6 +212,10 @@ ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val) {
   return Value<std::unordered_map<std::string, int64_t>>::make(std::move(val));
 }
 
+ConstArchivePtr mapStrU32(std::unordered_map<std::string, uint32_t> val) {
+  return Value<std::unordered_map<std::string, uint32_t>>::make(std::move(val));
+}
+
 ConstArchivePtr mapStrVecU64(MapStrVecU64 val) {
   return Value<MapStrVecU64>::make(std::move(val));
 }

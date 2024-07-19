@@ -108,6 +108,11 @@ std::string Value<std::unordered_map<std::string, int64_t>>::typeName() {
 }
 
 template <>
+std::string Value<std::unordered_map<std::string, uint32_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, uint32_t>]";
+}
+
+template <>
 std::string
 Value<std::unordered_map<std::string, std::vector<uint64_t>>>::typeName() {
   return "Value[std::unordered_map<std::string, std::vector<uint64_t>>]";
