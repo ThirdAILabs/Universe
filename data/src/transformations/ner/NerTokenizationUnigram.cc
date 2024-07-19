@@ -34,8 +34,8 @@ std::vector<std::string> cleanAndLowerCase(
   return lower_tokens;
 }
 
-void throwTokenTagSizeMismatchErro(uint32_t row_id, uint32_t tokens_size,
-                                   uint32_t tags_size) {
+void throwTokenTagSizeMismatchError(uint32_t row_id, uint32_t tokens_size,
+                                    uint32_t tags_size) {
   std::stringstream error_message;
   error_message << "Mismatch between the number of tokens and tags in row "
                 << row_id << ":\n"
@@ -96,11 +96,15 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
-
+        if (_token_tag_counter != nullptr &&
+            !is_number_with_punct(lower_cased_tokens[target], {})) {
+          featurized_sentences[featurized_sentence_offset] +=
+              _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
+        }
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {
-            throwTokenTagSizeMismatchErro(i, row_token_vectors.size(),
-                                          tags->row(i).size());
+            throwTokenTagSizeMismatchError(i, row_token_vectors.size(),
+                                           tags->row(i).size());
           }
           targets[featurized_sentence_offset] =
               findTagValueForString(tags->row(i)[target]);

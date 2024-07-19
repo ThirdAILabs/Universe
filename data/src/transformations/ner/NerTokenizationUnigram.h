@@ -40,7 +40,7 @@ class NerTokenizerUnigram final : public Transformation {
 
   std::string processToken(const std::vector<std::string>& tokens,
                            uint32_t index) const {
-    return _processor.processToken(tokens, index);
+    return _processor.processToken(tokens, index, cleanAndLowerCase(tokens));
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
@@ -58,6 +58,10 @@ class NerTokenizerUnigram final : public Transformation {
   }
 
   const auto& processor() const { return _processor; }
+
+  void setTokenTagCounter(ner::TokenTagCounterPtr token_tag_counter) {
+    _token_tag_counter = std::move(token_tag_counter);
+  }
 
  private:
   void updateTokenTagCounter(
