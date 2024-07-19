@@ -1,4 +1,5 @@
 # Python
+import os
 import shutil
 import sqlite3
 import uuid
@@ -177,7 +178,8 @@ class SQLiteTable(Table):
 
     def __init__(self, df: pd.DataFrame):
         # TODO: Reset index first?
-        self.db_path = f"{uuid.uuid4()}.db"
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.db_path = os.path.join(current_dir, f"{uuid.uuid4()}.db")
         self.db_columns = df.columns
         self.db_size = len(df)
 
