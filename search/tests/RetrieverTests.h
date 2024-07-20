@@ -1,3 +1,5 @@
+#pragma once
+
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
 #include <search/src/inverted_index/InvertedIndex.h>
