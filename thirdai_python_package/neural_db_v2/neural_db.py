@@ -23,14 +23,10 @@ class NeuralDB:
         self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
-        stored_chunks, _ = self.chunk_store.insert(
-            chunks=[chunks],
-            **kwargs,
-        )
-        self.retriever.insert(
-            chunks=stored_chunks,
-            **kwargs,
-        )
+        stored_chunks, metadata = self.chunk_store.insert(chunks=[chunks], **kwargs)
+        self.retriever.insert(chunks=stored_chunks, **kwargs)
+
+        return metadata[0]
 
     def insert(
         self, docs: List[Union[str, Document]], **kwargs

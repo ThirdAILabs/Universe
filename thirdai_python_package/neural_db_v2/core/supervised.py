@@ -12,9 +12,7 @@ class SupervisedDataset(ABC):
         raise NotImplementedError
 
     def supervised_samples(
-        self,
-        queries: List[str],
-        ids: Union[List[List[ChunkId]], List[List[str]], List[List[int]]],
+        self, queries: List[str], ids: List[List[ChunkId]]
     ) -> SupervisedBatch:
         return SupervisedBatch(
             query=queries,
