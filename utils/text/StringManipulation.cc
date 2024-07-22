@@ -144,25 +144,23 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
   return tokenizeSentenceUnicodeUnsafe(sentence);
 }
 
-
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
-    utils::validateGreaterThanZero(k, "k for Char-k grams");
+  utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-    std::wstring wideText = toUnicode(std::string(text));
-    if (wideText.empty()) {
-        return {};
-    }
+  std::wstring wideText = toUnicode(std::string(text));
+  if (wideText.empty()) {
+    return {};
+  }
 
+  std::vector<std::string> char_k_grams;
+  size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
 
-    std::vector<std::string> char_k_grams;
-    size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
+  for (size_t offset = 0; offset < n_kgrams; ++offset) {
+    std::wstring const kgram = wideText.substr(offset, k);
+    char_k_grams.push_back(fromUnicode(kgram));
+  }
 
-    for (size_t offset = 0; offset < n_kgrams; ++offset) {
-        std::wstring const kgram = wideText.substr(offset, k);
-        char_k_grams.push_back(fromUnicode(kgram));
-    }
-
-    return char_k_grams;
+  return char_k_grams;
 }
 
 std::vector<std::string> wordLevelCharKGrams(
@@ -403,15 +401,16 @@ std::wstring toUnicode(const std::string& text) {
 }
 
 std::string fromUnicode(const std::wstring& wText) {
-    std::string result;
-    for (const wchar_t wc : wText) {
-        char buffer[4];
-        const utf8proc_ssize_t bytes = utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
-        if (bytes > 0) {
-            result.append(buffer, bytes);
-        }
+  std::string result;
+  for (const wchar_t wc : wText) {
+    char buffer[4];
+    const utf8proc_ssize_t bytes =
+        utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+    if (bytes > 0) {
+      result.append(buffer, bytes);
     }
-    return result;
+  }
+  return result;
 }
 
 std::string normalize(const std::string& s) {
