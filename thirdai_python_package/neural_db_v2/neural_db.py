@@ -7,16 +7,8 @@ from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
-from .core.types import (
-    Chunk,
-    ChunkId,
-    InsertedDocMetadata,
-    NewChunkBatch,
-    Score,
-    VersionedNewChunkBatch,
-)
-from .documents import document_by_name
-from .documents.utils import series_from_value
+from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
+from .documents import PrebatchedDoc, document_by_name
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
@@ -31,10 +23,7 @@ class NeuralDB:
         self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
-        stored_chunks, metadata = self.chunk_store.insert(chunks=[chunks], **kwargs)
-        self.retriever.insert(chunks=stored_chunks, **kwargs)
-
-        return metadata[0]
+        return self.insert([PrebatchedDoc(chunks)], **kwargs)
 
     def insert(
         self, docs: List[Union[str, Document]], **kwargs
@@ -43,23 +32,8 @@ class NeuralDB:
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
 
-        def generator(doc: Document):
-            doc_id = doc.doc_id()
-            doc_version = self.chunk_store.max_version_for_doc(doc_id) + 1
-            for chunk in doc.chunks():
-                yield VersionedNewChunkBatch(
-                    text=chunk.text,
-                    keywords=chunk.keywords,
-                    metadata=chunk.metadata,
-                    document=chunk.document,
-                    doc_id=series_from_value(doc_id, len(chunk)),
-                    doc_version=series_from_value(doc_version, len(chunk)),
-                )
-
-        stored_chunks, doc_metadata = self.chunk_store.insert(
-            chunks=map(generator, docs), **kwargs
-        )
-        self.retriever.insert(chunks=stored_chunks, **kwargs)
+        chunks, doc_metadata = self.chunk_store.insert(docs=docs, **kwargs)
+        self.retriever.insert(chunks=chunks, **kwargs)
 
         return doc_metadata
 

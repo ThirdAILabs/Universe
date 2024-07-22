@@ -81,29 +81,12 @@ class NewChunkBatch:
     def __len__(self):
         return len(self.text)
 
-
-@dataclass
-class VersionedNewChunkBatch(NewChunkBatch):
-    doc_id: pt.Series[str]
-    doc_version: pt.Series[int]
-
-    def __post_init__(self):
-        super().__post_init__()
-
-        assert isinstance(self.doc_id, pd.Series)
-        assert isinstance(self.doc_version, pd.Series)
-
-        assert len(self.doc_id) == len(self.text)
-        assert len(self.doc_version) == len(self.text)
-
     def to_df(self):
         return pd.DataFrame(
             {
                 "text": self.text,
                 "keywords": self.keywords,
                 "document": self.document,
-                "doc_id": self.doc_id,
-                "doc_version": self.doc_version,
             }
         )
 
@@ -172,4 +155,6 @@ class SupervisedBatch:
 
 @dataclass
 class InsertedDocMetadata:
+    doc_id: str
+    doc_version: int
     chunk_ids: List[ChunkId]

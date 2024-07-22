@@ -1,13 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Set, Tuple
 
-from .types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    InsertedDocMetadata,
-    VersionedNewChunkBatch,
-)
+from .documents import Document
+from .types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 
 
 # Calling this ChunkStore instead of DocumentStore because it stores chunks
@@ -15,8 +10,8 @@ from .types import (
 class ChunkStore(ABC):
     @abstractmethod
     def insert(
-        self, chunks: Iterable[Iterable[VersionedNewChunkBatch]], **kwargs
-    ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
+        self, docs: List[Document], **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -38,3 +33,6 @@ class ChunkStore(ABC):
     @abstractmethod
     def max_version_for_doc(self, doc_id: str) -> int:
         raise NotImplementedError
+
+    def next_version_for_doc(self, doc_id: str) -> int:
+        return self.max_version_for_doc(doc_id=doc_id) + 1

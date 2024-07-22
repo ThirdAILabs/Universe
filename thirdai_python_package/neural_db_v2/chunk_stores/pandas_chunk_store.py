@@ -8,7 +8,8 @@ import pandas as pd
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
-from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata, NewChunkBatch
+from ..core.documents import Document
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
 
 
@@ -36,16 +37,19 @@ class PandasChunkStore(ChunkStore):
         self.next_id = 0
 
     def insert(
-        self, chunks: Iterable[Iterable[NewChunkBatch]], **kwargs
-    ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
+        self, docs: List[Document], **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
 
         output_batches = []
-        doc_metadata = []
-        for doc_chunks in chunks:
+        insert_doc_metadata = []
+        for doc in docs:
+            doc_id = doc.doc_id()
+            doc_version = self.next_version_for_doc(doc_id=doc_id)
+
             doc_chunk_ids = []
-            for batch in doc_chunks:
+            for batch in doc.chunks():
                 chunk_ids = pd.Series(
                     np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
                 )
@@ -54,6 +58,8 @@ class PandasChunkStore(ChunkStore):
 
                 chunk_df = batch.to_df()
                 chunk_df["chunk_id"] = chunk_ids
+                chunk_df["doc_id"] = doc_id
+                chunk_df["doc_version"] = doc_version
 
                 all_chunks.append(chunk_df)
 
@@ -68,7 +74,11 @@ class PandasChunkStore(ChunkStore):
                     )
                 )
 
-            doc_metadata.append(InsertedDocMetadata(chunk_ids=doc_chunk_ids))
+            insert_doc_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunk_ids
+                )
+            )
 
         self.chunk_df = pd.concat(all_chunks)
         self.chunk_df.set_index("chunk_id", inplace=True, drop=False)
@@ -81,7 +91,7 @@ class PandasChunkStore(ChunkStore):
             self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
             self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
 
-        return output_batches, doc_metadata
+        return output_batches, insert_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_df.drop(chunk_ids, inplace=True)

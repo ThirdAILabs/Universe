@@ -24,13 +24,8 @@ from sqlalchemy import (
 )
 
 from ..core.chunk_store import ChunkStore
-from ..core.types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    InsertedDocMetadata,
-    VersionedNewChunkBatch,
-)
+from ..core.documents import Document
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
 
 
@@ -178,17 +173,17 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def insert(
-        self,
-        chunks: Iterable[Iterable[VersionedNewChunkBatch]],
-        max_in_memory_batches=10000,
-        **kwargs,
-    ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
+        self, docs: List[Document], max_in_memory_batches=10000, **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         min_insertion_chunk_id = self.next_id
 
-        doc_metadata = []
-        for doc_chunks in chunks:
+        inserted_doc_metadata = []
+        for doc in docs:
+            doc_id = doc.doc_id()
+            doc_version = self.next_version_for_doc(doc_id=doc_id)
+
             doc_chunk_ids = []
-            for batch in doc_chunks:
+            for batch in doc.chunks():
                 chunk_ids = pd.Series(
                     np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
                 )
@@ -197,13 +192,19 @@ class SQLiteChunkStore(ChunkStore):
 
                 chunk_df = batch.to_df()
                 chunk_df["chunk_id"] = chunk_ids
+                chunk_df["doc_id"] = doc_id
+                chunk_df["doc_version"] = doc_version
 
                 if batch.metadata is not None:
                     self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
 
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
 
-            doc_metadata.append(InsertedDocMetadata(chunk_ids=doc_chunk_ids))
+            inserted_doc_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunk_ids
+                )
+            )
 
         max_insertion_chunk_id = self.next_id
 
@@ -215,7 +216,7 @@ class SQLiteChunkStore(ChunkStore):
             max_in_memory_batches=max_in_memory_batches,
         )
 
-        return inserted_chunks_iterator, doc_metadata
+        return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
