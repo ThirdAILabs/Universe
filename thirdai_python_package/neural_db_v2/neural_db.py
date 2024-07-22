@@ -15,6 +15,7 @@ from .core.types import (
     Score,
     VersionedNewChunkBatch,
 )
+from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
 from .documents import document_by_name
 from .documents.utils import series_from_value
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
@@ -31,36 +32,22 @@ class NeuralDB:
         self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
-        stored_chunks = self.chunk_store.insert(
-            chunks=chunks,
-            **kwargs,
-        )
-        self.retriever.insert(
-            chunks=stored_chunks,
-            **kwargs,
-        )
+        stored_chunks, metadata = self.chunk_store.insert(chunks=[chunks], **kwargs)
+        self.retriever.insert(chunks=stored_chunks, **kwargs)
 
-    def insert(self, docs: List[Union[str, Document]], **kwargs):
+        return metadata[0]
+
+    def insert(
+        self, docs: List[Union[str, Document]], **kwargs
+    ) -> List[InsertedDocMetadata]:
         docs = [
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
 
-        def chunk_generator():
-            for doc in docs:
-                doc_id = doc.doc_id()
-                doc_version = self.chunk_store.max_version_for_doc(doc_id) + 1
-                for chunk in doc.chunks():
-                    yield VersionedNewChunkBatch(
-                        custom_id=chunk.custom_id,
-                        text=chunk.text,
-                        keywords=chunk.keywords,
-                        metadata=chunk.metadata,
-                        document=chunk.document,
-                        doc_id=series_from_value(doc_id, len(chunk)),
-                        doc_version=series_from_value(doc_version, len(chunk)),
-                    )
+        stored_chunks, doc_metadata = self.chunk_store.insert(chunks=docs, **kwargs)
+        self.retriever.insert(chunks=stored_chunks, **kwargs)
 
-        self.insert_chunks(chunk_generator(), **kwargs)
+        return doc_metadata
 
     def search(
         self, query: str, top_k: int, constraints: dict = None, **kwargs
@@ -110,9 +97,6 @@ class NeuralDB:
 
     def supervised_train(self, supervised: SupervisedDataset, **kwargs):
         iterable = supervised.samples()
-
-        if isinstance(next(iter(iterable)), CustomIdSupervisedBatch):
-            iterable = self.chunk_store.remap_custom_ids(iterable)
 
         self.retriever.supervised_train(iterable, **kwargs)
 

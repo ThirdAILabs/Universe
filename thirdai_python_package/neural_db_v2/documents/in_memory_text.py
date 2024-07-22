@@ -10,11 +10,10 @@ from .utils import join_metadata, series_from_value
 class InMemoryText(Document):
     def __init__(
         self,
-        document_name: str,
-        text: Iterable[str] = [],
-        chunk_metadata: Optional[pd.DataFrame] = None,
-        doc_metadata: Optional[Dict[str, Any]] = None,
-        custom_id: Iterable[str] | Iterable[int] = None,
+        document_name,
+        text=[],
+        chunk_metadata=None,
+        doc_metadata=None,
         doc_id: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
@@ -25,7 +24,6 @@ class InMemoryText(Document):
             pd.DataFrame.from_records(chunk_metadata) if chunk_metadata else None
         )
         self.doc_metadata = doc_metadata
-        self.custom_id = custom_id
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         metadata = join_metadata(
@@ -36,7 +34,6 @@ class InMemoryText(Document):
 
         return [
             NewChunkBatch(
-                custom_id=pd.Series(self.custom_id) if self.custom_id else None,
                 text=self.text,
                 keywords=series_from_value("", len(self.text)),
                 metadata=metadata,

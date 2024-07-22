@@ -15,3 +15,6 @@ class Document(ABC):
 
     def doc_id(self):
         return self._doc_id
+
+    def __iter__(self) -> Iterable[NewChunkBatch]:
+        return iter(self.chunks())

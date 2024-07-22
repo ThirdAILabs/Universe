@@ -33,12 +33,11 @@ def concat_str_columns(df: pd.DataFrame, columns: List[str]):
 class CSV(Document):
     def __init__(
         self,
-        path: str,
-        text_columns: List[str] = [],
-        keyword_columns: List[str] = [],
-        custom_id_column: str = None,
-        doc_metadata: Optional[Dict[str, Any]] = None,
-        max_rows: int = 10_000_000,
+        path,
+        text_columns=[],
+        keyword_columns=[],
+        doc_metadata=None,
+        max_rows=10_000_000,
         doc_id: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
@@ -46,7 +45,6 @@ class CSV(Document):
         self.path = path
         self.text_columns = text_columns
         self.keyword_columns = keyword_columns
-        self.custom_id_column = custom_id_column
         self.doc_metadata = doc_metadata
         self.max_rows = max_rows
 
@@ -55,9 +53,6 @@ class CSV(Document):
 
         for df in data_iter:
             df.reset_index(drop=True, inplace=True)
-            custom_id = df[self.custom_id_column] if self.custom_id_column else None
-            if self.custom_id_column:
-                df.drop(self.custom_id_column, axis=1, inplace=True)
 
             if len(self.text_columns) + len(self.keyword_columns) == 0:
                 self.text_columns = infer_text_columns(df)
@@ -73,7 +68,6 @@ class CSV(Document):
             )
 
             yield NewChunkBatch(
-                custom_id=custom_id,
                 text=text,
                 keywords=keywords,
                 metadata=metadata,
