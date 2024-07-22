@@ -81,15 +81,19 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
         if target_column.token_type == str and target_column.number_tokens_per_row >= 4:
 
             # check if task can be token classification
-            token_column_candidates = column_detector.get_token_candidates_for_token_classification(
-                target_column, input_columns
+            token_column_candidates = (
+                column_detector.get_token_candidates_for_token_classification(
+                    target_column, input_columns
+                )
             )
             if (
                 len(token_column_candidates) == 1
                 and target_column.unique_tokens_per_row * len(dataframe) < 250
             ):
-                concrete_target_column = TokenClassificationTemplate.get_concrete_target(
-                    target_column, dataframe
+                concrete_target_column = (
+                    TokenClassificationTemplate.get_concrete_target(
+                        target_column, dataframe
+                    )
                 )
                 concrete_input_columns = {
                     token_column_candidates[0].name: column_detector.TextColumn(
@@ -101,8 +105,10 @@ def auto_infer_task_template(target_column_name: str, dataframe: pd.DataFrame):
                 )
 
             # check if task can be query reformulation
-            source_column_candidates = column_detector.get_source_column_for_query_reformulation(
-                target_column, input_columns
+            source_column_candidates = (
+                column_detector.get_source_column_for_query_reformulation(
+                    target_column, input_columns
+                )
             )
 
             if len(source_column_candidates) == 1:
@@ -136,11 +142,11 @@ def query_gpt(prompt, model_name, client):
 def get_task_detection_prompt(query: str):
     prompt = "I have 6 different task types. Here is the description of each of the task :- \n"
     for task_id, task_template in enumerate(SUPPORTED_TEMPLATES):
-        prompt += f"{task_id} : Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n"
+        prompt += f"{task_id} - Task : {task_template.task}, Description: {task_template.description}, Keywords : {' '.join(task_template.keywords)}\n".lower()
 
     prompt += (
         "Which task amongst the above is the closest to the following problem : \n"
-        + query
+        + query.lower()
     )
     prompt += "\nonly return the task number (as an int) and nothing else (this is extremely important)."
 
@@ -151,9 +157,6 @@ def get_template_from_query(
     query: str, openai_client: OpenAI, target_column: str, dataframe: pd.DataFrame
 ):
     detected_template = None
-
-    if query is None:
-        return None
 
     if query in TASK_TO_TEMPLATE_MAP:
         detected_template = TASK_TO_TEMPLATE_MAP[query]
@@ -186,8 +189,12 @@ def detect_template(
     df = pd.read_csv(dataset_path).dropna().astype(str)
     verify_dataframe(df, target, task)
 
-    detected_template = get_template_from_query(
-        query=task, openai_client=openai_client, target_column=target, dataframe=df
+    detected_template = (
+        get_template_from_query(
+            query=task, openai_client=openai_client, target_column=target, dataframe=df
+        )
+        if task is not None
+        else None
     )
     if detected_template is None:
         print("Enabling auto-inference on the dataframe.")
