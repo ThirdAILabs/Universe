@@ -1,21 +1,14 @@
 import operator
 import os
 from functools import reduce
-from typing import Dict, Iterable, List, Set, Union
+from typing import Dict, Iterable, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
 from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
-from ..core.types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    SupervisedBatch,
-)
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata, NewChunkBatch
 from .constraints import Constraint
 
 
@@ -25,44 +18,44 @@ class PandasChunkStore(ChunkStore):
 
         self.chunk_df = pd.DataFrame()
 
-        self.custom_id_map = {}
-
         self.metadata_df = pd.DataFrame()
 
         self.next_id = 0
 
-    def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_or_validate_custom_id_type(custom_ids)
-
-        if custom_ids is not None:
-            for custom_id, chunk_id in zip(custom_ids, chunk_ids):
-                self.custom_id_map[custom_id] = chunk_id
-
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, chunks: Iterable[Iterable[NewChunkBatch]], **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], Iterable[InsertedDocMetadata]]:
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
+
         output_batches = []
-        for batch in chunks:
-            chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
-            )
-            self.next_id += len(batch)
+        doc_metadata = []
+        for doc_chunks in chunks:
+            doc_chunk_ids = []
+            for batch in doc_chunks:
+                chunk_ids = pd.Series(
+                    np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+                )
+                self.next_id += len(batch)
+                doc_chunk_ids.extend(chunk_ids)
 
-            chunk_df = batch.to_df()
-            chunk_df["chunk_id"] = chunk_ids
+                chunk_df = batch.to_df()
+                chunk_df["chunk_id"] = chunk_ids
 
-            all_chunks.append(chunk_df)
+                all_chunks.append(chunk_df)
 
-            if batch.metadata is not None:
-                metadata = batch.metadata.copy(deep=False)
-                metadata["chunk_id"] = chunk_ids
-                all_metadata.append(metadata)
+                if batch.metadata is not None:
+                    metadata = batch.metadata.copy(deep=False)
+                    metadata["chunk_id"] = chunk_ids
+                    all_metadata.append(metadata)
 
-            self._update_custom_ids(batch.custom_id, chunk_ids)
+                output_batches.append(
+                    ChunkBatch(
+                        chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords
+                    )
+                )
 
-            output_batches.append(
-                ChunkBatch(chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords)
-            )
+            doc_metadata.append(InsertedDocMetadata(chunk_ids=doc_chunk_ids))
 
         self.chunk_df = pd.concat(all_chunks)
         self.chunk_df.set_index("chunk_id", inplace=True, drop=False)
@@ -75,17 +68,12 @@ class PandasChunkStore(ChunkStore):
             self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
             self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
 
-        return output_batches
+        return output_batches, doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_df.drop(chunk_ids, inplace=True)
         if not self.metadata_df.empty:
             self.metadata_df.drop(chunk_ids, inplace=True)
-
-        chunk_ids = set(chunk_ids)
-        for custom_id, chunk_id in list(self.custom_id_map.items()):
-            if chunk_id in chunk_ids:
-                del self.custom_id_map[custom_id]
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         try:
@@ -106,7 +94,6 @@ class PandasChunkStore(ChunkStore):
                 metadata = None
             output_chunks.append(
                 Chunk(
-                    custom_id=row.custom_id,
                     text=row.text,
                     keywords=row.keywords,
                     metadata=metadata,
@@ -134,38 +121,6 @@ class PandasChunkStore(ChunkStore):
         )
 
         return set(self.chunk_df[condition]["chunk_id"])
-
-    def _remap_id(self, custom_id: Union[int, str]) -> int:
-        if custom_id not in self.custom_id_map:
-            reversed_id = (
-                int(custom_id)
-                if isinstance(custom_id, str) and custom_id.isdigit()
-                else str(custom_id)
-            )
-            if reversed_id not in self.custom_id_map:
-                raise ValueError(f"Could not find chunk with custom id {custom_id}.")
-            return self.custom_id_map[reversed_id]
-        return self.custom_id_map[custom_id]
-
-    def remap_custom_ids(
-        self, samples: Iterable[CustomIdSupervisedBatch]
-    ) -> Iterable[SupervisedBatch]:
-
-        if not self.custom_id_map:
-            raise ValueError(f"Chunk Store does not contain custom ids.")
-
-        return [
-            SupervisedBatch(
-                query=batch.query,
-                chunk_id=pd.Series(
-                    [
-                        list(map(self._remap_id, custom_ids))
-                        for custom_ids in batch.custom_id
-                    ]
-                ),
-            )
-            for batch in samples
-        ]
 
     def save(self, path: str):
         pickle_to(self, path)

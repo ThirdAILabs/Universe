@@ -30,7 +30,6 @@ class DOCX(Document):
 
         return [
             NewChunkBatch(
-                custom_id=None,
                 text=text,
                 keywords=series_from_value("", len(text)),
                 metadata=metadata,

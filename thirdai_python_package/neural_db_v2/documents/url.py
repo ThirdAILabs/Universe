@@ -39,7 +39,6 @@ class URL(Document):
         )
         return [
             NewChunkBatch(
-                custom_id=None,
                 text=text,
                 keywords=keywords,
                 metadata=metadata,
