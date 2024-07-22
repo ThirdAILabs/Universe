@@ -740,6 +740,105 @@ class ModelBazaar(Bazaar):
         self.await_train(model)
         return model
 
+    def train_udt(
+        self,
+        model_name: str,
+        unsupervised_docs: List[str],
+        test_doc: Optional[str] = None,
+        doc_type: str = "local",
+        is_async: bool = False,
+        base_model_identifier: Optional[str] = None,
+        train_extra_options: Optional[dict] = None,
+    ):
+        """
+        Initiates training for a model and returns a Model instance.
+
+        Args:
+            model_name (str): The name of the model.
+            docs (Optional[List[str]]): A list of document paths for supervised training.
+            test_doc (Optional[str]): A path to a test file for evaluating the trained udt model.
+            doc_type (str): Specifies document location type : "local"(default), "nfs" or "s3".
+            is_async (bool): Whether training should be asynchronous (default is False).
+            train_extra_options: (Optional[dict])
+            base_model_identifier (Optional[str]): The identifier of the base model.
+            metadata (Optional[List[Dict[str, str]]]): A list metadata dicts. Each dict corresponds to an unsupervised file.
+
+        Returns:
+            Model: A Model instance.
+        """
+        if doc_type not in self._doc_types:
+            raise ValueError(
+                f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
+            )
+
+        if not unsupervised_docs:
+            raise ValueError("supervised docs are empty.")
+
+        file_details_list = []
+        docs = []
+        for doc in unsupervised_docs:
+            docs.append(doc)
+            file_details_list.append({"mode": "unsupervised", "location": doc_type})
+            
+        if test_doc:
+            docs.append(test_doc)
+            file_details_list.append({"mode": "test", "location": doc_type})
+
+        url = urljoin(self._base_url, f"train/udt")
+        files = [
+            (
+                ("files", open(file_path, "rb"))
+                if doc_type == "local"
+                else ("files", (file_path, "don't care"))
+            )
+            for file_path in docs
+        ]
+        if train_extra_options:
+            files.append(
+                (
+                    "extra_options_form",
+                    (None, json.dumps(train_extra_options), "application/json"),
+                )
+            )
+
+        files.append(
+            (
+                "file_details_list",
+                (
+                    None,
+                    json.dumps({"file_details": file_details_list}),
+                    "application/json",
+                ),
+            )
+        )
+
+        response = http_post_with_error(
+            url,
+            params={
+                "model_name": model_name,
+                "base_model_identifier": base_model_identifier,
+            },
+            files=files,
+            headers=auth_header(self._access_token),
+        )
+        print(response.content)
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            raise Exception(response_content["message"])
+
+        model = Model(
+            model_identifier=create_model_identifier(
+                model_name=model_name, author_username=self._username
+            ),
+            model_id=response_content["data"]["model_id"],
+        )
+
+        if is_async:
+            return model
+
+        self.await_train(model)
+        return model
+
     def test(
         self,
         model_identifier: str,
