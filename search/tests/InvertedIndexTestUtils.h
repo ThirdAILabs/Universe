@@ -62,4 +62,12 @@ makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
   return {ids, docs, queries};
 }
 
+inline std::string randomPath() {
+  std::mt19937 process_rng(getpid());  // To handle parallel tests
+  std::mt19937 time_rng(time(0));
+
+  return "tmp_" + std::to_string(process_rng()) + "_" +
+         std::to_string(time_rng());
+}
+
 }  // namespace thirdai::search::tests

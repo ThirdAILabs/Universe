@@ -195,7 +195,7 @@ static void testSaveLoad(
 
   auto original_partial_results = index.queryBatch(queries, /*k=*/5);
 
-  std::string save_path = "./test_partial_index";
+  std::string save_path = randomPath() + "_partial.db";
   index.save(save_path);
 
   index.index({ids.begin() + n_docs / 2, ids.end()},
