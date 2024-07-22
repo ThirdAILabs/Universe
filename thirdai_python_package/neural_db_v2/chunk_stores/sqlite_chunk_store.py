@@ -29,7 +29,6 @@ from ..core.types import (
     ChunkBatch,
     ChunkId,
     InsertedDocMetadata,
-    NewChunkBatch,
     VersionedNewChunkBatch,
 )
 from .constraints import Constraint

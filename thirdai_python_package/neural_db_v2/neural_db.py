@@ -10,7 +10,6 @@ from .core.supervised import SupervisedDataset
 from .core.types import (
     Chunk,
     ChunkId,
-    CustomIdSupervisedBatch,
     InsertedDocMetadata,
     NewChunkBatch,
     Score,
@@ -44,7 +43,22 @@ class NeuralDB:
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
 
-        stored_chunks, doc_metadata = self.chunk_store.insert(chunks=docs, **kwargs)
+        def generator(doc: Document):
+            doc_id = doc.doc_id()
+            doc_version = self.chunk_store.max_version_for_doc(doc_id) + 1
+            for chunk in doc.chunks():
+                yield VersionedNewChunkBatch(
+                    text=chunk.text,
+                    keywords=chunk.keywords,
+                    metadata=chunk.metadata,
+                    document=chunk.document,
+                    doc_id=series_from_value(doc_id, len(chunk)),
+                    doc_version=series_from_value(doc_version, len(chunk)),
+                )
+
+        stored_chunks, doc_metadata = self.chunk_store.insert(
+            chunks=map(generator, docs), **kwargs
+        )
         self.retriever.insert(chunks=stored_chunks, **kwargs)
 
         return doc_metadata

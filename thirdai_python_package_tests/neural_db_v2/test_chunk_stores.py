@@ -11,11 +11,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     GreaterThan,
     LessThan,
 )
-from thirdai.neural_db_v2.core.types import (
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    VersionedNewChunkBatch,
-)
+from thirdai.neural_db_v2.core.types import VersionedNewChunkBatch
 
 pytestmark = [pytest.mark.release]
 
@@ -169,7 +165,7 @@ def test_chunk_store_basic_operations(chunk_store):
             metadata=pd.DataFrame(
                 {"class": ["c", "d"], "time": [7.2, 8.1], "item": ["y", "z"]}
             ),
-            doc_id=pd.Series(["77", "11"]),
+            doc_id=pd.Series(["88", "11"]),
             doc_version=pd.Series([1, 1]),
         ),
     ]
@@ -383,15 +379,16 @@ def test_chunk_store_max_version(chunk_store):
 
     store.insert(
         [
-            VersionedNewChunkBatch(
-                custom_id=pd.Series([20]),
-                text=pd.Series(["a b c"]),
-                keywords=pd.Series(["a b c"]),
-                metadata=None,
-                document=pd.Series(["20"]),
-                doc_id=pd.Series(["new_id"]),
-                doc_version=pd.Series([12]),
-            )
+            [
+                VersionedNewChunkBatch(
+                    text=pd.Series(["a b c"]),
+                    keywords=pd.Series(["a b c"]),
+                    metadata=None,
+                    document=pd.Series(["20"]),
+                    doc_id=pd.Series(["new_id"]),
+                    doc_version=pd.Series([12]),
+                )
+            ]
         ]
     )
 
@@ -406,25 +403,26 @@ def test_get_doc_chunks(chunk_store):
 
     store.insert(
         [
-            VersionedNewChunkBatch(
-                custom_id=pd.Series([20, 21, 22]),
-                text=pd.Series(["a b c", "d e f", "g h i"]),
-                keywords=pd.Series(["a b c", "d e f", "g h i"]),
-                metadata=None,
-                document=pd.Series(["20", "21", "22"]),
-                doc_id=pd.Series(["new_id", "new_id", "new_id"]),
-                doc_version=pd.Series([10, 11, 12]),
-            )
+            [
+                VersionedNewChunkBatch(
+                    text=pd.Series(["a b c", "d e f", "g h i"]),
+                    keywords=pd.Series(["a b c", "d e f", "g h i"]),
+                    metadata=None,
+                    document=pd.Series(["20", "21", "22"]),
+                    doc_id=pd.Series(["new_id", "new_id", "new_id"]),
+                    doc_version=pd.Series([10, 11, 12]),
+                )
+            ]
         ]
     )
 
     assert set([]) == set(store.get_doc_chunks(doc_id="new_id", before_version=10))
-    assert set([5]) == set(store.get_doc_chunks(doc_id="new_id", before_version=11))
-    assert set([5, 6]) == set(store.get_doc_chunks(doc_id="new_id", before_version=12))
-    assert set([5, 6, 7]) == set(
+    assert set([7]) == set(store.get_doc_chunks(doc_id="new_id", before_version=11))
+    assert set([7, 8]) == set(store.get_doc_chunks(doc_id="new_id", before_version=12))
+    assert set([7, 8, 9]) == set(
         store.get_doc_chunks(doc_id="new_id", before_version=13)
     )
-    assert set([5, 6, 7]) == set(
+    assert set([7, 8, 9]) == set(
         store.get_doc_chunks(doc_id="new_id", before_version=float("inf"))
     )
 
