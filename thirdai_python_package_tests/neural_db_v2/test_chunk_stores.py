@@ -13,9 +13,9 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
 )
 from thirdai.neural_db_v2.core.types import (
     CustomIdSupervisedBatch,
+    NewChunkBatch,
     VersionedNewChunkBatch,
 )
-from thirdai.neural_db_v2.core.types import NewChunkBatch
 
 pytestmark = [pytest.mark.release]
 

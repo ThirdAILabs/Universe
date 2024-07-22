@@ -11,11 +11,11 @@ from .core.types import (
     Chunk,
     ChunkId,
     CustomIdSupervisedBatch,
+    InsertedDocMetadata,
     NewChunkBatch,
     Score,
     VersionedNewChunkBatch,
 )
-from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
 from .documents import document_by_name
 from .documents.utils import series_from_value
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
