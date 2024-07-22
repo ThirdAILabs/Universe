@@ -46,7 +46,7 @@ class PandasChunkStore(ChunkStore):
         insert_doc_metadata = []
         for doc in docs:
             doc_id = doc.doc_id()
-            doc_version = self.next_version_for_doc(doc_id=doc_id)
+            doc_version = self.max_version_for_doc(doc_id=doc_id) + 1
 
             doc_chunk_ids = []
             for batch in doc.chunks():

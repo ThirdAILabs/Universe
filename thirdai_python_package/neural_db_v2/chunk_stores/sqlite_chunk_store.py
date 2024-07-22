@@ -1,5 +1,4 @@
 import operator
-import os
 import shutil
 import uuid
 from functools import reduce
@@ -18,9 +17,10 @@ from sqlalchemy import (
     create_engine,
     delete,
     func,
-    inspect,
+    insert,
     select,
     text,
+    update,
 )
 
 from ..core.chunk_store import ChunkStore
@@ -116,6 +116,14 @@ class SQLiteChunkStore(ChunkStore):
             Column("doc_id", String),
             Column("doc_version", Integer),
         )
+
+        self.doc_versions_table = Table(
+            "doc_versions",
+            self.metadata,
+            Column("doc_id", String, primary_key=True),
+            Column("doc_version", Integer),
+        )
+
         self.metadata.create_all(self.engine)
 
         self.metadata_table = None
@@ -180,7 +188,27 @@ class SQLiteChunkStore(ChunkStore):
         inserted_doc_metadata = []
         for doc in docs:
             doc_id = doc.doc_id()
-            doc_version = self.next_version_for_doc(doc_id=doc_id)
+
+            with self.engine.begin() as conn:
+                old_version = conn.execute(
+                    select(func.max(self.doc_versions_table.c.doc_version)).where(
+                        self.doc_versions_table.c.doc_id == doc_id
+                    )
+                ).scalar()
+                if not old_version:
+                    doc_version = 1
+                    conn.execute(
+                        insert(self.doc_versions_table).values(
+                            doc_id=doc_id, doc_version=1
+                        )
+                    )
+                else:
+                    doc_version = old_version + 1
+                    conn.execute(
+                        update(self.doc_versions_table)
+                        .where(self.doc_versions_table.c.doc_id == doc_id)
+                        .values(doc_version=doc_version)
+                    )
 
             doc_chunk_ids = []
             for batch in doc.chunks():
@@ -302,8 +330,8 @@ class SQLiteChunkStore(ChunkStore):
             return [row.chunk_id for row in conn.execute(stmt)]
 
     def max_version_for_doc(self, doc_id: str) -> int:
-        stmt = select(func.max(self.chunk_table.c.doc_version)).where(
-            self.chunk_table.c.doc_id == doc_id
+        stmt = select(func.max(self.doc_versions_table.c.doc_version)).where(
+            self.doc_versions_table.c.doc_id == doc_id
         )
 
         with self.engine.connect() as conn:
