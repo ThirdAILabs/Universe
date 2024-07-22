@@ -1,8 +1,9 @@
 #include "InvertedIndexTestUtils.h"
 #include "RetrieverTests.h"
 #include <gtest/gtest.h>
-#include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <search/src/inverted_index/ShardedRetriever.h>
 #include <cstdlib>
 #include <filesystem>
 #include <random>
@@ -79,6 +80,16 @@ TEST_F(OnDiskIndexTests, SaveLoad) {
 
   testSaveLoad(index, [](const std::string& path) {
     return OnDiskIndex::load(path, false);
+  });
+}
+
+TEST_F(OnDiskIndexTests, ShardedRetrieverSaveLoad) {
+  IndexConfig config;
+  config.shard_size = 24;
+  ShardedRetriever index(config, tmpDbName());
+
+  testSaveLoad(index, [](const std::string& path) {
+    return ShardedRetriever::load(path, false);
   });
 }
 
