@@ -1,7 +1,6 @@
 import pandas as pd
 import pytest
 from thirdai.bolt.udt_modifications import task_detector
-
 from udt_builder_utils import *
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]

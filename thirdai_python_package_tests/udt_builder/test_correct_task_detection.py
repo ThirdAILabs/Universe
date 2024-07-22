@@ -6,7 +6,6 @@ import pytest
 from openai import OpenAI
 from thirdai import bolt
 from thirdai.bolt.udt_modifications import task_detector
-
 from udt_builder_utils import *
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
