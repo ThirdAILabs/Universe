@@ -10,7 +10,7 @@
 #include <unordered_set>
 namespace thirdai::data::ner {
 
-enum class ValidCharacterTypes { OnlyIntegers = 0, OnlyAlphabets = 1, All = 2 };
+enum class ValidCharacterTypes { All = 0, OnlyIntegers = 1, OnlyAlphabets = 2 };
 
 class NerLearnedTag {
  public:

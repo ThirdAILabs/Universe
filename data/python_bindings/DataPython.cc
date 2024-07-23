@@ -28,6 +28,7 @@
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -563,6 +564,15 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
            py::arg("phone_numbers"));
+  py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
+      transformations_submodule, "NERLearnedTag")
+      .def(py::init<std::string, uint32_t, uint32_t, std::unordered_set<char>,
+                    std::unordered_set<uint32_t>, std::optional<std::string>>(),
+           py::arg("tag"), py::arg("supported_types") = 0,
+           py::arg("consecutive_tags_required") = 1,
+           py::arg("special_characters") = std::unordered_set<char>{},
+           py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},
+           py::arg("validation_pattern") = std::nullopt);
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")

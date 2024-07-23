@@ -22,6 +22,7 @@
 #include <data/src/transformations/StringCast.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/TokenTagCounter.h>
@@ -36,6 +37,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 namespace thirdai::automl::udt {
 
@@ -146,9 +148,27 @@ std::string tokensColumn(ColumnDataTypes data_types,
 
 std::pair<std::vector<data::ner::NerLearnedTag>,
           std::unordered_set<std::string>>
-mapTagsToLabels(const std::string& default_tag,
-                const std::vector<std::string>& tags,
-                const data::ner::RulePtr& rule, bool ignore_rule_tags) {
+mapTagsToLabels(
+    const std::string& default_tag,
+    const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
+        tags,
+    const data::ner::RulePtr& rule, bool ignore_rule_tags) {
+  /*
+   * Constructs a pair containing a vector of NerLearnedTags and a set of
+   * strings. The vector represents the tags as they will appear in the model,
+   * and the set contains tags that will not have an explicit output in the
+   * model(ignored by the model).
+   *
+   * Process:
+   * 1. If a tag is explicitly an instance of NerLearnedTag, it is directly
+   * added to the output model.
+   * 2. If a tag is a string and not found in the rules, it is converted to
+   * NerLearnedTag and added to the model.
+   * 3. If a tag is a string and found in the rules, it is ignored if
+   * ignore_rule_tags is true, otherwise it is added.
+   */
+
+  // Get rule entities or an empty vector if no rule is provided
   auto rule_tags =
       rule == nullptr ? std::vector<std::string>() : rule->entities();
 
@@ -157,11 +177,18 @@ mapTagsToLabels(const std::string& default_tag,
   std::unordered_set<std::string> ignored_tags;
 
   for (const auto& tag : tags) {
-    if (std::find(rule_tags.begin(), rule_tags.end(), tag) == rule_tags.end() ||
-        !ignore_rule_tags) {
-      all_tags.push_back(data::ner::getLearnedTagFromString(tag));
-    } else if (ignore_rule_tags) {
-      ignored_tags.insert(tag);
+    if (std::holds_alternative<data::ner::NerLearnedTag>(tag)) {
+      // Direct inclusion for explicitly defined NerLearnedTag objects.
+      all_tags.push_back(std::get<data::ner::NerLearnedTag>(tag));
+    } else {
+      auto tag_string = std::get<std::string>(tag);
+      if (std::find(rule_tags.begin(), rule_tags.end(), tag_string) ==
+              rule_tags.end() ||
+          !ignore_rule_tags) {
+        all_tags.push_back(data::ner::getLearnedTagFromString(tag_string));
+      } else if (ignore_rule_tags) {
+        ignored_tags.insert(tag_string);
+      }
     }
   }
   return {all_tags, ignored_tags};
@@ -467,10 +494,11 @@ std::vector<SentenceTags> UDTNer::predictTags(
         bolt::NER::applyPunctAndStopWordFilter(
             tokens[sentence_index][token_index], tags, _label_to_tag[0].tag());
 
-        // if the number of labels in the model is 1, we do not have to reverse
+        // if the number of labels in the model is 1, we do not have to
+        // reverse
         if (tags.size() > 1) {
-          // If the default tag is the the top prediction but has a score < 0.9
-          // then using the next top prediction improves accuracy.
+          // If the default tag is the the top prediction but has a score <
+          // 0.9 then using the next top prediction improves accuracy.
           float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
           if (tags.back().first == _label_to_tag[0].tag() &&
