@@ -356,10 +356,10 @@ class SQLiteChunkStore(ChunkStore):
         else:
             raise ValueError("neural_db_chunks table is missing in the database.")
 
-        if "neural_db_custom_ids" in obj.metadata.tables:
-            obj.custom_id_table = obj.metadata.tables["neural_db_custom_ids"]
+        if "doc_versions_table" in obj.metadata.tables:
+            obj.doc_versions_table = obj.metadata.tables["doc_versions_table"]
         else:
-            obj.custom_id_table = None
+            raise ValueError("doc_versions_table table is missing in the database")
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
