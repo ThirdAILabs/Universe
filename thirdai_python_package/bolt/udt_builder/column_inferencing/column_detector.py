@@ -41,7 +41,7 @@ def cast_to_numerical(column_name: str, column: pd.Series):
     try:
         column = pd.to_numeric(column)
         return NumericalColumn(
-            name=column_name, minimum=min(column), maximum=max(column)
+            name=column_name, minimum=column.min(), maximum=column.max()
         )
     except:
         return None
