@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::ar {
@@ -197,6 +198,12 @@ ConstArchivePtr f32(float val);
 ConstArchivePtr character(char val);
 
 ConstArchivePtr str(std::string val);
+
+ConstArchivePtr setStr(std::unordered_set<std::string> val);
+
+ConstArchivePtr setU32(std::unordered_set<std::uint32_t> val);
+
+ConstArchivePtr setCharacter(std::unordered_set<char> val);
 
 ConstArchivePtr vecU32(std::vector<uint32_t> val);
 

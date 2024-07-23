@@ -9,15 +9,13 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
-#include <data/src/transformations/ner/token_tag_counter/TokenTagCounter.h>
+#include <data/src/transformations/ner/utils/TokenTagCounter.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
 
 namespace thirdai::data {
-
-std::vector<std::string> cleanAndLowerCase(
-    const std::vector<std::string>& tokens);
 
 class NerTokenizerUnigram final : public Transformation {
  public:
@@ -41,7 +39,8 @@ class NerTokenizerUnigram final : public Transformation {
 
   std::string processToken(const std::vector<std::string>& tokens,
                            uint32_t index) const {
-    return _processor.processToken(tokens, index, cleanAndLowerCase(tokens));
+    return _processor.processToken(tokens, index,
+                                   ner::utils::cleanAndLowerCase(tokens));
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
@@ -71,11 +70,13 @@ class NerTokenizerUnigram final : public Transformation {
     if (_token_tag_counter != nullptr && _target_column.has_value()) {
       for (size_t i = 0; i < tokens->numRows(); ++i) {
         std::vector<std::string> row_token_vectors = tokens->row(i).toVector();
-        auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
+        auto lower_cased_tokens =
+            ner::utils::cleanAndLowerCase(row_token_vectors);
 
         for (size_t token_index = 0; token_index < row_token_vectors.size();
              ++token_index) {
-          if (!is_number_with_punct(lower_cased_tokens[token_index], {})) {
+          if (!ner::utils::isNumberWithPunct(lower_cased_tokens[token_index],
+                                             {})) {
             _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
                                             tags->row(i)[token_index]);
           }

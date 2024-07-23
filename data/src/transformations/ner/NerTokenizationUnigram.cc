@@ -7,6 +7,7 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
@@ -16,23 +17,6 @@
 #include <utility>
 
 namespace thirdai::data {
-
-std::vector<std::string> cleanAndLowerCase(
-    const std::vector<std::string>& tokens) {
-  /*
-   * Converts the tokens to lower case and trims punctuations.
-   */
-  auto lower_tokens = tokens;
-  for (auto& token : lower_tokens) {
-    for (char& c : token) {
-      c = std::tolower(c);
-    }
-  }
-  for (auto& token : lower_tokens) {
-    token = trimPunctuation(token);
-  }
-  return lower_tokens;
-}
 
 void throwTokenTagSizeMismatchError(uint32_t row_id, uint32_t tokens_size,
                                     uint32_t tags_size) {
@@ -90,7 +74,8 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
       size_t sample_offset = sample_offsets[i];
       std::vector<std::string> row_token_vectors =
           text_tokens->row(i).toVector();
-      auto lower_cased_tokens = cleanAndLowerCase(row_token_vectors);
+      auto lower_cased_tokens =
+          ner::utils::cleanAndLowerCase(row_token_vectors);
 
       // processing the tokens in the sentence
       for (size_t target = 0; target < row_token_vectors.size(); target++) {
@@ -99,7 +84,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
         if (_token_tag_counter != nullptr &&
-            !is_number_with_punct(lower_cased_tokens[target], {})) {
+            !ner::utils::isNumberWithPunct(lower_cased_tokens[target], {})) {
           featurized_sentences[featurized_sentence_offset] +=
               _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
         }

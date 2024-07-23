@@ -1,4 +1,5 @@
 #include "NerDyadicDataProcessor.h"
+#include "utils/utils.h"
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <data/src/transformations/TextTokenizer.h>
@@ -15,140 +16,13 @@
 
 namespace thirdai::data {
 
-bool is_number_with_punct(const std::string& s,
-                          const std::unordered_set<char>& exception_chars) {
-  bool has_digit = false;
-
-  for (char c : s) {
-    if (std::isdigit(c)) {
-      has_digit = true;
-    } else if (!std::ispunct(c) && exception_chars.count(c) == 0) {
-      return false;
-    }
-  }
-
-  return has_digit;
-}
-
-std::string trimWhiteSpace(const std::string& str) {
-  auto start = str.begin();
-  while (start != str.end() && std::isspace(*start)) {
-    start++;
-  }
-
-  auto end = str.end();
-  while (end != start && std::isspace(*(end - 1))) {
-    end--;
-  }
-
-  return std::string(start, end);
-}
-
-bool containsKeywordInRange(const std::vector<std::string>& tokens,
-                            size_t start, size_t end,
-                            const std::unordered_set<std::string>& keywords) {
-  return std::any_of(tokens.begin() + start, tokens.begin() + end,
-                     [&keywords](const std::string& token) {
-                       return keywords.find(token) != keywords.end();
-                     });
-}
-
-std::string stripNonDigits(const std::string& input) {
-  std::string digits;
-  for (char ch : input) {
-    if (std::isdigit(ch)) {
-      digits += ch;
-    }
-  }
-  return digits;
-}
-
-bool containsAlphabets(const std::string& input,
-                       const std::unordered_set<char>& exception_chars) {
-  return std::any_of(input.begin(), input.end(), [exception_chars](char c) {
-    return std::isalpha(c) && exception_chars.count(c) == 0;
-  });
-}
-
-bool luhnCheck(const std::string& number) {
-  /*
-   * Checks whether the number being passed satisifies the luhn's check. This is
-   * useful for detecting credit card numbers.
-   */
-  int sum = 0;
-  bool alternate = false;
-  for (int i = number.size() - 1; i >= 0; --i) {
-    int n = number[i] - '0';
-    if (alternate) {
-      n *= 2;
-      if (n > 9) {
-        n -= 9;
-      }
-    }
-    sum += n;
-    alternate = !alternate;
-  }
-  return (sum % 10 == 0);
-}
-
-std::string find_contiguous_numbers(const std::vector<std::string>& v,
-                                    uint32_t index, uint32_t k = 3) {
-  /*
-   * Returns the surrounding numbers around the target token as a space
-   * seperated string. This is useful when we have tokens of the form 1234 5678
-   * 9101.
-   */
-  if (index >= static_cast<uint32_t>(v.size())) {
-    return "";
-  }
-
-  if (!is_number_with_punct(v[index], {'e', 'x', 't'})) {
-    return "";
-  }
-
-  int start = index > k ? index - k : 0;
-  int end = std::min(static_cast<uint32_t>(v.size()) - 1, index + k);
-
-  std::vector<std::string> left_window, right_window;
-  for (int i = index - 1; i >= start; --i) {
-    if (is_number_with_punct(v[index], {'e', 'x', 't'})) {
-      left_window.push_back(v[i]);
-    } else {
-      break;
-    }
-  }
-
-  std::reverse(left_window.begin(), left_window.end());
-
-  for (int i = index + 1; i <= end; ++i) {
-    if (is_number_with_punct(v[index], {'e', 'x', 't'})) {
-      right_window.push_back(v[i]);
-    } else {
-      break;
-    }
-  }
-  if (left_window.empty() && right_window.empty()) {
-    return "";
-  }
-
-  std::string result;
-  for (const auto& s : left_window) {
-    result += s + " ";
-  }
-  result += v[index] + " ";
-  for (const auto& s : right_window) {
-    result += s + " ";
-  }
-
-  return result;
-}
-
 std::string getNumericalFeatures(const std::string& input) {
-  std::string strippedInput = stripNonDigits(input);
+  std::string strippedInput = ner::utils::stripNonDigits(input);
 
   if (!strippedInput.empty()) {
     // if a token contains both alphabets and numbers, it is probably some uin
-    if (containsAlphabets(input, {'e', 'x', 't'}) && input.size() >= 6) {
+    if (ner::utils::containsAlphabets(input, {'e', 'x', 't'}) &&
+        input.size() >= 6) {
       return "IS_UIN";
     }
 
@@ -188,7 +62,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
   std::string extra_features;
 
   // clean the tokens to be able to match regex and apply heuristics
-  std::string current_token = trimPunctuation(tokens[index]);
+  std::string current_token = ner::utils::trimPunctuation(tokens[index]);
 
   /*
    * start, end, start_long are indices in the vector that mark the boundary of
@@ -217,7 +91,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
      * numbers, they probably form a single entity.
      */
     std::string surrounding_numbers = text::stripWhitespace(
-        find_contiguous_numbers(lower_cased_tokens, index));
+        ner::utils::findContiguousNumbers(lower_cased_tokens, index));
     if (!surrounding_numbers.empty()) {
       auto numerical_features = getNumericalFeatures(surrounding_numbers);
       if (!numerical_features.empty()) {
@@ -259,33 +133,36 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
     }
   }
 
-  if (containsKeywordInRange(
+  if (ner::utils::containsKeywordInRange(
           lower_cased_tokens, start_long, end,
           _feature_enhancement_config->identification_keywords)) {
     extra_features += "CONTAINS_IDENTIFICATION_KEYWORDS ";
   }
 
   if (_feature_enhancement_config->enhance_names &&
-      containsKeywordInRange(lower_cased_tokens, start, end,
-                             _feature_enhancement_config->name_keywords)) {
+      ner::utils::containsKeywordInRange(
+          lower_cased_tokens, start, end,
+          _feature_enhancement_config->name_keywords)) {
     extra_features += "CONTAINS_NAMED_WORDS ";
   }
 
   if (_feature_enhancement_config->enhance_location_features &&
-      containsKeywordInRange(lower_cased_tokens, start, end,
-                             _feature_enhancement_config->location_keywords)) {
+      ner::utils::containsKeywordInRange(
+          lower_cased_tokens, start, end,
+          _feature_enhancement_config->location_keywords)) {
     extra_features += "CONTAINS_LOCATION_WORDS ";
   }
 
   if (_feature_enhancement_config->enhance_organization_features &&
-      containsKeywordInRange(
+      ner::utils::containsKeywordInRange(
           lower_cased_tokens, start, end,
           _feature_enhancement_config->organization_keywords)) {
     extra_features += "CONTAINS_ORGANIZATION_WORDS ";
   }
   if (_feature_enhancement_config->find_phonenumbers &&
-      containsKeywordInRange(lower_cased_tokens, start_long, end,
-                             _feature_enhancement_config->contact_keywords)) {
+      ner::utils::containsKeywordInRange(
+          lower_cased_tokens, start_long, end,
+          _feature_enhancement_config->contact_keywords)) {
     extra_features += "CONTAINS_PHONE_WORDS_LONG ";
   }
 

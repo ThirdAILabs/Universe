@@ -13,16 +13,6 @@
 
 namespace thirdai::data {
 
-bool is_number_with_punct(const std::string& s,
-                          const std::unordered_set<char>& exception_chars);
-
-std::string trimPunctuation(const std::string& str);
-
-std::string stripNonDigits(const std::string& input);
-
-bool containsAlphabets(const std::string& input,
-                       const std::unordered_set<char>& exception_chars);
-
 struct FeatureEnhancementConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;

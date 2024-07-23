@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::ar {
 
@@ -158,6 +159,18 @@ ConstArchivePtr character(char val) { return Value<char>::make(val); }
 
 ConstArchivePtr str(std::string val) {
   return Value<std::string>::make(std::move(val));
+}
+
+ConstArchivePtr setStr(std::unordered_set<std::string> val) {
+  return Value<std::unordered_set<std::string>>::make(std::move(val));
+}
+
+ConstArchivePtr setU32(std::unordered_set<std::uint32_t> val) {
+  return Value<std::unordered_set<uint32_t>>::make(std::move(val));
+}
+
+ConstArchivePtr setCharacter(std::unordered_set<char> val) {
+  return Value<std::unordered_set<char>>::make(std::move(val));
 }
 
 ConstArchivePtr vecU32(std::vector<uint32_t> val) {
