@@ -5,7 +5,8 @@
 namespace thirdai::data::ner {
 
 void NerLearnedTag::applyTypeFilter(
-    SentenceTags& sentence_tags, const std::vector<std::string>& tokens) const {
+    utils::SentenceTags& sentence_tags,
+    const std::vector<std::string>& tokens) const {
   if (_supported_types == ValidCharacterTypes::All) {
     return;
   }
@@ -39,7 +40,8 @@ void NerLearnedTag::applyTypeFilter(
 }
 
 void NerLearnedTag::applyConsecutiveTagsFilter(
-    SentenceTags& sentence_tags, const std::vector<std::string>& tokens) const {
+    utils::SentenceTags& sentence_tags,
+    const std::vector<std::string>& tokens) const {
   size_t index = 0;
   while (index < sentence_tags.size()) {
     const std::string& tag =
@@ -48,7 +50,7 @@ void NerLearnedTag::applyConsecutiveTagsFilter(
     if (tag == _tag) {
       uint32_t maximum_consecutive_tags =
           _consecutive_tags_required > 1
-              ? find_max_contiguous_window(sentence_tags, index, tag) + 1
+              ? utils::find_max_contiguous_window(sentence_tags, index, tag) + 1
               : 1;
 
       std::string concatenated_tokens = tokens[index];

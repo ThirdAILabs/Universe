@@ -2,6 +2,7 @@
 
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <cstdint>
 #include <optional>
 #include <regex>
@@ -10,25 +11,6 @@
 namespace thirdai::data::ner {
 
 enum class ValidCharacterTypes { OnlyIntegers = 0, OnlyAlphabets = 1, All = 2 };
-
-using TokenTags = std::vector<std::pair<std::string, float>>;
-using SentenceTags = std::vector<TokenTags>;
-
-uint32_t inline find_max_contiguous_window(const SentenceTags& sentence_tags,
-                                           uint32_t index,
-                                           const std::string& tag_to_find) {
-  int count = 0;
-
-  // Check right from the index
-  for (size_t i = index; i < sentence_tags.size(); ++i) {
-    if (sentence_tags[i].empty() || sentence_tags[i][0].first != tag_to_find) {
-      break;
-    }
-    count++;
-  }
-
-  return count - 1;
-}
 
 class NerLearnedTag {
  public:
@@ -56,7 +38,7 @@ class NerLearnedTag {
                       /*special_characters=*/{}, /*invalid_sizes=*/{},
                       /*validation_pattern=*/std::nullopt) {}
 
-  void processTags(SentenceTags& sentence_tags,
+  void processTags(utils::SentenceTags& sentence_tags,
                    const std::vector<std::string>& tokens) const {
     applyTypeFilter(sentence_tags, tokens);
     applyConsecutiveTagsFilter(sentence_tags, tokens);
@@ -98,10 +80,10 @@ class NerLearnedTag {
   }
 
  private:
-  void applyTypeFilter(SentenceTags& sentence_tags,
+  void applyTypeFilter(utils::SentenceTags& sentence_tags,
                        const std::vector<std::string>& tokens) const;
 
-  void applyConsecutiveTagsFilter(SentenceTags& sentence_tags,
+  void applyConsecutiveTagsFilter(utils::SentenceTags& sentence_tags,
                                   const std::vector<std::string>& tokens) const;
 
   std::string _tag;
