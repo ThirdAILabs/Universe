@@ -32,6 +32,8 @@ class PandasChunkStore(ChunkStore):
             }
         )
 
+        self.doc_versions = {}
+
         self.metadata_df = pd.DataFrame()
 
         self.next_id = 0
@@ -47,6 +49,7 @@ class PandasChunkStore(ChunkStore):
         for doc in docs:
             doc_id = doc.doc_id()
             doc_version = self.max_version_for_doc(doc_id=doc_id) + 1
+            self.doc_versions[doc_id] = doc_version
 
             doc_chunk_ids = []
             for batch in doc.chunks():
@@ -154,8 +157,7 @@ class PandasChunkStore(ChunkStore):
         ].to_list()
 
     def max_version_for_doc(self, doc_id: str) -> int:
-        version = self.chunk_df["doc_version"][self.chunk_df["doc_id"] == doc_id].max()
-        return 0 if np.isnan(version) else version
+        return self.doc_versions.get(doc_id, 0)
 
     def save(self, path: str):
         pickle_to(self, path)
