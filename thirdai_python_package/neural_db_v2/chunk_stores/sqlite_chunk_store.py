@@ -330,7 +330,7 @@ class SQLiteChunkStore(ChunkStore):
             return [row.chunk_id for row in conn.execute(stmt)]
 
     def max_version_for_doc(self, doc_id: str) -> int:
-        stmt = select(func.max(self.doc_versions_table.c.doc_version)).where(
+        stmt = select(self.doc_versions_table.c.doc_version).where(
             self.doc_versions_table.c.doc_id == doc_id
         )
 
