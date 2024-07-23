@@ -72,9 +72,9 @@ void FinetunableRetriever::finetune(
   std::iota(query_ids.begin(), query_ids.end(), _next_query_id);
 
   for (size_t i = 0; i < query_ids.size(); i++) {
-    _query_to_docs[query_ids[i]] = doc_ids[i];
+    _query_to_docs->put(query_ids[i], doc_ids[i]);
     for (DocId doc : doc_ids[i]) {
-      _doc_to_queries[doc].push_back(query_ids[i]);
+      _doc_to_queries->append(doc, query_ids[i]);
     }
   }
 
@@ -131,7 +131,7 @@ std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
   }
 
   for (const auto& [query, score] : top_queries) {
-    for (DocId doc : _query_to_docs.at(query)) {
+    for (DocId doc : _query_to_docs->get(query)) {
       top_scores[doc] += (1 - _lambda) * score;
     }
   }
@@ -169,7 +169,7 @@ std::vector<DocScore> FinetunableRetriever::rank(
   }
 
   for (const auto& [query, score] : top_queries) {
-    for (DocId doc : _query_to_docs.at(query)) {
+    for (DocId doc : _query_to_docs->get(query)) {
       if (candidates.count(doc)) {
         top_scores[doc] += (1 - _lambda) * score;
       }
@@ -204,11 +204,11 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
 
   std::vector<QueryId> irrelevant_queries;
   for (DocId doc : ids) {
-    if (!_doc_to_queries.count(doc)) {
+    if (!_doc_to_queries->contains(doc)) {
       continue;
     }
-    for (QueryId query : _doc_to_queries.at(doc)) {
-      auto& docs_for_query = _query_to_docs.at(query);
+    for (QueryId query : _doc_to_queries->get(doc)) {
+      auto docs_for_query = _query_to_docs->get(query);
       auto loc = std::find(docs_for_query.begin(), docs_for_query.end(), doc);
       if (loc != docs_for_query.end()) {
         docs_for_query.erase(loc);
@@ -217,13 +217,13 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
         irrelevant_queries.push_back(query);
       }
     }
-    _doc_to_queries.erase(doc);
+    _doc_to_queries->del(doc);
   }
 
   _query_index->remove(irrelevant_queries);
   for (QueryId query : irrelevant_queries) {
-    if (_query_to_docs.count(query)) {
-      _query_to_docs.erase(query);
+    if (_query_to_docs->contains(query)) {
+      _query_to_docs->del(query);
     }
   }
 }
@@ -234,8 +234,8 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   map->set("doc_index_type", ar::str(_doc_index_type));
   map->set("query_index_type", ar::str(_query_index_type));
 
-  map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
-  map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
+  // map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
+  // map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
 
   map->set("next_query_id", ar::u64(_next_query_id));
 
@@ -249,8 +249,8 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
 void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
   _doc_index_type = archive.str("doc_index_type");
   _query_index_type = archive.str("query_index_type");
-  _query_to_docs = archive.getAs<ar::MapU64VecU64>("query_to_docs");
-  _doc_to_queries = archive.getAs<ar::MapU64VecU64>("doc_to_queries");
+  // _query_to_docs = archive.getAs<ar::MapU64VecU64>("query_to_docs");
+  // _doc_to_queries = archive.getAs<ar::MapU64VecU64>("doc_to_queries");
   _next_query_id = archive.u64("next_query_id");
   _lambda = archive.f32("lambda");
   _min_top_docs = archive.u64("min_top_docs");
@@ -315,8 +315,8 @@ void FinetunableRetriever::save_stream(std::ostream& ostream) const {
 FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
     : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
-      _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
-      _doc_to_queries(archive.getAs<ar::MapU64VecU64>("doc_to_queries")),
+      // _query_to_docs(archive.getAs<ar::MapU64VecU64>("query_to_docs")),
+      // _doc_to_queries(archive.getAs<ar::MapU64VecU64>("doc_to_queries")),
       _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <search/src/inverted_index/IdMap.h>
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
@@ -93,8 +94,8 @@ class FinetunableRetriever {
   std::string _doc_index_type;
   std::string _query_index_type;
 
-  std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
-  std::unordered_map<DocId, std::vector<QueryId>> _doc_to_queries;
+  std::unique_ptr<IdMap> _query_to_docs;
+  std::unique_ptr<IdMap> _doc_to_queries;
 
   QueryId _next_query_id = 0;
 
