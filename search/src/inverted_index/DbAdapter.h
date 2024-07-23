@@ -36,6 +36,16 @@ class DbAdapter {
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
           token_to_new_docs) = 0;
 
+  // Used only for update method
+  virtual void incrementDocLens(
+      const std::vector<DocId>& ids,
+      const std::vector<uint32_t>& doc_len_increments) = 0;
+
+  // Used only for update method
+  virtual void incrementDocTokenCounts(
+      const std::unordered_map<HashedToken, std::vector<DocCount>>&
+          token_to_doc_updates) = 0;
+
   virtual std::vector<std::vector<DocCount>> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const = 0;
 
@@ -45,7 +55,7 @@ class DbAdapter {
 
   virtual void removeDocs(const std::unordered_set<DocId>& docs) = 0;
 
-  virtual uint32_t getDocLen(DocId doc_id) const = 0;
+  virtual uint64_t getDocLen(DocId doc_id) const = 0;
 
   virtual uint64_t getNDocs() const = 0;
 

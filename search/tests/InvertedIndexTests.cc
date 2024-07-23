@@ -57,15 +57,8 @@ TEST(InvertedIndexTests, DocRemoval) {
 
 TEST(InvertedIndexTests, TestUpdate) {
   InvertedIndex index = indexWithShardSize(2);
-
-  index.index({1, 2, 3, 4}, {"a b c d 1 2", "5 6", "7 8", "f g h 3 4"});
+  testUpdate(index);
   ASSERT_EQ(index.nShards(), 2);
-
-  checkQuery(index, "a b c d e f g h", {1, 4});
-
-  index.update({2, 4}, {"a h", "e f"});
-
-  checkQuery(index, "a b c d e f g h", {4, 1, 2});
 }
 
 TEST(InvertedIndexTests, SyntheticDataset) {

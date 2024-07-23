@@ -60,6 +60,21 @@ void RocksDbReadOnlyAdapter::updateTokenToDocs(
   throw std::invalid_argument("This method is not supported for read only db.");
 }
 
+void RocksDbReadOnlyAdapter::incrementDocLens(
+    const std::vector<DocId>& ids,
+    const std::vector<uint32_t>& doc_len_increments) {
+  (void)ids;
+  (void)doc_len_increments;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+void RocksDbReadOnlyAdapter::incrementDocTokenCounts(
+    const std::unordered_map<HashedToken, std::vector<DocCount>>&
+        token_to_doc_updates) {
+  (void)token_to_doc_updates;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
 std::vector<std::vector<DocCount>> RocksDbReadOnlyAdapter::lookupDocs(
     const std::vector<HashedToken>& query_tokens) const {
   std::vector<rocksdb::Slice> keys;
@@ -101,7 +116,7 @@ void RocksDbReadOnlyAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   throw std::invalid_argument("This method is not supported for read only db.");
 }
 
-uint32_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
+uint64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
@@ -109,7 +124,7 @@ uint32_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
     raiseError(status, "get");
   }
 
-  uint32_t len;
+  uint64_t len;
   if (!deserialize(value, len)) {
     throw std::invalid_argument("document length is corrupted");
   }

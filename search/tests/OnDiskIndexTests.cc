@@ -62,6 +62,11 @@ TEST_F(OnDiskIndexTests, DocRemoval) {
   testDocRemoval(index);
 }
 
+TEST_F(OnDiskIndexTests, TestUpdate) {
+  OnDiskIndex index(tmpDbName());
+  testUpdate(index);
+}
+
 TEST_F(OnDiskIndexTests, SyntheticDataset) {
   OnDiskIndex index(tmpDbName());
   OnDiskIndex incremental_index(tmpDbName());

@@ -58,7 +58,7 @@ void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
 
   for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
-    const uint32_t doc_len = doc_lens[i];
+    const uint64_t doc_len = doc_lens[i];
 
     const std::string key = docIdKey(doc_id);
 
@@ -126,6 +126,80 @@ void RocksDbAdapter::updateTokenToDocs(
   if (!status.ok()) {
     raiseError(status, "write batch");
   }
+}
+
+void RocksDbAdapter::incrementDocLens(
+    const std::vector<DocId>& ids,
+    const std::vector<uint32_t>& doc_len_increments) {
+  rocksdb::WriteBatch batch;
+
+  uint64_t sum_new_lens = 0;
+  for (size_t i = 0; i < ids.size(); i++) {
+    const uint64_t doc_len = doc_len_increments[i];
+    sum_new_lens += doc_len;
+
+    auto merge_status =
+        batch.Merge(_counters, docIdKey(ids[i]),
+                    rocksdb::Slice(reinterpret_cast<const char*>(&doc_len),
+                                   sizeof(doc_len)));
+    if (!merge_status.ok()) {
+      raiseError(merge_status, "add merge to batch");
+    }
+  }
+
+  auto status = _db->Write(rocksdb::WriteOptions(), &batch);
+  if (!status.ok()) {
+    raiseError(status, "write batch");
+  }
+
+  updateSumDocLens(sum_new_lens);
+}
+
+void RocksDbAdapter::incrementDocTokenCounts(
+    const std::unordered_map<HashedToken, std::vector<DocCount>>&
+        token_to_doc_updates) {
+  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+
+  for (const auto& [token, updates] : token_to_doc_updates) {
+    rocksdb::Slice key(reinterpret_cast<const char*>(&token), sizeof(token));
+
+    std::string value;
+    auto get_status =
+        txn->GetForUpdate(rocksdb::ReadOptions(), _token_to_docs, key, &value);
+    if (get_status.IsNotFound()) {
+      TokenStatus status = TokenStatus::Default;
+      value.append(reinterpret_cast<const char*>(&status), sizeof(TokenStatus));
+    } else if (!get_status.ok()) {
+      raiseError(get_status, "txn get");
+    }
+
+    for (const auto& update : updates) {
+      auto* doc_counts = docCountPtr(value);
+      const size_t docs_w_token = docsWithToken(value);
+
+      const DocId doc_id = update.doc_id;
+      auto* it =
+          std::find_if(doc_counts, doc_counts + docs_w_token,
+                       [doc_id](const auto& a) { return a.doc_id == doc_id; });
+      if (it != doc_counts + docs_w_token) {
+        it->count += update.count;
+      } else {
+        value.append(reinterpret_cast<const char*>(&update), sizeof(DocCount));
+      }
+    }
+
+    auto put_status = txn->Put(_token_to_docs, key, value);
+    if (!put_status.ok()) {
+      raiseError(put_status, "txn put");
+    }
+  }
+
+  auto status = txn->Commit();
+  if (!status.ok()) {
+    raiseError(status, "txn commit");
+  }
+
+  delete txn;
 }
 
 std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
@@ -239,7 +313,7 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   delete txn;
 }
 
-uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
+uint64_t RocksDbAdapter::getDocLen(DocId doc_id) const {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
@@ -247,7 +321,7 @@ uint32_t RocksDbAdapter::getDocLen(DocId doc_id) const {
     raiseError(status, "get");
   }
 
-  uint32_t len;
+  uint64_t len;
   if (!deserialize(value, len)) {
     throw std::invalid_argument("document length is corrupted");
   }

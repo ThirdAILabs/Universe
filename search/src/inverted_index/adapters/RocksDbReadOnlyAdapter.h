@@ -19,6 +19,13 @@ class RocksDbReadOnlyAdapter final : public DbAdapter {
       const std::unordered_map<HashedToken, std::vector<DocCount>>&
           token_to_new_docs) final;
 
+  void incrementDocLens(const std::vector<DocId>& ids,
+                        const std::vector<uint32_t>& doc_len_increments) final;
+
+  void incrementDocTokenCounts(
+      const std::unordered_map<HashedToken, std::vector<DocCount>>&
+          token_to_doc_updates) final;
+
   std::vector<std::vector<DocCount>> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const final;
 
@@ -26,7 +33,7 @@ class RocksDbReadOnlyAdapter final : public DbAdapter {
 
   void removeDocs(const std::unordered_set<DocId>& docs) final;
 
-  uint32_t getDocLen(DocId doc_id) const final;
+  uint64_t getDocLen(DocId doc_id) const final;
 
   uint64_t getNDocs() const final;
 

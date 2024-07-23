@@ -50,6 +50,10 @@ inline const DocCount* docCountPtr(const rocksdb::Slice& value) {
   return reinterpret_cast<const DocCount*>(value.data() + sizeof(TokenStatus));
 }
 
+inline DocCount* docCountPtr(std::string& value) {
+  return reinterpret_cast<DocCount*>(value.data() + sizeof(TokenStatus));
+}
+
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
 class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
  public:

@@ -12,7 +12,9 @@
 #include <rocksdb/utilities/write_batch_with_index.h>
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/BM25.h>
+#include <search/src/inverted_index/DbAdapter.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/inverted_index/adapters/RocksDbAdapter.h>
 #include <search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.h>
@@ -67,6 +69,22 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   ar::serialize(metadata, metadata_file);
 }
 
+std::unordered_map<HashedToken, std::vector<DocCount>> coalesceCounts(
+    const std::vector<DocId>& ids,
+    const std::vector<std::unordered_map<HashedToken, uint32_t>>&
+        token_counts) {
+  std::unordered_map<HashedToken, std::vector<DocCount>> coalesced_counts;
+  for (size_t i = 0; i < ids.size(); i++) {
+    const DocId doc_id = ids[i];
+
+    for (const auto& [token, count] : token_counts[i]) {
+      coalesced_counts[token].emplace_back(doc_id, count);
+    }
+  }
+
+  return coalesced_counts;
+}
+
 void OnDiskIndex::index(const std::vector<DocId>& ids,
                         const std::vector<std::string>& docs) {
   if (ids.size() != docs.size()) {
@@ -80,16 +98,27 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
 
   _db->storeDocLens(ids, doc_lens);
 
-  std::unordered_map<HashedToken, std::vector<DocCount>> coalesced_counts;
-  for (size_t i = 0; i < ids.size(); i++) {
-    const DocId doc_id = ids[i];
-
-    for (const auto& [token, count] : token_counts[i]) {
-      coalesced_counts[token].emplace_back(doc_id, count);
-    }
-  }
+  auto coalesced_counts = coalesceCounts(ids, token_counts);
 
   _db->updateTokenToDocs(coalesced_counts);
+}
+
+void OnDiskIndex::update(const std::vector<DocId>& ids,
+                         const std::vector<std::string>& extra_tokens) {
+  if (ids.size() != extra_tokens.size()) {
+    throw std::invalid_argument(
+        "Number of ids must match the number of docs in index.");
+  }
+
+  licensing::entitlements().verifyNoDataSourceRetrictions();
+
+  auto [doc_lens, token_counts] = countTokenOccurences(extra_tokens);
+
+  _db->incrementDocLens(ids, doc_lens);
+
+  auto coalesced_counts = coalesceCounts(ids, token_counts);
+
+  _db->incrementDocTokenCounts(coalesced_counts);
 }
 
 // TODO(Nicholas): This logic is similar to that of the regular inverted index,
