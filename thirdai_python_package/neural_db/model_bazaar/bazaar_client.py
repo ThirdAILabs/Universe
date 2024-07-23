@@ -462,7 +462,61 @@ class NeuralDBClient:
 
         return response.json()["data"]
 
+class UDTClient:
+    """
+    A client for interacting with deployed UDT Model
+    
+    Attributes:
+        deployment_identifier (str): The identifier for the deployment.
+        deployment_id (str): The deployment ID for the deployed UDT model.
+        bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
+    """
+    
+    def __init__(
+        self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
+    ):
+        """
+        Initializes a new instance of the UDTClient.
+
+        Args:
+            deployment_identifier (str): The identifier for the deployment.
+            deployment_id (str): The deployment ID for the deployed UDT model.
+            bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
+        """
+        
+        self.deployment_identifier = deployment_identifier
+        self.base_url = construct_deployment_url(
+            re.sub(r"api/$", "", bazaar._base_url), deployment_id
+        )
+        self.bazaar = bazaar
+        
+    @check_deployment_decorator
+    def query(
+        self, query, top_k=1 
+    ):
+        """
+        Queries the UDT Model
+        
+        Args:
+            query (str): The query to search for.
+            top_k (int): The number of top results to retrieve (default is 5).
+        """
+        print(self.base_url)
+        
+        base_params = {
+            "query": query,
+            "top_k": top_k
+        }
+        
+        response = http_post_with_error(
+            urljoin(self.base_url, "predict"),
+            json=base_params,
+            headers=auth_header(self.bazaar._access_token),
+        )
+        
+        return json.loads(response.content)["data"]
+        
 class ModelBazaar(Bazaar):
     """
     A class representing ModelBazaar, providing functionality for managing models and deployments.
@@ -1028,6 +1082,40 @@ class ModelBazaar(Bazaar):
         self.await_deploy(ndb_client)
         return ndb_client
 
+    def deploy_udt(
+        self,
+        model_identifier: str,
+        deployment_name: str,
+        memory: Optional[int] = None,
+        is_async=False
+    ):
+        url = urljoin(self._base_url, f"deploy/run")
+        params = {
+            "model_identifier": model_identifier,
+            "deployment_name": deployment_name,
+            "memory": memory,
+        }
+        response = http_post_with_error(
+            url, params=params, headers=auth_header(self._access_token)
+        )
+        response_data = json.loads(response.content)["data"]
+
+        udt_client = UDTClient(
+            deployment_identifier=create_deployment_identifier(
+                model_identifier=model_identifier,
+                deployment_name=deployment_name,
+                deployment_username=self._username,
+            ),
+            deployment_id=response_data["deployment_id"],
+            bazaar=self,
+        )
+        if is_async:
+            return udt_client
+
+        time.sleep(5)
+        self.await_deploy(udt_client)
+        return udt_client
+        
     def await_deploy(self, ndb_client: NeuralDBClient):
         """
         Waits for the deployment of a model to complete.
