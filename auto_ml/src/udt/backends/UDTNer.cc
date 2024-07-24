@@ -198,15 +198,16 @@ mapTagsToLabels(
   return {model_tags, ignored_tags};
 }
 
-std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
-    const data::TransformationPtr& transform) {
+std::shared_ptr<data::NerTokenizerUnigram> extractNerTokenizerTransform(
+    const data::TransformationPtr& transform, bool is_inference) {
   if (auto pipeline = std::dynamic_pointer_cast<data::Pipeline>(transform)) {
     if (pipeline->transformations().empty()) {
       return nullptr;
     }
 
     return std::dynamic_pointer_cast<data::NerTokenizerUnigram>(
-        pipeline->transformations().at(2));
+        is_inference ? pipeline->transformations().at(0)
+                     : pipeline->transformations().at(2));
   }
 
   return nullptr;
@@ -233,8 +234,8 @@ UDTNer::NerOptions UDTNer::fromPretrained(const UDTNer* pretrained_model) {
   options.input_dim = options.pretrained_emb->inputDim();
   options.emb_dim = options.pretrained_emb->dim();
 
-  auto input_transform =
-      extractInputTransform(pretrained_model->_supervised_transform);
+  auto input_transform = extractNerTokenizerTransform(
+      pretrained_model->_supervised_transform, /*is_inference=*/false);
   if (!input_transform) {
     throw std::invalid_argument("Invalid pretrained model for NER task.");
   }
@@ -606,16 +607,16 @@ UDTNer::UDTNer(const ar::Archive& archive)
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
         data::ner::TokenTagCounter(*archive.get("token_tag_counter")));
 
-    auto ner_transformation_supervised =
-        extractInputTransform(_supervised_transform);
+    auto ner_transformation_supervised = extractNerTokenizerTransform(
+        _supervised_transform, /*is_inference=*/false);
     if (ner_transformation_supervised) {
       ner_transformation_supervised->setTokenTagCounter(_token_tag_counter);
     } else {
       throw std::logic_error("could not extract the supervised transform");
     }
 
-    auto ner_transformation_inference =
-        extractInputTransform(_inference_transform);
+    auto ner_transformation_inference = extractNerTokenizerTransform(
+        _inference_transform, /*is_inference=*/true);
     if (ner_transformation_inference) {
       ner_transformation_inference->setTokenTagCounter(_token_tag_counter);
     } else {
