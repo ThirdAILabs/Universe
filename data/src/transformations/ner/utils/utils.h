@@ -1,8 +1,8 @@
 #pragma once
 
+#include <string>
 #include <unordered_set>
 #include <vector>
-
 namespace thirdai::data::ner::utils {
 
 using TokenTags = std::vector<std::pair<std::string, float>>;
