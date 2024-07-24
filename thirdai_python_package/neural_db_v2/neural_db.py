@@ -7,8 +7,8 @@ from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
-from .core.types import Chunk, ChunkId, CustomIdSupervisedBatch, NewChunkBatch, Score
-from .documents import document_by_name
+from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
+from .documents import PrebatchedDoc, document_by_name
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
@@ -23,26 +23,19 @@ class NeuralDB:
         self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
-        stored_chunks = self.chunk_store.insert(
-            chunks=chunks,
-            **kwargs,
-        )
-        self.retriever.insert(
-            chunks=stored_chunks,
-            **kwargs,
-        )
+        return self.insert([PrebatchedDoc(chunks)], **kwargs)
 
-    def insert(self, docs: List[Union[str, Document]], **kwargs):
+    def insert(
+        self, docs: List[Union[str, Document]], **kwargs
+    ) -> List[InsertedDocMetadata]:
         docs = [
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
 
-        def chunk_generator():
-            for doc in docs:
-                for chunk in doc.chunks():
-                    yield chunk
+        chunks, doc_metadata = self.chunk_store.insert(docs=docs, **kwargs)
+        self.retriever.insert(chunks=chunks, **kwargs)
 
-        self.insert_chunks(chunk_generator(), **kwargs)
+        return doc_metadata
 
     def search(
         self, query: str, top_k: int, constraints: dict = None, **kwargs
@@ -71,6 +64,19 @@ class NeuralDB:
         self.chunk_store.delete(chunk_ids)
         self.retriever.delete(chunk_ids)
 
+    def delete_doc(self, doc_id: str, keep_latest_version: bool = False):
+        before_version = (
+            self.chunk_store.max_version_for_doc(doc_id)
+            if keep_latest_version
+            else float("inf")
+        )
+        chunk_ids = self.chunk_store.get_doc_chunks(
+            doc_id=doc_id, before_version=before_version
+        )
+
+        self.retriever.delete(chunk_ids)
+        self.chunk_store.delete(chunk_ids)
+
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.retriever.upvote(queries, chunk_ids, **kwargs)
 
@@ -79,9 +85,6 @@ class NeuralDB:
 
     def supervised_train(self, supervised: SupervisedDataset, **kwargs):
         iterable = supervised.samples()
-
-        if isinstance(next(iter(iterable)), CustomIdSupervisedBatch):
-            iterable = self.chunk_store.remap_custom_ids(iterable)
 
         self.retriever.supervised_train(iterable, **kwargs)
 

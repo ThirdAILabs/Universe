@@ -67,5 +67,3 @@ def modify_ner():
     bolt.NER.predict = wrapped_predict
 
     bolt.NER.train_on_data_source = original_train
-
-    bolt.UniversalDeepTransformer.NER = bolt.NER
