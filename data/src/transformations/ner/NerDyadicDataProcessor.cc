@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <optional>
-#include <random>
 #include <regex>
 
 namespace thirdai::data {
@@ -21,6 +20,7 @@ std::string getNumericalFeatures(const std::string& input) {
 
   if (!strippedInput.empty()) {
     // if a token contains both alphabets and numbers, it is probably some uin
+    // exluding e, x, and t because they can be present in phonenumbers as well
     if (ner::utils::containsAlphabets(input, {'e', 'x', 't'}) &&
         input.size() >= 6) {
       return "IS_UIN";
@@ -102,10 +102,6 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
       if (!numerical_features.empty()) {
         extra_features += numerical_features;
       }
-    }
-
-    if (extra_features == "IS_ACCOUNT_NUMBER") {
-      return extra_features;
     }
     extra_features += " ";
   }
@@ -217,6 +213,8 @@ std::string NerDyadicDataProcessor::processToken(
 
   std::vector<std::string> tokenized_target_token;
 
+  // randomly dropping out the target token so that model can learn from the
+  // context and does not overfit just on the tokens
   if (_for_inference || rand() % 2 == 0) {
     for (const auto& tokenizer : _target_word_tokenizers) {
       auto tokens = tokenizer->toStrings(target_token);
