@@ -11,11 +11,22 @@
 #include <unordered_set>
 namespace thirdai::data::ner {
 
-enum class ValidCharacterTypes : uint32_t {
+enum class NerSupportedCharacterType : uint32_t {
   All = 0,
   OnlyIntegers = 1,
   OnlyAlphabets = 2
 };
+
+inline NerSupportedCharacterType convertTypeStrToEnum(const std::string& type) {
+  if (type == "int") {
+    return NerSupportedCharacterType::OnlyIntegers;
+  }
+  if (type == "alpha") {
+    return NerSupportedCharacterType::OnlyAlphabets;
+  }
+  return NerSupportedCharacterType::All;
+}
+
 enum class NerTagType : uint32_t { NerLearnedTagType = 0 };
 
 class NerTag {
@@ -33,13 +44,13 @@ class NerTag {
 };
 class NerLearnedTag : public NerTag {
  public:
-  NerLearnedTag(std::string tag, uint32_t supported_types,
+  NerLearnedTag(std::string tag, NerSupportedCharacterType supported_types,
                 uint32_t consecutive_tags_required,
                 std::unordered_set<char> special_characters,
                 std::unordered_set<uint32_t> invalid_sizes,
                 std::optional<std::string> validation_pattern = std::nullopt)
       : _tag(std::move(tag)),
-        _supported_types(static_cast<ValidCharacterTypes>(supported_types)),
+        _supported_types(supported_types),
         _consecutive_tags_required(consecutive_tags_required),
         _special_characters(std::move(special_characters)),
         _invalid_sizes(std::move(invalid_sizes)),
@@ -50,14 +61,24 @@ class NerLearnedTag : public NerTag {
             : std::nullopt;
   }
 
+  NerLearnedTag(std::string tag, const std::string& supported_types,
+                uint32_t consecutive_tags_required,
+                std::unordered_set<char> special_characters,
+                std::unordered_set<uint32_t> invalid_sizes,
+                std::optional<std::string> validation_pattern = std::nullopt)
+      : NerLearnedTag(std::move(tag), convertTypeStrToEnum(supported_types),
+                      consecutive_tags_required, std::move(special_characters),
+                      std::move(invalid_sizes), std::move(validation_pattern)) {
+  }
+
   explicit NerLearnedTag(const std::string& tag)
-      : NerLearnedTag(tag, /*supported_types=*/2,
+      : NerLearnedTag(tag, /*supported_types=*/NerSupportedCharacterType::All,
                       /*consecutive_tags_required=*/1,
                       /*special_characters=*/{}, /*invalid_sizes=*/{},
                       /*validation_pattern=*/std::nullopt) {}
 
   static std::shared_ptr<NerLearnedTag> make(
-      std::string tag, uint32_t supported_types,
+      std::string tag, NerSupportedCharacterType supported_types,
       uint32_t consecutive_tags_required,
       std::unordered_set<char> special_characters,
       std::unordered_set<uint32_t> invalid_sizes,
@@ -78,8 +99,8 @@ class NerLearnedTag : public NerTag {
 
   explicit NerLearnedTag(const ar::Archive& archive)
       : _tag(archive.str("tag")),
-        _supported_types(
-            static_cast<ValidCharacterTypes>(archive.u64("supported_types"))),
+        _supported_types(static_cast<NerSupportedCharacterType>(
+            archive.u64("supported_types"))),
         _consecutive_tags_required(archive.u64("consecutive_tags_required")),
         _special_characters(
             archive.getAs<std::unordered_set<char>>("special_characters")),
@@ -119,7 +140,7 @@ class NerLearnedTag : public NerTag {
                                   const std::vector<std::string>& tokens) const;
 
   std::string _tag;
-  ValidCharacterTypes _supported_types;
+  NerSupportedCharacterType _supported_types;
   uint32_t _consecutive_tags_required;
   std::unordered_set<char> _special_characters;
   std::unordered_set<uint32_t> _invalid_sizes;

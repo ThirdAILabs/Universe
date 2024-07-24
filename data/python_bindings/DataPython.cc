@@ -566,13 +566,14 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("phone_numbers"));
   py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
       transformations_submodule, "NERLearnedTag")
-      .def(py::init<std::string, uint32_t, uint32_t, std::unordered_set<char>,
-                    std::unordered_set<uint32_t>, std::optional<std::string>>(),
-           py::arg("tag"), py::arg("supported_types") = 0,
-           py::arg("consecutive_tags_required") = 1,
-           py::arg("special_characters") = std::unordered_set<char>{},
-           py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},
-           py::arg("validation_pattern") = std::nullopt)
+      .def(
+          py::init<std::string, std::string, uint32_t, std::unordered_set<char>,
+                   std::unordered_set<uint32_t>, std::optional<std::string>>(),
+          py::arg("tag"), py::arg("supported_types") = "all",
+          py::arg("consecutive_tags_required") = 1,
+          py::arg("special_characters") = std::unordered_set<char>{},
+          py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},
+          py::arg("validation_pattern") = std::nullopt)
       .def(
           "process_tags",
           [](ner::NerLearnedTag& self, const py::list& py_sentence_tags,
