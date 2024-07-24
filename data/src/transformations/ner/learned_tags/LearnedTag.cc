@@ -24,11 +24,11 @@ std::shared_ptr<NerTag> NerTag::fromArchive(const ar::Archive& archive) {
 void NerLearnedTag::applyTypeFilter(
     utils::SentenceTags& sentence_tags,
     const std::vector<std::string>& tokens) const {
-  if (_supported_types == NerSupportedCharacterType::All) {
+  if (_supported_type == NerSupportedCharacterType::All) {
     return;
   }
 
-  if (_supported_types == NerSupportedCharacterType::OnlyIntegers) {
+  if (_supported_type == NerSupportedCharacterType::OnlyIntegers) {
     for (size_t token_index = 0; token_index < sentence_tags.size();
          token_index++) {
       if (sentence_tags[token_index][0].first != _tag) {

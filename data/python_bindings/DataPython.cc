@@ -567,7 +567,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       .def(
           py::init<std::string, std::string, uint32_t, std::unordered_set<char>,
                    std::unordered_set<uint32_t>, std::optional<std::string>>(),
-          py::arg("tag"), py::arg("supported_types") = "all",
+          py::arg("tag"), py::arg("supported_type") = "all",
           py::arg("consecutive_tags_required") = 1,
           py::arg("special_characters") = std::unordered_set<char>{},
           py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},

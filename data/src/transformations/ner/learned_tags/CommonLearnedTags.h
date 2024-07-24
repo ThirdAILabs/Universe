@@ -7,7 +7,7 @@ namespace thirdai::data::ner {
 
 inline NerTagPtr getLocationTag() {
   return NerLearnedTag::make("LOCATION",
-                             /*supported_types=*/NerSupportedCharacterType::All,
+                             /*supported_type=*/NerSupportedCharacterType::All,
                              /*consecutive_tags_required=*/3,
                              /*special_characters=*/{},
                              /*invalid_sizes=*/{});
@@ -15,7 +15,7 @@ inline NerTagPtr getLocationTag() {
 
 inline NerTagPtr getSSNTag() {
   return NerLearnedTag::make(
-      "SSN", /*supported_types=*/NerSupportedCharacterType::OnlyIntegers,
+      "SSN", /*supported_type=*/NerSupportedCharacterType::OnlyIntegers,
       /*consecutive_tags_required=*/1,
       /*special_characters=*/{}, /*invalid_sizes=*/{1, 6, 8},
       /*validation_pattern=*/
@@ -24,7 +24,7 @@ inline NerTagPtr getSSNTag() {
 
 inline NerTagPtr getNameTag() {
   return NerLearnedTag::make(
-      "NAME", /*supported_types=*/NerSupportedCharacterType::OnlyAlphabets,
+      "NAME", /*supported_type=*/NerSupportedCharacterType::OnlyAlphabets,
       /*consecutive_tags_required=*/2,
       /*special_characters=*/{}, /*invalid_sizes=*/{});
 }

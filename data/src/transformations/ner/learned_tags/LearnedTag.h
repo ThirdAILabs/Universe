@@ -44,13 +44,13 @@ class NerTag {
 };
 class NerLearnedTag : public NerTag {
  public:
-  NerLearnedTag(std::string tag, NerSupportedCharacterType supported_types,
+  NerLearnedTag(std::string tag, NerSupportedCharacterType supported_type,
                 uint32_t consecutive_tags_required,
                 std::unordered_set<char> special_characters,
                 std::unordered_set<uint32_t> invalid_sizes,
                 std::optional<std::string> validation_pattern = std::nullopt)
       : _tag(std::move(tag)),
-        _supported_types(supported_types),
+        _supported_type(supported_type),
         _consecutive_tags_required(consecutive_tags_required),
         _special_characters(std::move(special_characters)),
         _invalid_sizes(std::move(invalid_sizes)),
@@ -61,30 +61,30 @@ class NerLearnedTag : public NerTag {
             : std::nullopt;
   }
 
-  NerLearnedTag(std::string tag, const std::string& supported_types,
+  NerLearnedTag(std::string tag, const std::string& supported_type,
                 uint32_t consecutive_tags_required,
                 std::unordered_set<char> special_characters,
                 std::unordered_set<uint32_t> invalid_sizes,
                 std::optional<std::string> validation_pattern = std::nullopt)
-      : NerLearnedTag(std::move(tag), convertTypeStrToEnum(supported_types),
+      : NerLearnedTag(std::move(tag), convertTypeStrToEnum(supported_type),
                       consecutive_tags_required, std::move(special_characters),
                       std::move(invalid_sizes), std::move(validation_pattern)) {
   }
 
   explicit NerLearnedTag(const std::string& tag)
-      : NerLearnedTag(tag, /*supported_types=*/NerSupportedCharacterType::All,
+      : NerLearnedTag(tag, /*supported_type=*/NerSupportedCharacterType::All,
                       /*consecutive_tags_required=*/1,
                       /*special_characters=*/{}, /*invalid_sizes=*/{},
                       /*validation_pattern=*/std::nullopt) {}
 
   static std::shared_ptr<NerLearnedTag> make(
-      std::string tag, NerSupportedCharacterType supported_types,
+      std::string tag, NerSupportedCharacterType supported_type,
       uint32_t consecutive_tags_required,
       std::unordered_set<char> special_characters,
       std::unordered_set<uint32_t> invalid_sizes,
       std::optional<std::string> validation_pattern = std::nullopt) {
     return std::make_shared<NerLearnedTag>(
-        std::move(tag), supported_types, consecutive_tags_required,
+        std::move(tag), supported_type, consecutive_tags_required,
         std::move(special_characters), std::move(invalid_sizes),
         std::move(validation_pattern));
   }
@@ -99,8 +99,8 @@ class NerLearnedTag : public NerTag {
 
   explicit NerLearnedTag(const ar::Archive& archive)
       : _tag(archive.str("tag")),
-        _supported_types(static_cast<NerSupportedCharacterType>(
-            archive.u64("supported_types"))),
+        _supported_type(static_cast<NerSupportedCharacterType>(
+            archive.u64("supported_type"))),
         _consecutive_tags_required(archive.u64("consecutive_tags_required")),
         _special_characters(
             archive.getAs<std::unordered_set<char>>("special_characters")),
@@ -119,8 +119,7 @@ class NerLearnedTag : public NerTag {
     map->set("type",
              ar::u64(static_cast<uint32_t>(NerTagType::NerLearnedTagType)));
     map->set("tag", ar::str(_tag));
-    map->set("supported_types",
-             ar::u64(static_cast<uint32_t>(_supported_types)));
+    map->set("supported_type", ar::u64(static_cast<uint32_t>(_supported_type)));
     map->set("consecutive_tags_required", ar::u64(_consecutive_tags_required));
     map->set("special_characters", ar::setCharacter(_special_characters));
     map->set("invalid_sizes", ar::setU32(_invalid_sizes));
@@ -140,7 +139,7 @@ class NerLearnedTag : public NerTag {
                                   const std::vector<std::string>& tokens) const;
 
   std::string _tag;
-  NerSupportedCharacterType _supported_types;
+  NerSupportedCharacterType _supported_type;
   uint32_t _consecutive_tags_required;
   std::unordered_set<char> _special_characters;
   std::unordered_set<uint32_t> _invalid_sizes;
