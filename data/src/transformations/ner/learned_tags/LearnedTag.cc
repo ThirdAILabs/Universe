@@ -1,8 +1,25 @@
 #include "LearnedTag.h"
+#include <archive/src/Archive.h>
 #include <data/src/transformations/ner/utils/utils.h>
+#include <memory>
 #include <regex>
+#include <stdexcept>
+#include <string>
 #include <utility>
 namespace thirdai::data::ner {
+
+std::unique_ptr<NerTag> NerTag::fromArchive(const ar::Archive& archive) {
+  auto type = static_cast<NerTagType>(archive.u64("type"));
+
+  switch (type) {
+    case NerTagType::NerLearnedTagType:
+      return std::make_unique<NerLearnedTag>(archive);
+
+    default:
+      throw std::runtime_error("Unknown Tag Type " +
+                               std::to_string(archive.u64("type")) + " found.");
+  }
+}
 
 void NerLearnedTag::applyTypeFilter(
     utils::SentenceTags& sentence_tags,

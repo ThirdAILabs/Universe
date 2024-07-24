@@ -88,7 +88,7 @@ class UDTNer final : public UDTBackend {
   std::string _tokens_column;
   std::string _tags_column;
 
-  std::vector<data::ner::NerLearnedTag> _label_to_tag;
+  std::vector<data::ner::NerTagPtr> _label_to_tag;
 
   thirdai::data::ner::TokenTagCounterPtr _token_tag_counter;
 };

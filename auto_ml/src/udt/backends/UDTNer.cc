@@ -75,7 +75,7 @@ bolt::ModelPtr buildModel(uint32_t input_dim, uint32_t emb_dim,
 data::TransformationPtr makeTransformation(
     bool inference, const std::string& tags_column,
     const std::string& tokens_column,
-    const std::vector<data::ner::NerLearnedTag>& tags,
+    const std::vector<data::ner::NerTagPtr>& tags,
     const std::unordered_set<std::string>& ignored_tags, size_t input_dim,
     uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
@@ -90,7 +90,7 @@ data::TransformationPtr makeTransformation(
 
   std::unordered_map<std::string, uint32_t> tag_to_label;
   for (size_t i = 0; i < tags.size(); i++) {
-    tag_to_label[tags[i].tag()] = i;
+    tag_to_label[tags[i]->tag()] = i;
   }
   for (const auto& tag : ignored_tags) {
     tag_to_label[tag] = 0;
@@ -146,8 +146,7 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::pair<std::vector<data::ner::NerLearnedTag>,
-          std::unordered_set<std::string>>
+std::pair<std::vector<data::ner::NerTagPtr>, std::unordered_set<std::string>>
 mapTagsToLabels(
     const std::string& default_tag,
     const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
@@ -172,14 +171,15 @@ mapTagsToLabels(
   auto rule_tags =
       rule == nullptr ? std::vector<std::string>() : rule->entities();
 
-  std::vector<data::ner::NerLearnedTag> all_tags = {
+  std::vector<data::ner::NerTagPtr> all_tags = {
       data::ner::getLearnedTagFromString(default_tag)};
   std::unordered_set<std::string> ignored_tags;
 
   for (const auto& tag : tags) {
     if (std::holds_alternative<data::ner::NerLearnedTag>(tag)) {
       // Direct inclusion for explicitly defined NerLearnedTag objects.
-      all_tags.push_back(std::get<data::ner::NerLearnedTag>(tag));
+      all_tags.push_back(std::make_unique<data::ner::NerLearnedTag>(
+          std::get<data::ner::NerLearnedTag>(tag)));
     } else {
       auto tag_string = std::get<std::string>(tag);
       if (std::find(rule_tags.begin(), rule_tags.end(), tag_string) ==
@@ -301,7 +301,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   if (args.get<bool>("use_token_tag_counter", "bool", false)) {
     std::unordered_map<std::string, uint32_t> tag_to_label;
     for (size_t i = 0; i < _label_to_tag.size(); i++) {
-      tag_to_label[_label_to_tag[i].tag()] = i;
+      tag_to_label[_label_to_tag[i]->tag()] = i;
     }
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
         args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
@@ -486,13 +486,13 @@ std::vector<SentenceTags> UDTNer::predictTags(
         while (!top_labels.empty()) {
           float score = top_labels.top().first;
 
-          auto tag = _label_to_tag.at(top_labels.top().second).tag();
+          auto tag = _label_to_tag.at(top_labels.top().second)->tag();
           top_labels.pop();
           tags.emplace_back(tag, score);
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
-            tokens[sentence_index][token_index], tags, _label_to_tag[0].tag());
+            tokens[sentence_index][token_index], tags, _label_to_tag[0]->tag());
 
         // if the number of labels in the model is 1, we do not have to
         // reverse
@@ -501,7 +501,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
           // 0.9 then using the next top prediction improves accuracy.
           float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
-          if (tags.back().first == _label_to_tag[0].tag() &&
+          if (tags.back().first == _label_to_tag[0]->tag() &&
               tags.back().second < o_threshold &&
               second_highest_tag_act > 0.05) {
             tags.pop_back();
@@ -522,8 +522,8 @@ std::vector<SentenceTags> UDTNer::predictTags(
   for (size_t sentence_index = 0; sentence_index < output_tags.size();
        ++sentence_index) {
     for (const auto& learned_tag : _label_to_tag) {
-      learned_tag.processTags(output_tags[sentence_index],
-                              tokens[sentence_index]);
+      learned_tag->processTags(output_tags[sentence_index],
+                               tokens[sentence_index]);
     }
   }
 
@@ -557,7 +557,7 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
 
   auto tag_list = ar::List::make();
   for (const auto& tags : _label_to_tag) {
-    tag_list->append(tags.toArchive());
+    tag_list->append(tags->toArchive());
   }
   map->set("label_to_tag", tag_list);
 
@@ -586,7 +586,7 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")) {
   for (const auto& learned_tags : archive.get("label_to_tag")->list()) {
-    _label_to_tag.push_back(data::ner::NerLearnedTag(*learned_tags));
+    _label_to_tag.push_back(data::ner::NerTag::fromArchive(*learned_tags));
   }
 
   if (archive.contains("use_rules_for")) {
