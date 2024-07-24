@@ -549,8 +549,6 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
       transformations_submodule, "NerTokenTagCounter")
       .def(py::init<uint32_t, std::unordered_map<std::string, uint32_t>>(),
            py::arg("number_bins"), py::arg("tag_to_label"))
-      .def("get_token_encoding", &ner::TokenTagCounter::getTokenEncoding,
-           py::arg("token"))
       .def("add_token_tag", &ner::TokenTagCounter::addTokenTag,
            py::arg("token"), py::arg("tag"))
       .def("encode", &ner::TokenTagCounter::getTokenEncoding, py::arg("token"));
