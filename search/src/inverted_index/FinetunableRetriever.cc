@@ -2,7 +2,9 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
+#endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <search/src/inverted_index/Utils.h>
@@ -44,6 +46,7 @@ FinetunableRetriever::FinetunableRetriever(
     float lambda, uint32_t min_top_docs, uint32_t top_queries,
     const IndexConfig& config, const std::optional<std::string>& save_path)
     : _lambda(lambda), _min_top_docs(min_top_docs), _top_queries(top_queries) {
+#if !_WIN32
   if (save_path) {
     createDirectory(*save_path);
 
@@ -55,6 +58,13 @@ FinetunableRetriever::FinetunableRetriever(
     _doc_index = std::make_shared<InvertedIndex>(config);
     _query_index = std::make_shared<InvertedIndex>(config);
   }
+#else
+  if (save_path) {
+    throw std::invalid_argument("on-disk is not supported for windows.");
+  }
+  _doc_index = std::make_shared<InvertedIndex>(config);
+  _query_index = std::make_shared<InvertedIndex>(config);
+#endif
 }
 
 void FinetunableRetriever::index(const std::vector<DocId>& ids,
@@ -275,9 +285,11 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
   if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
+#if !_WIN32
   if (type == OnDiskIndex::typeName()) {
     return OnDiskIndex::load(path, read_only);
   }
+#endif
   if (type == ShardedRetriever::typeName()) {
     return ShardedRetriever::load(path, read_only);
   }
