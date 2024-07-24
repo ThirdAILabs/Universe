@@ -90,9 +90,6 @@ class FinetunableRetriever {
   std::shared_ptr<Retriever> _doc_index;
   std::shared_ptr<Retriever> _query_index;
 
-  std::string _doc_index_type;
-  std::string _query_index_type;
-
   std::unordered_map<QueryId, std::vector<DocId>> _query_to_docs;
   std::unordered_map<DocId, std::vector<QueryId>> _doc_to_queries;
 

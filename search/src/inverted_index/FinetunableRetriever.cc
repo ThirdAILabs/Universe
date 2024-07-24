@@ -55,9 +55,6 @@ FinetunableRetriever::FinetunableRetriever(
     _doc_index = std::make_shared<InvertedIndex>(config);
     _query_index = std::make_shared<InvertedIndex>(config);
   }
-
-  _doc_index_type = _doc_index->type();
-  _query_index_type = _query_index->type();
 }
 
 void FinetunableRetriever::index(const std::vector<DocId>& ids,
@@ -231,8 +228,8 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
 ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   auto map = ar::Map::make();
 
-  map->set("doc_index_type", ar::str(_doc_index_type));
-  map->set("query_index_type", ar::str(_query_index_type));
+  map->set("doc_index_type", ar::str(_doc_index->type()));
+  map->set("query_index_type", ar::str(_query_index->type()));
 
   map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
   map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
@@ -247,8 +244,6 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
 }
 
 void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
-  _doc_index_type = archive.str("doc_index_type");
-  _query_index_type = archive.str("query_index_type");
   _query_to_docs = archive.getAs<ar::MapU64VecU64>("query_to_docs");
   _doc_to_queries = archive.getAs<ar::MapU64VecU64>("doc_to_queries");
   _next_query_id = archive.u64("next_query_id");
@@ -291,12 +286,14 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
 
 FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
                                            bool read_only) {
-  auto metadata = dataset::SafeFileIO::ifstream(metadataPath(save_path));
-  metadataFromArchive(*ar::deserialize(metadata));
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto metadata = ar::deserialize(metadata_file);
+  metadataFromArchive(*metadata);
 
-  _doc_index = loadIndex(_doc_index_type, docIndexPath(save_path), read_only);
-  _query_index =
-      loadIndex(_query_index_type, queryIndexPath(save_path), read_only);
+  _doc_index = loadIndex(metadata->str("doc_index_type"),
+                         docIndexPath(save_path), read_only);
+  _query_index = loadIndex(metadata->str("query_index_type"),
+                           queryIndexPath(save_path), read_only);
 }
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
