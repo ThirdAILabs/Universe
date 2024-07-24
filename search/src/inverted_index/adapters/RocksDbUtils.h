@@ -13,6 +13,10 @@ inline void raiseError(const rocksdb::Status& status, const std::string& op) {
 }
 
 inline std::string docIdKey(DocId doc_id) {
+  // We are prependeding the letter D to the keys so that we could do a prefix
+  // scan to iterate over the different doc_ids in the database if needed. We
+  // are serializing the numbers instead of converting to a string because it
+  // will be more space efficient at larger scale.
   std::string key;
   key.reserve(sizeof(DocId) + 1);
   key.append("D");
