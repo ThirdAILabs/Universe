@@ -166,33 +166,36 @@ mapTagsToLabels(
    * NerLearnedTag and added to the model.
    * 3. If a tag is a string and found in the rules, it is ignored if
    * ignore_rule_tags is true, otherwise it is added.
+   *
+   * Union(model_tags, ignored_tags) = {tag : tag in Dataset}. This constraint
+   * is needed to avoid errors while transforming the training dataset.
    */
 
   // Get rule entities or an empty vector if no rule is provided
   auto rule_tags =
       rule == nullptr ? std::vector<std::string>() : rule->entities();
 
-  std::vector<data::ner::NerTagPtr> all_tags = {
+  std::vector<data::ner::NerTagPtr> model_tags = {
       data::ner::getLearnedTagFromString(default_tag)};
   std::unordered_set<std::string> ignored_tags;
 
   for (const auto& tag : tags) {
     if (std::holds_alternative<data::ner::NerLearnedTag>(tag)) {
       // Direct inclusion for explicitly defined NerLearnedTag objects.
-      all_tags.push_back(std::make_shared<data::ner::NerLearnedTag>(
+      model_tags.push_back(std::make_shared<data::ner::NerLearnedTag>(
           std::get<data::ner::NerLearnedTag>(tag)));
     } else {
       auto tag_string = std::get<std::string>(tag);
       if (std::find(rule_tags.begin(), rule_tags.end(), tag_string) ==
               rule_tags.end() ||
           !ignore_rule_tags) {
-        all_tags.push_back(data::ner::getLearnedTagFromString(tag_string));
+        model_tags.push_back(data::ner::getLearnedTagFromString(tag_string));
       } else if (ignore_rule_tags) {
         ignored_tags.insert(tag_string);
       }
     }
   }
-  return {all_tags, ignored_tags};
+  return {model_tags, ignored_tags};
 }
 
 std::shared_ptr<data::NerTokenizerUnigram> extractInputTransform(
@@ -303,6 +306,9 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     std::unordered_map<std::string, uint32_t> tag_to_label;
     for (size_t i = 0; i < _label_to_tag.size(); i++) {
       tag_to_label[_label_to_tag[i]->tag()] = i;
+    }
+    for (const auto& tag : ignored_tags) {
+      tag_to_label[tag] = 0;
     }
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
         args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
