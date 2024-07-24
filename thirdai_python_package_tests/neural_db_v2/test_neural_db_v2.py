@@ -93,3 +93,42 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     os.remove(csv_file_name)
 
     clean_up_sql_lite_db(db.chunk_store)
+
+
+def test_neural_db_v2_doc_versioning():
+    db = ndb.NeuralDB(chunk_store=SQLiteChunkStore(), retriever=FinetunableRetriever())
+
+    db.insert(
+        [
+            ndb.InMemoryText("doc_a", text=["a b c d e"], doc_id="a"),
+            ndb.InMemoryText("doc_a", text=["a b c d"], doc_id="a"),
+            ndb.InMemoryText("doc_b", text=["v w x y z"], doc_id="b"),
+            ndb.InMemoryText("doc_a", text=["a b c"], doc_id="a"),
+        ]
+    )
+
+    def check_results(results, doc_id, versions):
+        assert len(results) == len(versions)
+        for ver, res in zip(versions, results):
+            assert res[0].doc_id == doc_id
+            assert res[0].doc_version == ver
+
+    check_results(db.search("v w x y z", top_k=5), "b", [1])
+
+    db.insert(
+        [
+            ndb.InMemoryText("doc_b", text=["v w x y"], doc_id="b"),
+            ndb.InMemoryText("doc_b", text=["v w x"], doc_id="b"),
+        ]
+    )
+
+    check_results(db.search("a b c d e", top_k=5), "a", [1, 2, 3])
+    check_results(db.search("v w x y z", top_k=5), "b", [1, 2, 3])
+
+    db.delete_doc("b", keep_latest_version=True)
+    check_results(db.search("v w x y z", top_k=5), "b", [3])
+
+    db.delete_doc("a")
+    check_results(db.search("a b c d e v", top_k=5), "b", [3])
+
+    clean_up_sql_lite_db(db.chunk_store)

@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -38,8 +38,9 @@ class CSV(Document):
         keyword_columns=[],
         doc_metadata=None,
         max_rows=10_000_000,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.path = path
         self.text_columns = text_columns

@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Dict, Iterable, Optional
 
 import thirdai.neural_db.parsing_utils.sliding_pdf_parse as pdf_parse
 
@@ -10,18 +10,19 @@ from .utils import join_metadata, series_from_value
 class PDF(Document):
     def __init__(
         self,
-        path,
-        chunk_size=100,
-        stride=40,
-        emphasize_first_words=0,
-        ignore_header_footer=True,
-        ignore_nonstandard_orientation=True,
-        doc_metadata=None,
-        doc_keywords="",
-        emphasize_section_titles=False,
-        table_parsing=False,
+        path: str,
+        chunk_size: int = 100,
+        stride: int = 40,
+        emphasize_first_words: int = 0,
+        ignore_header_footer: bool = True,
+        ignore_nonstandard_orientation: bool = True,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_keywords: str = "",
+        emphasize_section_titles: bool = False,
+        table_parsing: bool = False,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.path = path
         self.chunk_size = chunk_size

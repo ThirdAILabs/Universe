@@ -8,7 +8,7 @@ from .core.documents import Document
 from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
 from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
-from .documents import document_by_name
+from .documents import PrebatchedDoc, document_by_name
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
@@ -23,10 +23,7 @@ class NeuralDB:
         self.retriever = retriever or Mach(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
-        stored_chunks, metadata = self.chunk_store.insert(chunks=[chunks], **kwargs)
-        self.retriever.insert(chunks=stored_chunks, **kwargs)
-
-        return metadata[0]
+        return self.insert([PrebatchedDoc(chunks)], **kwargs)
 
     def insert(
         self, docs: List[Union[str, Document]], **kwargs
@@ -35,8 +32,8 @@ class NeuralDB:
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
 
-        stored_chunks, doc_metadata = self.chunk_store.insert(chunks=docs, **kwargs)
-        self.retriever.insert(chunks=stored_chunks, **kwargs)
+        chunks, doc_metadata = self.chunk_store.insert(docs=docs, **kwargs)
+        self.retriever.insert(chunks=chunks, **kwargs)
 
         return doc_metadata
 
@@ -66,6 +63,19 @@ class NeuralDB:
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_store.delete(chunk_ids)
         self.retriever.delete(chunk_ids)
+
+    def delete_doc(self, doc_id: str, keep_latest_version: bool = False):
+        before_version = (
+            self.chunk_store.max_version_for_doc(doc_id)
+            if keep_latest_version
+            else float("inf")
+        )
+        chunk_ids = self.chunk_store.get_doc_chunks(
+            doc_id=doc_id, before_version=before_version
+        )
+
+        self.retriever.delete(chunk_ids)
+        self.chunk_store.delete(chunk_ids)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.retriever.upvote(queries, chunk_ids, **kwargs)

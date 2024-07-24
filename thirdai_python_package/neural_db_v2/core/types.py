@@ -13,8 +13,8 @@ Score = float
 
 
 @dataclass
-class NewChunk:
-    """A chunk that has not been assigned a unique ID."""
+class Chunk:
+    """A chunk that has been assigned a unique ID."""
 
     # The text content of the chunk, e.g. a paragraph.
     text: str
@@ -28,10 +28,11 @@ class NewChunk:
     # Parent document name
     document: str
 
+    # UUID for the document
+    doc_id: str
 
-@dataclass
-class Chunk(NewChunk):
-    """A chunk that has been assigned a unique ID."""
+    # Version of the document
+    doc_version: int
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
@@ -79,16 +80,6 @@ class NewChunkBatch:
 
     def __len__(self):
         return len(self.text)
-
-    def __getitem__(self, i: int):
-        return NewChunk(
-            text=self.text[i],
-            keywords=self.keywords[i],
-            metadata=(
-                self.metadata.iloc[i].to_dict() if self.metadata is not None else None
-            ),
-            document=self.document[i],
-        )
 
     def to_df(self):
         return pd.DataFrame(
@@ -164,4 +155,6 @@ class SupervisedBatch:
 
 @dataclass
 class InsertedDocMetadata:
+    doc_id: str
+    doc_version: int
     chunk_ids: List[ChunkId]
