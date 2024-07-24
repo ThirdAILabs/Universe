@@ -18,6 +18,8 @@ class IdMap {
 
   virtual void save(const std::string& path) const = 0;
 
+  virtual std::string type() const = 0;
+
   virtual ~IdMap() = default;
 };
 
