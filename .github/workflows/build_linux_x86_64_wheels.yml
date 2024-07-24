@@ -77,6 +77,8 @@ jobs:
           # TODO(any): A more future proof solution when stuff starts working.
           CIBW_SKIP: "cp36-* cp37-*"
 
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
