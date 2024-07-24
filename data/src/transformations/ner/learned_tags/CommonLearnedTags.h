@@ -1,3 +1,5 @@
+#pragma once
+
 #include "LearnedTag.h"
 
 namespace thirdai::data::ner {

@@ -572,7 +572,26 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("consecutive_tags_required") = 1,
            py::arg("special_characters") = std::unordered_set<char>{},
            py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},
-           py::arg("validation_pattern") = std::nullopt);
+           py::arg("validation_pattern") = std::nullopt)
+      .def(
+          "process_tags",
+          [](ner::NerLearnedTag& self, const py::list& py_sentence_tags,
+             const std::vector<std::string>& tokens) {
+            auto vec_sentence_tags = py_sentence_tags.cast<
+                std::vector<std::vector<std::pair<std::string, float>>>>();
+
+            if (vec_sentence_tags.size() != tokens.size()) {
+              throw std::invalid_argument(
+                  "Size of tags and tokens should be the same.");
+            }
+
+            // Call the C++ function with the converted data
+            self.processTags(vec_sentence_tags, tokens);
+
+            // Automatically convert modified C++ data back to Python list
+            return py::cast(vec_sentence_tags);
+          },
+          py::arg("sentence_tags"), py::arg("tokens"));
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")
