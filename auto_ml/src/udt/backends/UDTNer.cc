@@ -26,6 +26,7 @@
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/TokenTagCounter.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
 #include <utils/text/StringManipulation.h>
@@ -521,9 +522,10 @@ std::vector<SentenceTags> UDTNer::predictTags(
   // apply processing for model predictions
   for (size_t sentence_index = 0; sentence_index < output_tags.size();
        ++sentence_index) {
+    auto cleaned_tokens =
+        data::ner::utils::cleanAndLowerCase(tokens[sentence_index]);
     for (const auto& learned_tag : _label_to_tag) {
-      learned_tag->processTags(output_tags[sentence_index],
-                               tokens[sentence_index]);
+      learned_tag->processTags(output_tags[sentence_index], cleaned_tokens);
     }
   }
 

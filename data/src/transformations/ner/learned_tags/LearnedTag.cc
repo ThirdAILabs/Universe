@@ -56,9 +56,12 @@ void NerLearnedTag::applyTypeFilter(
   }
 }
 
-void NerLearnedTag::applyConsecutiveTagsFilter(
+void NerLearnedTag::applyConsecutiveTagsAndValidationFilter(
     utils::SentenceTags& sentence_tags,
     const std::vector<std::string>& tokens) const {
+  // the two filters are merged to avoid duplicate processing. both validation
+  // and contiguous tag filter require finding the maximum window that have the
+  // same tags.
   size_t index = 0;
   while (index < sentence_tags.size()) {
     const std::string& tag =

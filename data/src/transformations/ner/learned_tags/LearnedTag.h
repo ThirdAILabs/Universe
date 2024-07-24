@@ -92,7 +92,10 @@ class NerLearnedTag : public NerTag {
   void processTags(utils::SentenceTags& sentence_tags,
                    const std::vector<std::string>& tokens) const final {
     applyTypeFilter(sentence_tags, tokens);
-    applyConsecutiveTagsFilter(sentence_tags, tokens);
+
+    if (_validation_pattern.has_value() || _consecutive_tags_required > 1) {
+      applyConsecutiveTagsAndValidationFilter(sentence_tags, tokens);
+    }
   }
 
   std::string tag() const final { return _tag; }
@@ -135,8 +138,9 @@ class NerLearnedTag : public NerTag {
   void applyTypeFilter(utils::SentenceTags& sentence_tags,
                        const std::vector<std::string>& tokens) const;
 
-  void applyConsecutiveTagsFilter(utils::SentenceTags& sentence_tags,
-                                  const std::vector<std::string>& tokens) const;
+  void applyConsecutiveTagsAndValidationFilter(
+      utils::SentenceTags& sentence_tags,
+      const std::vector<std::string>& tokens) const;
 
   std::string _tag;
   NerSupportedCharacterType _supported_type;
