@@ -30,21 +30,25 @@ def random_email():
     )
 
 
+def generate_sample():
+    email_tokens = ["email", "is", random_email(), "for", "work"]
+    email_tags = ["O", "O", "EMAIL", "O", "O"]
+
+    credit_card_tokens = ["credit", "card", "is", random_credit_card()]
+    credit_card_tags = ["O", "O", "O", "CREDITCARDNUMBER"]
+
+    return (
+        " ".join(email_tokens + credit_card_tokens),
+        " ".join(email_tags + credit_card_tags),
+    )
+
+
 def generate_data(filename, n_rows):
     with open(filename, "w") as file:
         file.write(f"{TOKENS},{TAGS}\n")
         for _ in range(n_rows):
-            email_tokens = ["email", "is", random_email(), "for", "work"]
-            email_tags = ["O", "O", "EMAIL", "O", "O"]
-
-            credit_card_tokens = ["credit", "card", "is", random_credit_card()]
-            credit_card_tags = ["O", "O", "O", "CREDITCARDNUMBER"]
-
-            sample = (
-                " ".join(email_tokens + credit_card_tokens)
-                + ","
-                + " ".join(email_tags + credit_card_tags)
-            )
+            source_str, target_str = generate_sample()
+            sample = source_str + "," + target_str
 
             file.write(sample + "\n")
 
@@ -253,3 +257,47 @@ def test_udt_ner_feature_config_arg():
             target=TAGS,
             feature_config={"email": True},
         )
+
+
+def test_udt_ner_learned_tags(ner_dataset):
+    train, _ = ner_dataset
+
+    rule_tags = ["CREDITCARDNUMBER"]
+
+    # supported_type is set to int to verify that the filters are being used in the prediction pipeline
+    learned_tags = [
+        data.transformations.NERLearnedTag(
+            "EMAIL", supported_type="int", consecutive_tags_required=2
+        )
+    ]
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=rule_tags + learned_tags, default_tag="O"),
+        },
+        target=TAGS,
+        embedding_dimension=500,
+        rules=True,
+        use_token_tag_counter=True,
+    )
+
+    model.train(train, epochs=1, learning_rate=0.001, metrics=["categorical_accuracy"])
+
+    samples = [{"tokens": generate_sample()[0]} for _ in range(100)]
+    predictions = model.predict_batch(samples, top_k=1)
+
+    for prediction in predictions:
+        for tags in prediction:
+            assert tags[0][0] != "EMAIL"
+
+    model.save("udt_ner_model.bolt")
+    model = bolt.UniversalDeepTransformer.load("udt_ner_model.bolt")
+
+    new_predictions = model.predict_batch(samples, top_k=1)
+
+    for old_prediction, new_prediction in zip(predictions, new_predictions):
+        for old_tag_prediction, new_tag_prediction in zip(
+            old_prediction, new_prediction
+        ):
+            assert old_tag_prediction[0][0] == new_tag_prediction[0][0]
