@@ -117,13 +117,6 @@ class SQLiteChunkStore(ChunkStore):
             Column("doc_version", Integer),
         )
 
-        # self.doc_versions_table = Table(
-        #     "doc_versions",
-        #     self.metadata,
-        #     Column("doc_id", String, primary_key=True),
-        #     Column("doc_version", Integer),
-        # )
-
         self.metadata.create_all(self.engine)
 
         self.metadata_table = None
@@ -189,27 +182,6 @@ class SQLiteChunkStore(ChunkStore):
         for doc in docs:
             doc_id = doc.doc_id()
             doc_version = self.max_version_for_doc(doc_id) + 1
-
-            # with self.engine.begin() as conn:
-            #     old_version = conn.execute(
-            #         select(func.max(self.doc_versions_table.c.doc_version)).where(
-            #             self.doc_versions_table.c.doc_id == doc_id
-            #         )
-            #     ).scalar()
-            #     if not old_version:
-            #         doc_version = 1
-            #         conn.execute(
-            #             insert(self.doc_versions_table).values(
-            #                 doc_id=doc_id, doc_version=1
-            #             )
-            #         )
-            #     else:
-            #         doc_version = old_version + 1
-            #         conn.execute(
-            #             update(self.doc_versions_table)
-            #             .where(self.doc_versions_table.c.doc_id == doc_id)
-            #             .values(doc_version=doc_version)
-            #         )
 
             doc_chunk_ids = []
             for batch in doc.chunks():
@@ -356,11 +328,6 @@ class SQLiteChunkStore(ChunkStore):
             obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
         else:
             raise ValueError("neural_db_chunks table is missing in the database.")
-
-        # if "doc_versions" in obj.metadata.tables:
-        #     obj.doc_versions_table = obj.metadata.tables["doc_versions"]
-        # else:
-        #     raise ValueError("doc_versions_table table is missing in the database")
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
