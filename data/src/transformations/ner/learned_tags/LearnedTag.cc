@@ -8,12 +8,12 @@
 #include <utility>
 namespace thirdai::data::ner {
 
-std::unique_ptr<NerTag> NerTag::fromArchive(const ar::Archive& archive) {
+std::shared_ptr<NerTag> NerTag::fromArchive(const ar::Archive& archive) {
   auto type = static_cast<NerTagType>(archive.u64("type"));
 
   switch (type) {
     case NerTagType::NerLearnedTagType:
-      return std::make_unique<NerLearnedTag>(archive);
+      return std::make_shared<NerLearnedTag>(archive);
 
     default:
       throw std::runtime_error("Unknown Tag Type " +

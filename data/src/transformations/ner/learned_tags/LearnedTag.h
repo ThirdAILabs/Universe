@@ -27,7 +27,7 @@ class NerTag {
 
   virtual ar::ConstArchivePtr toArchive() const = 0;
 
-  static std::unique_ptr<NerTag> fromArchive(const ar::Archive& archive);
+  static std::shared_ptr<NerTag> fromArchive(const ar::Archive& archive);
 
   virtual ~NerTag() = default;
 };
@@ -56,13 +56,13 @@ class NerLearnedTag : public NerTag {
                       /*special_characters=*/{}, /*invalid_sizes=*/{},
                       /*validation_pattern=*/std::nullopt) {}
 
-  static std::unique_ptr<NerLearnedTag> make(
+  static std::shared_ptr<NerLearnedTag> make(
       std::string tag, uint32_t supported_types,
       uint32_t consecutive_tags_required,
       std::unordered_set<char> special_characters,
       std::unordered_set<uint32_t> invalid_sizes,
       std::optional<std::string> validation_pattern = std::nullopt) {
-    return std::make_unique<NerLearnedTag>(
+    return std::make_shared<NerLearnedTag>(
         std::move(tag), supported_types, consecutive_tags_required,
         std::move(special_characters), std::move(invalid_sizes),
         std::move(validation_pattern));
@@ -127,7 +127,7 @@ class NerLearnedTag : public NerTag {
   std::optional<std::regex> _validation_regex;
 };
 
-using NerTagPtr = std::unique_ptr<NerTag>;
-using NerLearnedTagPtr = std::unique_ptr<NerLearnedTag>;
+using NerTagPtr = std::shared_ptr<NerTag>;
+using NerLearnedTagPtr = std::shared_ptr<NerLearnedTag>;
 
 }  // namespace thirdai::data::ner

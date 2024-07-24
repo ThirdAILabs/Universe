@@ -38,6 +38,6 @@ inline NerTagPtr getLearnedTagFromString(const std::string& tag) {
     return getLocationTag();
   }
 
-  return std::make_unique<NerLearnedTag>(tag);
+  return std::make_shared<NerLearnedTag>(tag);
 }
 }  // namespace thirdai::data::ner

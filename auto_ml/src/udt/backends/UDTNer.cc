@@ -178,7 +178,7 @@ mapTagsToLabels(
   for (const auto& tag : tags) {
     if (std::holds_alternative<data::ner::NerLearnedTag>(tag)) {
       // Direct inclusion for explicitly defined NerLearnedTag objects.
-      all_tags.push_back(std::make_unique<data::ner::NerLearnedTag>(
+      all_tags.push_back(std::make_shared<data::ner::NerLearnedTag>(
           std::get<data::ner::NerLearnedTag>(tag)));
     } else {
       auto tag_string = std::get<std::string>(tag);
