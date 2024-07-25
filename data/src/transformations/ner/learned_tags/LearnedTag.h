@@ -42,6 +42,7 @@ class NerTag {
 
   virtual ~NerTag() = default;
 };
+
 class NerLearnedTag : public NerTag {
  public:
   NerLearnedTag(std::string tag, NerSupportedCharacterType supported_type,
@@ -145,7 +146,8 @@ class NerLearnedTag : public NerTag {
   std::string _tag;
   NerSupportedCharacterType _supported_type;
   uint32_t _consecutive_tags_required;
-  std::unordered_set<char> _special_characters;
+  std::unordered_set<char> _special_characters;  // characters that are omitted
+                                                 // by the supported_type check.
   std::unordered_set<uint32_t> _invalid_sizes;
   std::optional<std::string> _validation_pattern;
   std::optional<std::regex> _validation_regex;

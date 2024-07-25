@@ -545,6 +545,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("token_tag_counter") = nullptr)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
+
   py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
       transformations_submodule, "NerTokenTagCounter")
       .def(py::init<uint32_t, std::unordered_map<std::string, uint32_t>>(),
@@ -562,6 +563,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
            py::arg("phone_numbers"));
+
   py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
       transformations_submodule, "NERLearnedTag")
       .def(
@@ -574,21 +576,16 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
           py::arg("validation_pattern") = std::nullopt)
       .def(
           "process_tags",
-          [](ner::NerLearnedTag& self, const py::list& py_sentence_tags,
+          [](ner::NerLearnedTag& self,
+             std::vector<std::vector<std::pair<std::string, float>>>&
+                 sentence_tags,
              const std::vector<std::string>& tokens) {
-            auto vec_sentence_tags = py_sentence_tags.cast<
-                std::vector<std::vector<std::pair<std::string, float>>>>();
-
-            if (vec_sentence_tags.size() != tokens.size()) {
+            if (sentence_tags.size() != tokens.size()) {
               throw std::invalid_argument(
                   "Size of tags and tokens should be the same.");
             }
-
-            // Call the C++ function with the converted data
-            self.processTags(vec_sentence_tags, tokens);
-
-            // Automatically convert modified C++ data back to Python list
-            return py::cast(vec_sentence_tags);
+            self.processTags(sentence_tags, tokens);
+            return sentence_tags;
           },
           py::arg("sentence_tags"), py::arg("tokens"));
 

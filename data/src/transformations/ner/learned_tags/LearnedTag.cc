@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+
 namespace thirdai::data::ner {
 
 std::shared_ptr<NerTag> NerTag::fromArchive(const ar::Archive& archive) {

@@ -1,4 +1,5 @@
 #include "TokenTagCounter.h"
+#include "utils.h"
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
@@ -17,21 +18,23 @@ TokenTagCounter::TokenTagCounter(
     std::unordered_map<std::string, uint32_t> tag_to_label)
     : _tag_to_label(std::move(tag_to_label)) {
   uint32_t max_label = 0;
-  for (const auto& taglabel : _tag_to_label) {
-    max_label = std::max(max_label, taglabel.second);
+  for (const auto& [tag, label] : _tag_to_label) {
+    max_label = std::max(max_label, label);
   }
   _num_unique_counters = max_label + 1;
 
   _tag_encoders = std::vector<NumericalColumn>(_num_unique_counters);
-  for (const auto& taglabel : _tag_to_label) {
-    _tag_encoders[taglabel.second] =
-        NumericalColumn(taglabel.first, 0, 1, number_bins);
+  for (const auto& [tag, label] : _tag_to_label) {
+    _tag_encoders[label] = NumericalColumn(tag, 0, 1, number_bins);
   }
 }
 
 void TokenTagCounter::addTokenTag(const std::string& token,
                                   const std::string& tag) {
-  if (_tag_to_label.count(tag) == 0) {
+  if (utils::isNumberWithPunct(token, {})) {
+    return;
+  }
+  if (!_tag_to_label.count(tag)) {
     throw std::invalid_argument("The tag " + tag +
                                 " is not present in the tag to label map.");
   }
@@ -39,12 +42,10 @@ void TokenTagCounter::addTokenTag(const std::string& token,
   _token_counts[token]++;
   _total_tokens++;
 
-  if (_token_tag_counts.count(token)) {
-    _token_tag_counts[token][_tag_to_label[tag]]++;
-    return;
+  if (!_token_tag_counts.count(token)) {
+    _token_tag_counts[token] = std::vector<uint32_t>(_num_unique_counters, 0);
   }
 
-  _token_tag_counts[token] = std::vector<uint32_t>(_num_unique_counters, 0);
   _token_tag_counts[token][_tag_to_label[tag]]++;
 }
 

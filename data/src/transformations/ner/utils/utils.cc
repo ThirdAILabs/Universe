@@ -3,6 +3,7 @@
 #include <vector>
 
 namespace thirdai::data::ner::utils {
+
 bool isNumberWithPunct(const std::string& s,
                        const std::unordered_set<char>& exception_chars) {
   bool has_digit = false;
@@ -20,14 +21,14 @@ bool isNumberWithPunct(const std::string& s,
 
 bool containsAlphabets(const std::string& input,
                        const std::unordered_set<char>& exception_chars) {
-  return std::any_of(input.begin(), input.end(), [exception_chars](char c) {
+  return std::any_of(input.begin(), input.end(), [&exception_chars](char c) {
     return std::isalpha(c) && exception_chars.count(c) == 0;
   });
 }
 
 bool containsNumbers(const std::string& input,
                      const std::unordered_set<char>& exception_chars) {
-  return std::any_of(input.begin(), input.end(), [exception_chars](char c) {
+  return std::any_of(input.begin(), input.end(), [&exception_chars](char c) {
     return std::isdigit(c) && exception_chars.count(c) == 0;
   });
 }
@@ -110,6 +111,8 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
     return "";
   }
 
+  // e, x, t are characters that can be found in phone numbers hence, we include
+  // them too
   if (!isNumberWithPunct(v[index], {'e', 'x', 't'})) {
     return "";
   }

@@ -322,11 +322,7 @@ NerDyadicDataProcessor::NerDyadicDataProcessor(const ar::Archive& archive) {
     _feature_enhancement_config = std::nullopt;
   }
 
-  if (archive.contains("for_inference")) {
-    _for_inference = archive.boolean("for_inference");
-  } else {
-    _for_inference = true;
-  }
+  _for_inference = archive.getOr<ar::Boolean>("for_inference", true);
 
   _target_prefix = archive.str("target_prefix");
   _dyadic_previous_prefix = archive.str("dyadic_previous_prefix");

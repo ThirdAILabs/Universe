@@ -83,8 +83,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
-        if (_token_tag_counter != nullptr &&
-            !ner::utils::isNumberWithPunct(lower_cased_tokens[target], {})) {
+        if (_token_tag_counter != nullptr) {
           featurized_sentences[featurized_sentence_offset] +=
               _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
         }

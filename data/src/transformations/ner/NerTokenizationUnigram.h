@@ -75,11 +75,8 @@ class NerTokenizerUnigram final : public Transformation {
 
         for (size_t token_index = 0; token_index < row_token_vectors.size();
              ++token_index) {
-          if (!ner::utils::isNumberWithPunct(lower_cased_tokens[token_index],
-                                             {})) {
-            _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
-                                            tags->row(i)[token_index]);
-          }
+          _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
+                                          tags->row(i)[token_index]);
         }
       }
     }
