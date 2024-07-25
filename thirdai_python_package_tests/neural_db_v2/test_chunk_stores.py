@@ -466,6 +466,10 @@ def test_encryption():
     store_wo_key = SQLiteChunkStore.load(save_path)
     check_queries(store_wo_key, check_equal=False)
 
+    store_w_wrong_key = SQLiteChunkStore.load(save_path, encryption_key=key + "0")
+    with pytest.raises(ValueError, match="Invalid decryption key"):
+        check_queries(store_w_wrong_key, check_equal=False)
+
     store_w_key = SQLiteChunkStore.load(save_path, encryption_key=key)
     check_queries(store_w_key, check_equal=True)
 
