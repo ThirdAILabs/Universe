@@ -49,6 +49,9 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
     )
 
 
+MULTIVALUE_METADATA_PREFIX = "multivalue_metadata_"
+
+
 def get_sql_type(name, dtype):
     if dtype == int:
         return Integer
@@ -200,7 +203,7 @@ class SQLiteChunkStore(ChunkStore):
 
         if metadata_col.name not in self.multivalue_metadata_tables:
             table = Table(
-                "metadata_" + metadata_col.name,
+                MULTIVALUE_METADATA_PREFIX + metadata_col.name,
                 self.metadata,
                 Column("chunk_id", Integer, index=True, primary_key=True),
                 Column(
@@ -406,6 +409,13 @@ class SQLiteChunkStore(ChunkStore):
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
         else:
             obj.metadata_table = None
+
+        obj.multivalue_metadata_tables = {}
+        for name, table in obj.metadata.tables.items():
+            if name.startswith(MULTIVALUE_METADATA_PREFIX):
+                obj.multivalue_metadata_tables[
+                    name[len(MULTIVALUE_METADATA_PREFIX) :]
+                ] = table
 
         with obj.engine.connect() as conn:
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
