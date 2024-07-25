@@ -70,7 +70,7 @@ void NerLearnedTag::applyConsecutiveTagsAndValidationFilter(
     if (tag == _tag) {
       uint32_t maximum_consecutive_tags =
           _consecutive_tags_required > 1
-              ? utils::find_max_contiguous_window(sentence_tags, index, tag) + 1
+              ? utils::findMaxContiguousWindow(sentence_tags, index, tag)
               : 1;
 
       std::string concatenated_tokens = tokens[index];

@@ -151,9 +151,9 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
   return result;
 }
 
-uint32_t find_max_contiguous_window(const SentenceTags& sentence_tags,
-                                    uint32_t index,
-                                    const std::string& tag_to_find) {
+uint32_t findMaxContiguousWindow(const SentenceTags& sentence_tags,
+                                 uint32_t index,
+                                 const std::string& tag_to_find) {
   int count = 0;
 
   // Check right from the index
@@ -164,6 +164,6 @@ uint32_t find_max_contiguous_window(const SentenceTags& sentence_tags,
     count++;
   }
 
-  return count - 1;
+  return count;
 }
 }  // namespace thirdai::data::ner::utils
