@@ -50,7 +50,8 @@ void NerLearnedTag::applyTypeFilter(
     if (sentence_tags[token_index][0].first != _tag) {
       continue;
     }
-    if (utils::containsNumbers(tokens[token_index], _special_characters) ||
+    if (utils::containsNumbers(tokens[token_index],
+                               /*excluded_numbers=*/_special_characters) ||
         _invalid_sizes.count(tokens[token_index].size())) {
       sentence_tags[token_index][0] = std::make_pair("O", 1);
     }

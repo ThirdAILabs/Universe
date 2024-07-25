@@ -21,7 +21,8 @@ std::string getNumericalFeatures(const std::string& input) {
   if (!strippedInput.empty()) {
     // if a token contains both alphabets and numbers, it is probably some uin
     // exluding e, x, and t because they can be present in phonenumbers as well
-    if (ner::utils::containsAlphabets(input, {'e', 'x', 't'}) &&
+    if (ner::utils::containsAlphabets(input,
+                                      /*excluded_alphas=*/{'e', 'x', 't'}) &&
         input.size() >= 6) {
       return "IS_UIN";
     }

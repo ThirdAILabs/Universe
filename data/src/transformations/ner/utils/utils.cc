@@ -5,13 +5,13 @@
 namespace thirdai::data::ner::utils {
 
 bool isNumberWithPunct(const std::string& s,
-                       const std::unordered_set<char>& exception_chars) {
+                       const std::unordered_set<char>& whitelist_chars) {
   bool has_digit = false;
 
   for (char c : s) {
     if (std::isdigit(c)) {
       has_digit = true;
-    } else if (!std::ispunct(c) && exception_chars.count(c) == 0) {
+    } else if (!std::ispunct(c) && whitelist_chars.count(c) == 0) {
       return false;
     }
   }
@@ -20,16 +20,16 @@ bool isNumberWithPunct(const std::string& s,
 }
 
 bool containsAlphabets(const std::string& input,
-                       const std::unordered_set<char>& exception_chars) {
-  return std::any_of(input.begin(), input.end(), [&exception_chars](char c) {
-    return std::isalpha(c) && exception_chars.count(c) == 0;
+                       const std::unordered_set<char>& excluded_alphas) {
+  return std::any_of(input.begin(), input.end(), [&excluded_alphas](char c) {
+    return std::isalpha(c) && excluded_alphas.count(c) == 0;
   });
 }
 
 bool containsNumbers(const std::string& input,
-                     const std::unordered_set<char>& exception_chars) {
-  return std::any_of(input.begin(), input.end(), [&exception_chars](char c) {
-    return std::isdigit(c) && exception_chars.count(c) == 0;
+                     const std::unordered_set<char>& excluded_numbers) {
+  return std::any_of(input.begin(), input.end(), [&excluded_numbers](char c) {
+    return std::isdigit(c) && excluded_numbers.count(c) == 0;
   });
 }
 

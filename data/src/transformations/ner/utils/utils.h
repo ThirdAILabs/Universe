@@ -9,13 +9,13 @@ using TokenTags = std::vector<std::pair<std::string, float>>;
 using SentenceTags = std::vector<TokenTags>;
 
 bool isNumberWithPunct(const std::string& s,
-                       const std::unordered_set<char>& exception_chars);
+                       const std::unordered_set<char>& whitelist_chars);
 
 bool containsAlphabets(const std::string& input,
-                       const std::unordered_set<char>& exception_chars);
+                       const std::unordered_set<char>& excluded_alphas);
 
 bool containsNumbers(const std::string& input,
-                     const std::unordered_set<char>& exception_chars);
+                     const std::unordered_set<char>& excluded_numbers);
 
 std::string trimPunctuation(const std::string& str);
 
