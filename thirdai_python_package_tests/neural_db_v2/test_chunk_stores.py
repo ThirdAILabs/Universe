@@ -452,19 +452,21 @@ def test_encryption():
 
     store.insert([doc])
 
-    def check_queries(chunk_store):
+    def check_queries(chunk_store, check_equal):
         chunks = chunk_store.get_chunks([0, 1, 2])
 
         for chunk, text in zip(chunks, texts):
-            assert chunk.text == text
+            assert (chunk.text == text) == check_equal
 
-    check_queries(store)
+    check_queries(store, check_equal=True)
 
     save_path = store.db_name + ".tmp.save"
     store.save(save_path)
 
-    store = SQLiteChunkStore.load(save_path, encryption_key=key)
+    store_wo_key = SQLiteChunkStore.load(save_path)
+    check_queries(store_wo_key, check_equal=False)
 
-    check_queries(store)
+    store_w_key = SQLiteChunkStore.load(save_path, encryption_key=key)
+    check_queries(store_w_key, check_equal=True)
 
     os.remove(save_path)
