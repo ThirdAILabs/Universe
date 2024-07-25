@@ -4,9 +4,8 @@
 #include <dataset/src/utils/SafeFileIO.h>
 #include <search/src/inverted_index/IdMap.h>
 #include <search/src/inverted_index/InMemoryIdMap.h>
-#include <search/src/inverted_index/OnDiskIdMap.h>
-#include <search/src/inverted_index/OnDiskIndex.h>
 #if !_WIN32
+#include <search/src/inverted_index/OnDiskIdMap.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
 #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
@@ -27,10 +26,10 @@ namespace thirdai::search {
  * Because of how bm25 is calculated, particularly the idf scores, the query
  * index does not work will with only a couple of finetuning samples, for
  * instance a single upvote/associate. Thus for a small number of finetuning
- * samples we concatenate the query to the documents it maps to, this boosts
- * the score for the document for that query maps to. The samples are still
- * added to the query index, just the query index isn't used until this
- * threshold of samples is reached.
+ * samples we concatenate the query to the documents it maps to, this boosts the
+ * score for the document for that query maps to. The samples are still added to
+ * the query index, just the query index isn't used until this threshold of
+ * samples is reached.
  */
 constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
@@ -305,8 +304,8 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
   if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
-#if !_WIN32 
-if (type == OnDiskIndex::typeName()) {
+#if !_WIN32
+  if (type == OnDiskIndex::typeName()) {
     return OnDiskIndex::load(path, read_only);
   }
 #endif
@@ -321,9 +320,11 @@ std::unique_ptr<IdMap> loadIdMap(const std::string& type,
   if (type == InMemoryIdMap::typeName()) {
     return InMemoryIdMap::load(path);
   }
+#if !_WIN32
   if (type == OnDiskIdMap::typeName()) {
     return OnDiskIdMap::load(path);
   }
+#endif
   throw std::invalid_argument("Invalid id map type '" + type + "'.");
 }
 
