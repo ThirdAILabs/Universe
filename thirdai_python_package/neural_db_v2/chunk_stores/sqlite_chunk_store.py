@@ -17,10 +17,9 @@ from sqlalchemy import (
     create_engine,
     delete,
     func,
-    insert,
+    join,
     select,
     text,
-    update,
 )
 
 from ..core.chunk_store import ChunkStore
@@ -29,21 +28,41 @@ from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
 
 
-def get_sql_columns(df: pd.DataFrame):
-    columns = []
+def separate_multivalue_columns(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, List[pd.Series]]:
+    multivalue_columns = []
     for col in df.columns:
-        dtype = df[col].dtype
-        if dtype == int:
-            columns.append(Column(col, Integer))
-        elif dtype == float:
-            columns.append(Column(col, Float))
-        elif dtype == object:
-            columns.append(Column(col, String))
-        else:
-            raise ValueError(
-                f"Column {col} has dtype {str(dtype)} which is not a supported type for metadata columns."
-            )
-    return columns
+        if df[col].dtype == object and df[col].map(lambda x: isinstance(x, List)).any():
+            multivalue_columns.append(df[col])
+
+    return df.drop([c.name for c in multivalue_columns], axis=1), multivalue_columns
+
+
+def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.DataFrame:
+    return (
+        pd.DataFrame({"chunk_ids": chunk_ids, column.name: column})
+        .explode(column.name)  # flattens column and repeats values in other column
+        .dropna()  # explode converts [] to a row with a NaN in the exploded column
+        .reset_index()  # explode repeats index values, this resets that
+    )
+
+
+def get_sql_type(name, dtype):
+    if dtype == int:
+        return Integer
+    elif dtype == float:
+        return Float
+    elif dtype == object:
+        return String
+    else:
+        raise ValueError(
+            f"Column {name} has dtype {str(dtype)} which is not a supported type for metadata columns."
+        )
+
+
+def get_sql_columns(df: pd.DataFrame):
+    return [Column(col, get_sql_type(col, df[col])) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -121,6 +140,8 @@ class SQLiteChunkStore(ChunkStore):
 
         self.metadata_table = None
 
+        self.multivalue_metadata_tables = {}
+
         self.next_id = 0
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
@@ -149,7 +170,7 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata_table.name, self.metadata, autoload_with=self.engine
         )
 
-    def _store_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
+    def _store_singlevalue_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
         metadata_columns = get_sql_columns(metadata)
         if self.metadata_table is None:
             self.metadata_table = Table(
@@ -172,6 +193,28 @@ class SQLiteChunkStore(ChunkStore):
                         )
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
+
+    def _store_multivalue_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
+        flattened_metadata = flatten_multivalue_column(metadata_col, chunk_ids)
+
+        if metadata_col.name not in self.multivalue_metadata_tables:
+            table = Table(
+                "metadata_" + metadata_col.name,
+                self.metadata,
+                Column("chunk_id", Integer, index=True, primary_key=True),
+                Column(
+                    metadata_col.name,
+                    # TODO: explode doesn't seem to adjust dtype
+                    get_sql_type(flattened_metadata[metadata_col.name].dtype),
+                    primary_key=True,
+                ),
+            )
+            self.metadata.create_all(self.engine)
+            self.multivalue_metadata_tables[metadata_col.name] = table
+
+        self._write_to_table(
+            flattened_metadata, self.multivalue_metadata_tables[metadata_col.name]
+        )
 
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
@@ -197,7 +240,12 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_df["doc_version"] = doc_version
 
                 if batch.metadata is not None:
-                    self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
+                    singlevalue_metadata, multivalue_metadata = (
+                        separate_multivalue_columns(batch.metadata)
+                    )
+                    self._store_singlevalue_metadata(singlevalue_metadata, chunk_ids)
+                    for col in multivalue_metadata:
+                        self._store_multivalue_metadata(col, chunk_ids)
 
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
 
@@ -276,15 +324,31 @@ class SQLiteChunkStore(ChunkStore):
         if self.metadata_table is None:
             raise ValueError("Cannot filter constraints with no metadata.")
 
-        condition = reduce(
-            operator.and_,
-            [
-                constraint.sql_condition(column_name=column, table=self.metadata_table)
-                for column, constraint in constraints.items()
-            ],
-        )
+        select_from = self.metadata_table
+        conditions = []
+        for column, constraint in constraints.items():
+            if column in self.multivalue_metadata_tables:
+                table = self.multivalue_metadata_tables[column]
+                conditions.append(
+                    constraint.sql_condition(column_name=column, table=table)
+                )
+                select_from = join(
+                    select_from,
+                    table,
+                    self.metadata_table.c.chunk_id == table.c.chunk_id,
+                )
+            else:
+                conditions.append(
+                    constraint.sql_condition(
+                        column_name=column, table=self.metadata_table
+                    )
+                )
 
-        stmt = select(self.metadata_table.c.chunk_id).where(condition)
+        stmt = (
+            select(self.metadata_table.c.chunk_id)
+            .select_from(select_from)
+            .where(reduce(operator.and_, conditions))
+        )
 
         chunk_ids = set()
         with self.engine.connect() as conn:
