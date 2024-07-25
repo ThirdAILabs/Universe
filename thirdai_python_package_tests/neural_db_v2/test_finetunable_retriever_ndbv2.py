@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 
 import pandas as pd
 import pytest
@@ -132,7 +133,7 @@ def test_finetunable_retriever_finetuning(load_chunks):
 
     assert acc_after_finetuning == after_load_accuracy
 
-    os.remove(model_path)
+    shutil.rmtree(model_path)
 
 
 def test_finetunable_retriever_upvote(load_chunks):
