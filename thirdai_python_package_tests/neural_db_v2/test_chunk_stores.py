@@ -428,3 +428,43 @@ def test_get_doc_chunks(chunk_store):
     )
 
     clean_up_sql_lite_db(store)
+
+
+def test_encryption():
+    key = "209402"
+    store = SQLiteChunkStore(encryption_key=key)
+
+    texts = [
+        "apples are an excellent fruit",
+        "i like nectarines",
+        "mangos are tasty too",
+    ]
+    doc = PrebatchedDoc(
+        [
+            NewChunkBatch(
+                text=pd.Series(texts),
+                keywords=pd.Series(["apples", "nectarines", "mangos"]),
+                metadata=None,
+                document=pd.Series(["a", "b", "c"]),
+            )
+        ],
+    )
+
+    store.insert([doc])
+
+    def check_queries(chunk_store):
+        chunks = chunk_store.get_chunks([0, 1, 2])
+
+        for chunk, text in zip(chunks, texts):
+            assert chunk.text == text
+
+    check_queries(store)
+
+    save_path = store.db_name + ".tmp.save"
+    store.save(save_path)
+
+    store = SQLiteChunkStore.load(save_path, encryption_key=key)
+
+    check_queries(store)
+
+    os.remove(save_path)
