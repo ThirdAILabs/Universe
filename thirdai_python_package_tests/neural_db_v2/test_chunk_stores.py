@@ -12,7 +12,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     LessThan,
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
-from thirdai.neural_db_v2.documents import PrebatchedDoc, InMemoryText
+from thirdai.neural_db_v2.documents import InMemoryText, PrebatchedDoc
 
 pytestmark = [pytest.mark.release]
 
