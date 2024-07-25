@@ -41,10 +41,10 @@ def separate_multivalue_columns(
 
 def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.DataFrame:
     return (
-        pd.DataFrame({"chunk_ids": chunk_ids, column.name: column})
+        pd.DataFrame({"chunk_id": chunk_ids, column.name: column})
         .explode(column.name)  # flattens column and repeats values in other column
         .dropna()  # explode converts [] to a row with a NaN in the exploded column
-        .reset_index()  # explode repeats index values, this resets that
+        .reset_index(drop=True)  # explode repeats index values, this resets that
         .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
     )
 
@@ -205,8 +205,9 @@ class SQLiteChunkStore(ChunkStore):
                 Column("chunk_id", Integer, index=True, primary_key=True),
                 Column(
                     metadata_col.name,
-                    # TODO: explode doesn't seem to adjust dtype
-                    get_sql_type(flattened_metadata[metadata_col.name].dtype),
+                    get_sql_type(
+                        metadata_col.name, flattened_metadata[metadata_col.name].dtype
+                    ),
                     primary_key=True,
                 ),
             )
@@ -308,6 +309,17 @@ class SQLiteChunkStore(ChunkStore):
                     del metadata["chunk_id"]
                     id_to_chunk[row.chunk_id].metadata = metadata
 
+            for key, table in self.multivalue_metadata_tables.items():
+                multivalue_stmt = select(table).where(table.c.chunk_id.in_(chunk_ids))
+                for row in conn.execute(multivalue_stmt).all():
+                    if id_to_chunk[row.chunk_id].metadata is None:
+                        id_to_chunk[row.chunk_id].metadata = {}
+
+                    if key not in id_to_chunk[row.chunk_id].metadata:
+                        id_to_chunk[row.chunk_id].metadata[key] = []
+
+                    id_to_chunk[row.chunk_id].metadata[key].append(getattr(row, key))
+
         chunks = []
         for chunk_id in chunk_ids:
             if chunk_id not in id_to_chunk:
@@ -351,12 +363,8 @@ class SQLiteChunkStore(ChunkStore):
             .where(reduce(operator.and_, conditions))
         )
 
-        chunk_ids = set()
         with self.engine.connect() as conn:
-            for row in conn.execute(stmt):
-                chunk_ids.add(row.chunk_id)
-
-        return chunk_ids
+            return set(row.chunk_id for row in conn.execute(stmt))
 
     def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(

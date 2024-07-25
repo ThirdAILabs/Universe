@@ -12,7 +12,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     LessThan,
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
-from thirdai.neural_db_v2.documents import PrebatchedDoc
+from thirdai.neural_db_v2.documents import PrebatchedDoc, InMemoryText
 
 pytestmark = [pytest.mark.release]
 
@@ -428,3 +428,132 @@ def test_get_doc_chunks(chunk_store):
     )
 
     clean_up_sql_lite_db(store)
+
+
+def test_multivalue_metadata():
+    store = SQLiteChunkStore()
+
+    docs = [
+        InMemoryText(
+            document_name="1",
+            text=["a b c", "d e f"],
+            chunk_metadata=[
+                {"start": "a", "items": [1, 3]},
+                {"end": "f", "items": [2, 4]},
+            ],
+            doc_metadata={"time": 20, "permissions": ["group1", "group2", "group3"]},
+        ),
+        InMemoryText(
+            document_name="2",
+            text=["r s t", "u v w", "x y z"],
+            chunk_metadata=[
+                {"start": "r", "end": "t", "items": [2, 3]},
+                {"start": "u", "end": "w"},
+                {"start": "x", "items": [1, 5]},
+            ],
+            doc_metadata={"type": "pdf", "permissions": ["group1", "group4"]},
+        ),
+    ]
+    store.insert(docs)
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": AnyOf(["group2", "group10"]),
+        }
+    )
+    assert chunk_ids == set([0, 1])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": AnyOf(["group2", "group4"]),
+        }
+    )
+    assert chunk_ids == set([0, 1, 2, 3, 4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "items": AnyOf([2, 5]),
+        }
+    )
+    assert chunk_ids == set([1, 2, 4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": EqualTo("group1"),
+            "end": AnyOf(["w", "t"]),
+        }
+    )
+    assert chunk_ids == set([2, 3])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": EqualTo("group3"),
+            "items": GreaterThan(4),
+        }
+    )
+    assert chunk_ids == set([1])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "items": GreaterThan(3),
+            "permissions": EqualTo("group4"),
+        }
+    )
+    assert chunk_ids == set([2, 4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "items": GreaterThan(4),
+            "time": LessThan(25),
+        }
+    )
+    assert chunk_ids == set([1])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": EqualTo("group4"),
+            "start": AnyOf(["r", "x"]),
+            "items": GreaterThan(4),
+        }
+    )
+    assert chunk_ids == set([4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": EqualTo("group4"),
+            "start": AnyOf(["r", "x"]),
+            "items": AnyOf([2, 3]),
+        }
+    )
+    assert chunk_ids == set([2])
+
+    chunks = store.get_chunks([0, 4, 3])
+
+    chunk_0_metadata = {
+        "start": "a",
+        "end": None,
+        "items": [1, 3],
+        "time": 20,
+        "type": None,
+        "permissions": ["group1", "group2", "group3"],
+    }
+    assert chunks[0].metadata == chunk_0_metadata
+
+    chunk_4_metadata = {
+        "start": "x",
+        "end": None,
+        "items": [1, 5],
+        "time": None,
+        "type": "pdf",
+        "permissions": ["group1", "group4"],
+    }
+    assert chunks[1].metadata == chunk_4_metadata
+
+    chunk_3_metadata = {
+        "start": "u",
+        "end": "w",
+        "time": None,
+        "type": "pdf",
+        "permissions": ["group1", "group4"],
+    }
+    assert chunks[2].metadata == chunk_3_metadata
