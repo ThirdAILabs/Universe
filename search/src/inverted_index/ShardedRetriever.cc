@@ -3,7 +3,10 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <search/src/inverted_index/IndexConfig.h>
+#if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
+#endif
+#include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Utils.h>
 #include <filesystem>
@@ -14,6 +17,7 @@
 
 namespace thirdai::search {
 
+#if !_WIN32
 class OnDiskFactory final : public RetrieverFactory {
  public:
   explicit OnDiskFactory(std::string save_path, bool read_only)
@@ -41,6 +45,7 @@ class OnDiskFactory final : public RetrieverFactory {
   std::string _save_path;
   bool _read_only;
 };
+#endif
 
 class InMemoryFactory final : public RetrieverFactory {
  public:
@@ -60,11 +65,19 @@ class InMemoryFactory final : public RetrieverFactory {
 ShardedRetriever::ShardedRetriever(IndexConfig config,
                                    const std::optional<std::string>& save_path)
     : _config(std::move(config)), _shard_size(config.shard_size) {
+#if !_WIN32
   if (save_path) {
     _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
   } else {
     _factory = std::make_shared<InMemoryFactory>();
   }
+#else
+  _factory = std::make_shared<InMemoryFactory>();
+  if (save_path) {
+    throw std::invalid_argument("on-disk is not supported for windows.");
+  }
+
+#endif
   _shards.push_back(_factory->create(_config, /*shard_id=*/0));
 }
 
@@ -201,11 +214,15 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
 
   auto type = metadata->str("type");
 
-  if (type == OnDiskIndex::typeName()) {
-    _factory = std::make_shared<OnDiskFactory>(save_path, read_only);
-  } else if (type == InvertedIndex::typeName()) {
+  if (type == InvertedIndex::typeName()) {
     _factory = std::make_shared<InMemoryFactory>();
-  } else {
+  }
+#if !_WIN32
+  else if (type == OnDiskIndex::typeName()) {
+    _factory = std::make_shared<OnDiskFactory>(save_path, read_only);
+  }
+#endif
+  else {
     throw std::invalid_argument("Invalid factory type: '" + type + "'.");
   }
 
@@ -213,6 +230,10 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     _shards.push_back(_factory->load(
         (std::filesystem::path(save_path) / shard_file).string()));
   }
+
+#if _WIN32
+  (void)read_only;
+#endif
 }
 
 std::shared_ptr<ShardedRetriever> ShardedRetriever::load(

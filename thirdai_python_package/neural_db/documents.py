@@ -769,7 +769,9 @@ class CSV(Document):
             ]
         )
         row = {
-            self.no_space_to_with_space.get(col, col): val for col, val in row.items()
+            self.no_space_to_with_space.get(col, col): val
+            for col, val in row.items()
+            if col != "thirdai_index"
         }
         return Reference(
             document=self,

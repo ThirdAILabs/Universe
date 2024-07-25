@@ -82,6 +82,30 @@ TEST_F(OnDiskIndexTests, SaveLoad) {
   });
 }
 
+TEST_F(OnDiskIndexTests, ReadOnly) {
+  OnDiskIndex index(tmpDbName());
+
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  index.index({ids.begin(), ids.begin() + n_docs / 2},
+              {docs.begin(), docs.begin() + n_docs / 2});
+
+  auto original_results = index.queryBatch(queries, /*k=*/5);
+
+  std::string save_path = tmpDbName();
+
+  index.save(save_path);
+
+  auto read_write_index = OnDiskIndex::load(save_path, /*read_only=*/false);
+  auto read_only_index = OnDiskIndex::load(save_path, /*read_only=*/true);
+
+  ASSERT_EQ(original_results, read_write_index->queryBatch(queries, /*k=*/5));
+  ASSERT_EQ(original_results, read_only_index->queryBatch(queries, /*k=*/5));
+}
+
 TEST_F(OnDiskIndexTests, ShardedRetrieverSaveLoad) {
   IndexConfig config;
   config.shard_size = 24;

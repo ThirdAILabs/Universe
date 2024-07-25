@@ -1,9 +1,8 @@
 import operator
-import os
 import shutil
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,20 +16,16 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
+    insert,
     select,
     text,
+    update,
 )
-from thirdai.neural_db.utils import pickle_to, unpickle_from
 
-from ..core.chunk_store import ChunkStore, CustomIDType
-from ..core.types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    SupervisedBatch,
-)
+from ..core.chunk_store import ChunkStore
+from ..core.documents import Document
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
 
 
@@ -58,26 +53,26 @@ class SqlLiteIterator:
         engine: Engine,
         min_insertion_chunk_id: int,
         max_insertion_chunk_id: int,
-        batch_size: int = 100,
+        max_in_memory_batches: int = 100,
     ):
         self.chunk_table = table
         self.engine = engine
 
         # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
-        # through a range of chunk_ids. We need a min and a max we do an insertion
-        # while another iterator still exists
+        # through a range of chunk_ids. We need a min and a max in the case
+        # we do an insertion while another iterator instance still exists
         self.min_insertion_chunk_id = min_insertion_chunk_id
         self.max_insertion_chunk_id = max_insertion_chunk_id
 
-        self.batch_size = batch_size
+        self.max_in_memory_batches = max_in_memory_batches
 
     def __next__(self) -> Optional[ChunkBatch]:
         # The "next" call on the sql_row_iterator returns one row at a time
-        # despite fetching them in "batch_size" quantities from the database.
-        # Thus we call "next" "batch_size" times to pull out all the rows we want
+        # despite fetching them in "max_in_memory_batches" quantities from the database.
+        # Thus we call "next" "max_in_memory_batches" times to pull out all the rows we want
         sql_lite_batch = []
         try:
-            for _ in range(self.batch_size):
+            for _ in range(self.max_in_memory_batches):
                 sql_lite_batch.append(next(self.sql_row_iterator))
         except StopIteration:
             if not sql_lite_batch:
@@ -98,7 +93,7 @@ class SqlLiteIterator:
         )
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
-            self.sql_row_iterator = result.yield_per(self.batch_size)
+            self.sql_row_iterator = result.yield_per(self.max_in_memory_batches)
         return self
 
 
@@ -115,14 +110,14 @@ class SQLiteChunkStore(ChunkStore):
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
-            Column("custom_id", Integer),
             Column("text", String),
             Column("keywords", String),
             Column("document", String),
+            Column("doc_id", String, index=True),
+            Column("doc_version", Integer),
         )
-        self.metadata.create_all(self.engine)
 
-        self.custom_id_table = None
+        self.metadata.create_all(self.engine)
 
         self.metadata_table = None
 
@@ -136,30 +131,6 @@ class SQLiteChunkStore(ChunkStore):
             if_exists="append",
             index=False,
         )
-
-    def _create_custom_id_table(self):
-        custom_id_dtype = (
-            Integer if self.custom_id_type == CustomIDType.Integer else String
-        )
-        self.custom_id_table = Table(
-            "neural_db_custom_ids",
-            self.metadata,
-            Column("custom_id", custom_id_dtype, primary_key=True),
-            Column("chunk_id", Integer),
-        )
-        self.metadata.create_all(self.engine)
-
-    def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_or_validate_custom_id_type(custom_ids)
-
-        if custom_ids is not None:
-            if self.custom_id_table is None:
-                self._create_custom_id_table()
-
-            custom_id_df = pd.DataFrame(
-                {"custom_id": custom_ids, "chunk_id": chunk_ids}
-            )
-            self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
     def _add_metadata_column(self, column: Column):
         column_name = column.compile(dialect=self.engine.dialect)
@@ -202,23 +173,39 @@ class SQLiteChunkStore(ChunkStore):
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
+    def insert(
+        self, docs: List[Document], max_in_memory_batches=10000, **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         min_insertion_chunk_id = self.next_id
-        for batch in chunks:
-            chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+
+        inserted_doc_metadata = []
+        for doc in docs:
+            doc_id = doc.doc_id()
+            doc_version = self.max_version_for_doc(doc_id) + 1
+
+            doc_chunk_ids = []
+            for batch in doc.chunks():
+                chunk_ids = pd.Series(
+                    np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+                )
+                self.next_id += len(batch)
+                doc_chunk_ids.extend(chunk_ids)
+
+                chunk_df = batch.to_df()
+                chunk_df["chunk_id"] = chunk_ids
+                chunk_df["doc_id"] = doc_id
+                chunk_df["doc_version"] = doc_version
+
+                if batch.metadata is not None:
+                    self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
+
+                self._write_to_table(df=chunk_df, table=self.chunk_table)
+
+            inserted_doc_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunk_ids
+                )
             )
-            self.next_id += len(batch)
-
-            chunk_df = batch.to_df()
-            chunk_df["chunk_id"] = chunk_ids
-
-            self._update_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
-
-            if batch.metadata is not None:
-                self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
-
-            self._write_to_table(df=chunk_df, table=self.chunk_table)
 
         max_insertion_chunk_id = self.next_id
 
@@ -227,10 +214,10 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            batch_size=kwargs.get("sql_lite_iterator_batch_size", 100),
+            max_in_memory_batches=max_in_memory_batches,
         )
 
-        return inserted_chunks_iterator
+        return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
@@ -245,12 +232,6 @@ class SQLiteChunkStore(ChunkStore):
                 )
                 conn.execute(delete_metadata)
 
-            if self.custom_id_table is not None:
-                delete_chunk_ids = delete(self.custom_id_table).where(
-                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
-                )
-                conn.execute(delete_chunk_ids)
-
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
 
@@ -260,12 +241,13 @@ class SQLiteChunkStore(ChunkStore):
             )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
-                    custom_id=row.custom_id,
                     text=row.text,
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
                     metadata=None,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
                 )
 
             if self.metadata_table is not None:
@@ -311,56 +293,54 @@ class SQLiteChunkStore(ChunkStore):
 
         return chunk_ids
 
-    def remap_custom_ids(
-        self, samples: Iterable[CustomIdSupervisedBatch]
-    ) -> Iterable[SupervisedBatch]:
-        remapped_batches = []
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
+        stmt = select(self.chunk_table.c.chunk_id).where(
+            (self.chunk_table.c.doc_id == doc_id)
+            & (self.chunk_table.c.doc_version < before_version)
+        )
 
-        if self.custom_id_table is None:
-            raise ValueError(f"Chunk Store does not contain custom ids.")
+        with self.engine.connect() as conn:
+            return [row.chunk_id for row in conn.execute(stmt)]
 
-        for batch in samples:
-            chunk_ids = []
-            with self.engine.connect() as conn:
-                for custom_ids in batch.custom_id:
-                    sample_ids = []
-                    for custom_id in custom_ids:
-                        stmt = select(self.custom_id_table.c.chunk_id).where(
-                            self.custom_id_table.c.custom_id == custom_id
-                        )
-                        if result := conn.execute(stmt).first():
-                            sample_ids.append(result.chunk_id)
-                        else:
-                            raise ValueError(
-                                f"Could not find chunk with custom id {custom_id}."
-                            )
-                    chunk_ids.append(sample_ids)
+    def max_version_for_doc(self, doc_id: str) -> int:
+        stmt = select(func.max(self.chunk_table.c.doc_version)).where(
+            self.chunk_table.c.doc_id == doc_id
+        )
 
-            remapped_batches.append(
-                SupervisedBatch(query=batch.query, chunk_id=pd.Series(chunk_ids))
-            )
-
-        return remapped_batches
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            return result.scalar() or 0
 
     def save(self, path: str):
-        os.makedirs(path)
-        db_target_path = os.path.join(path, self.db_name)
-        shutil.copyfile(self.db_name, db_target_path)
-
-        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
-        pickle_path = os.path.join(path, "object.pkl")
-        pickle_to(contents, pickle_path)
+        shutil.copyfile(self.db_name, path)
 
     @classmethod
     def load(cls, path: str):
-        pickle_path = os.path.join(path, "object.pkl")
-        contents = unpickle_from(pickle_path)
-
         obj = cls.__new__(cls)
-        obj.__dict__.update(contents)
 
-        db_name = os.path.basename(obj.db_name)
-        obj.db_name = os.path.join(path, db_name)
+        obj.db_name = path
         obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        obj.metadata = MetaData()
+        obj.metadata.reflect(bind=obj.engine)
+
+        if "neural_db_chunks" in obj.metadata.tables:
+            obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+        else:
+            raise ValueError("neural_db_chunks table is missing in the database.")
+
+        if "neural_db_metadata" in obj.metadata.tables:
+            obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+        else:
+            obj.metadata_table = None
+
+        with obj.engine.connect() as conn:
+            result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
+            max_id = result.scalar()
+            obj.next_id = (max_id or 0) + 1
+
+            chunk_count = conn.execute(
+                select(func.count()).select_from(obj.chunk_table)
+            ).scalar()
 
         return obj

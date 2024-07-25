@@ -6,6 +6,9 @@
 #include <search/src/inverted_index/InMemoryIdMap.h>
 #include <search/src/inverted_index/OnDiskIdMap.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
+#if !_WIN32
+#include <search/src/inverted_index/OnDiskIndex.h>
+#endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <search/src/inverted_index/Utils.h>
@@ -24,10 +27,10 @@ namespace thirdai::search {
  * Because of how bm25 is calculated, particularly the idf scores, the query
  * index does not work will with only a couple of finetuning samples, for
  * instance a single upvote/associate. Thus for a small number of finetuning
- * samples we concatenate the query to the documents it maps to, this boosts the
- * score for the document for that query maps to. The samples are still added to
- * the query index, just the query index isn't used until this threshold of
- * samples is reached.
+ * samples we concatenate the query to the documents it maps to, this boosts
+ * the score for the document for that query maps to. The samples are still
+ * added to the query index, just the query index isn't used until this
+ * threshold of samples is reached.
  */
 constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
@@ -55,6 +58,7 @@ FinetunableRetriever::FinetunableRetriever(
     float lambda, uint32_t min_top_docs, uint32_t top_queries,
     const IndexConfig& config, const std::optional<std::string>& save_path)
     : _lambda(lambda), _min_top_docs(min_top_docs), _top_queries(top_queries) {
+#if !_WIN32
   if (save_path) {
     createDirectory(*save_path);
 
@@ -73,9 +77,16 @@ FinetunableRetriever::FinetunableRetriever(
     _query_to_docs = std::make_unique<InMemoryIdMap>();
     _doc_to_queries = std::make_unique<InMemoryIdMap>();
   }
+#else
+  if (save_path) {
+    throw std::invalid_argument("on-disk is not supported for windows.");
+  }
+  _doc_index = std::make_shared<InvertedIndex>(config);
+  _query_index = std::make_shared<InvertedIndex>(config);
 
-  _doc_index_type = _doc_index->type();
-  _query_index_type = _query_index->type();
+  _query_to_docs = std::make_unique<InMemoryIdMap>();
+  _doc_to_queries = std::make_unique<InMemoryIdMap>();
+#endif
 }
 
 void FinetunableRetriever::index(const std::vector<DocId>& ids,
@@ -249,8 +260,8 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
 ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   auto map = ar::Map::make();
 
-  map->set("doc_index_type", ar::str(_doc_index_type));
-  map->set("query_index_type", ar::str(_query_index_type));
+  map->set("doc_index_type", ar::str(_doc_index->type()));
+  map->set("query_index_type", ar::str(_query_index->type()));
 
   map->set("doc_to_queries_map_type", ar::str(_doc_to_queries->type()));
   map->set("query_to_docs_map_type", ar::str(_query_to_docs->type()));
@@ -265,8 +276,6 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
 }
 
 void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
-  _doc_index_type = archive.str("doc_index_type");
-  _query_index_type = archive.str("query_index_type");
   _next_query_id = archive.u64("next_query_id");
   _lambda = archive.f32("lambda");
   _min_top_docs = archive.u64("min_top_docs");
@@ -296,9 +305,11 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
   if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
-  if (type == OnDiskIndex::typeName()) {
+#if !_WIN32 
+if (type == OnDiskIndex::typeName()) {
     return OnDiskIndex::load(path, read_only);
   }
+#endif
   if (type == ShardedRetriever::typeName()) {
     return ShardedRetriever::load(path, read_only);
   }
@@ -322,9 +333,10 @@ FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
   auto metadata = ar::deserialize(metadata_file);
   metadataFromArchive(*metadata);
 
-  _doc_index = loadIndex(_doc_index_type, docIndexPath(save_path), read_only);
-  _query_index =
-      loadIndex(_query_index_type, queryIndexPath(save_path), read_only);
+  _doc_index = loadIndex(metadata->str("doc_index_type"),
+                         docIndexPath(save_path), read_only);
+  _query_index = loadIndex(metadata->str("query_index_type"),
+                           queryIndexPath(save_path), read_only);
 
   _query_to_docs = loadIdMap(metadata->str("query_to_docs_map_type"),
                              queryToDocsPath(save_path));

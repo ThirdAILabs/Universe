@@ -431,6 +431,7 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
     } else if (py::isinstance<data::FeatureEnhancementConfig>(v)) {
       auto value = v.cast<data::FeatureEnhancementConfig>();
       args.insert(name, value);
+    } else if (v.is_none()) {
     } else {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +

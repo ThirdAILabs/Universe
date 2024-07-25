@@ -5,7 +5,9 @@
 #include <pybind11/stl.h>
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/InvertedIndex.h>
+#if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
+#endif
 #include <search/src/inverted_index/Tokenizer.h>
 #include <optional>
 
@@ -145,6 +147,7 @@ void createSearchSubmodule(py::module_& module) {
             }
           }));
 
+#if !_WIN32
   py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
                                                         "OnDiskIndex")
       .def(py::init<const std::string&, const IndexConfig&>(),
@@ -156,6 +159,7 @@ void createSearchSubmodule(py::module_& module) {
       .def("save", &OnDiskIndex::save, py::arg("filename"))
       .def_static("load", &OnDiskIndex::load, py::arg("filename"),
                   py::arg("read_only") = false);
+#endif
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")

@@ -42,7 +42,6 @@ def all_nonempty_strings(series: pd.Series):
 def doc_property_checks(
     doc: Document,
     has_keywords: bool,
-    has_custom_ids: bool,
     document_metadata: dict,
     chunk_metadata_columns: List[str],
     allow_empty_keywords: bool = False,
@@ -60,11 +59,6 @@ def doc_property_checks(
         else:
             assert all_empty_strings(chunks.keywords)
         assert len(chunks.keywords) == len(chunks.text)
-
-        if has_custom_ids:
-            assert len(chunks.custom_id) == len(chunks.text)
-        else:
-            assert chunks.custom_id is None
 
         assert len(chunks.document) == len(chunks.text)
         assert all_nonempty_strings(chunks.document)
@@ -96,17 +90,15 @@ def doc_property_checks(
 def test_csv_doc_infered_columns():
     df = pd.read_csv(CSV_FILE)
 
-    doc = CSV(CSV_FILE, custom_id_column="category")
+    doc = CSV(CSV_FILE)
     doc_property_checks(
         doc,
         has_keywords=False,
-        has_custom_ids=True,
         document_metadata={},
-        chunk_metadata_columns=[],
+        chunk_metadata_columns=["category"],
     )
     chunks = list(doc.chunks())[0]
     assert (df["text"] == chunks.text).all()
-    assert (df["category"] == chunks.custom_id).all()
 
 
 def test_csv_doc_no_keywords():
@@ -116,7 +108,6 @@ def test_csv_doc_no_keywords():
     doc_property_checks(
         doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata={"type": "csv"},
         chunk_metadata_columns=["category"],
     )
@@ -131,7 +122,6 @@ def test_csv_doc_with_keywords():
 
     doc = CSV(
         CSV_FILE,
-        custom_id_column="category",
         text_columns=["text"],
         keyword_columns=["text", "text"],
         doc_metadata={"type": "csv"},
@@ -139,9 +129,8 @@ def test_csv_doc_with_keywords():
     doc_property_checks(
         doc,
         has_keywords=True,
-        has_custom_ids=True,
         document_metadata={"type": "csv"},
-        chunk_metadata_columns=[],
+        chunk_metadata_columns=["category"],
     )
     chunks = list(doc.chunks())[0]
     assert (df["text"] == chunks.text).all()
@@ -154,7 +143,6 @@ def test_csv_doc_streaming():
 
     doc = CSV(
         CSV_FILE,
-        custom_id_column="category",
         text_columns=["text"],
         keyword_columns=["text", "text"],
         doc_metadata={"type": "csv"},
@@ -163,15 +151,11 @@ def test_csv_doc_streaming():
     doc_property_checks(
         doc,
         has_keywords=True,
-        has_custom_ids=True,
         document_metadata={"type": "csv"},
-        chunk_metadata_columns=[],
+        chunk_metadata_columns=["category"],
     )
 
     part1, part2 = list(doc.chunks())
-
-    all_custom_ids = pd.concat([part1.custom_id, part2.custom_id]).to_list()
-    assert df["category"].to_list() == all_custom_ids
 
     all_texts = pd.concat([part1.text, part2.text]).to_list()
     assert df["text"].to_list() == all_texts
@@ -189,7 +173,6 @@ def test_docx_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=[],
     )
@@ -202,7 +185,6 @@ def test_pdf_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=True,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=["chunk_boxes", "page"],
         allow_empty_keywords=True,
@@ -216,7 +198,6 @@ def test_email_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
     )
@@ -229,7 +210,6 @@ def test_pptx_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=["filetype", "page"],
     )
@@ -242,7 +222,6 @@ def test_txt_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=["filetype"],
     )
@@ -256,7 +235,6 @@ def test_url_doc(metadata):
         doc_property_checks(
             doc=doc,
             has_keywords=True,
-            has_custom_ids=False,
             document_metadata=metadata,
             chunk_metadata_columns=[],
         )
@@ -275,7 +253,6 @@ def test_in_memory_text_doc(metadata):
     doc_property_checks(
         doc=doc,
         has_keywords=False,
-        has_custom_ids=False,
         document_metadata=metadata,
         chunk_metadata_columns=["item"],
     )

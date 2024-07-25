@@ -177,7 +177,7 @@ class SQLiteTable(Table):
 
     def __init__(self, df: pd.DataFrame):
         # TODO: Reset index first?
-        self.db_path = f"{uuid.uuid4()}.db"
+        self.db_path = Path(f"{uuid.uuid4()}.db").resolve()
         self.db_columns = df.columns
         self.db_size = len(df)
 
@@ -253,5 +253,5 @@ class SQLiteTable(Table):
 
     def apply_filter(self, table_filter: TableFilter):
         return table_filter.filter_sql_ids(
-            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME
+            sqlite3.connect(self.db_path), SQLiteTable.TABLE_NAME, self.id_column
         )

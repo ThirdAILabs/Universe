@@ -11,7 +11,6 @@
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>

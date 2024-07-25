@@ -16,19 +16,11 @@ struct DocCount {
   uint32_t count : 24;
 };
 
-#if !_WIN32
 // This does not get packed into a single word on windows unlike linux and mac.
 static_assert(sizeof(DocCount) == 8);
-#endif
 
 class DbAdapter {
  public:
-  DbAdapter() {
-    if constexpr (sizeof(DocCount) != 8) {
-      throw std::invalid_argument(
-          "on_disk options are not supported on windows.");
-    }
-  }
   virtual void storeDocLens(const std::vector<DocId>& ids,
                             const std::vector<uint32_t>& doc_lens) = 0;
 
