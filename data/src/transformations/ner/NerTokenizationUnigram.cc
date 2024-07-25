@@ -43,7 +43,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  std::move(feature_enhancement_config),
-                 _target_column.has_value()),
+                 !_target_column.has_value()),
       _tag_to_label(std::move(tag_to_label)),
       _token_tag_counter(std::move(token_tag_counter)) {}
 
