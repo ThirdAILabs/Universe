@@ -7,6 +7,14 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
+from thirdai import bolt
+
+from thirdai import neural_db as ndb
+import os
+from typing import List
+from thirdai import bolt
+from openai import OpenAI
+import re
 
 from .bazaar_base import Bazaar, auth_header
 from .utils import (
@@ -20,6 +28,95 @@ from .utils import (
 )
 
 
+OPENAI_KEY = ""
+    
+class PIIRedactor:
+    def __init__(self):
+        if not os.path.isdir("./models/"):
+            os.system("mkdir ./models/")
+
+        if not os.path.exists("./models/pretrained_multilingual.model"):
+            os.system(
+                "wget -nv -O ./models/pretrained_multilingual.model 'https://www.dropbox.com/scl/fi/z3xo7nqbjpo1xsvl9b0xh/ner_model_new.bolt?rlkey=md3lw409d55krjdm2ao6kjo7o&st=jnv84wtg&dl=0'"
+            )
+
+        os.system(
+            "wget -nv -O pretrained_multilingual.model 'https://www.dropbox.com/scl/fi/z3xo7nqbjpo1xsvl9b0xh/ner_model_new.bolt?rlkey=md3lw409d55krjdm2ao6kjo7o&st=jnv84wtg&dl=0'"
+        )
+            
+        self.pii_model = bolt.UniversalDeepTransformer.load("./models/pretrained_multilingual.model")
+        self.client = OpenAI(api_key=OPENAI_KEY)
+        
+    def strip_non_alphanumeric(self, s):
+        pattern = r'^[^a-zA-Z0-9_<>\s]+|[^a-zA-Z0-9_<>\s]+$'
+        cleaned_string = re.sub(pattern, '', s)
+        return cleaned_string
+
+    def extract(self, results: List[ndb.documents.Reference]):
+
+        token_to_tag = {}
+        token_counts = {}
+        
+        for reference in results:
+            text = reference["text"]
+            text = " ".join(text.split())
+            predicted_tags = self.pii_model.predict({"source": text}, top_k=1)
+            for i, token in enumerate(text.split()):
+                tag = predicted_tags[i]
+                if tag[0][0] != "O":
+                    if token not in token_to_tag or token_to_tag[token][1] < tag[0][1]:
+                        tg = (f"<{tag[0][0]}>", tag[0][1])
+                        token_to_tag[token] = tg
+        token_counts = {v[0]:0 for k, v in token_to_tag.items()}
+        inverse_map = {}
+        
+        for k, v in token_to_tag.items():
+            token_to_tag[k] = v[0]
+            new_tag = v[0][:-1] + f"_{token_counts[v[0]]}>"
+            inverse_map[new_tag] = k
+            token_to_tag[k] = new_tag
+            token_counts[v[0]] += 1
+        
+        output_text = []
+        for reference in results:
+            text = reference["text"] 
+            text = " ".join(text.split())
+            redacted_text = [word if word not in token_to_tag else token_to_tag[word] for word in text.split()]
+            output_text.append(" ".join(redacted_text))
+        
+        return "\n\n".join(output_text), inverse_map
+
+    def restore(self, text, tag_to_token):
+        restored_text = []
+        for word in text.split():
+            word = self.strip_non_alphanumeric(word)
+            if word in tag_to_token.keys():
+                restored_text.append(tag_to_token[word])
+            else:
+                restored_text.append(word)
+        return " ".join(restored_text)
+
+    def query_gpt(self, context, query, model="gpt-4o"):
+    
+        prompt = "\n\n".join(
+                [
+                    "Answer the query based on the context provided",
+                    "Ensure the following points while generating your answer:",
+                    "Sensitive entities are in angular brackets and masked with their corresponding tags in Capital Case. Preserve those in the output",
+                    f"[Question]: {query}",
+                    f"[Context]: {context}",
+                ]
+            )
+
+        completion = self.client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a RAG Expert. You have expertise in taking a query and it's relevant context and generate an output"},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return completion.choices[0].message.content
+    
 class Model:
     """
     A class representing a model listed on NeuralDB Enterprise.
@@ -114,6 +211,24 @@ class NeuralDBClient:
         )
         self.bazaar = bazaar
 
+    @check_deployment_decorator
+    def search_rag(
+        self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = {}
+    ):
+        results = self.search( query, top_k, constraints)
+        references = results["references"]
+        
+        redactor = PIIRedactor()
+        context, token_to_tags = redactor.extract(references)
+        
+        response = redactor.query_gpt(context, query)
+        
+        restored_text = redactor.restore(response, token_to_tags)
+        
+        return restored_text
+        
+        
+        
     @check_deployment_decorator
     def search(
         self, query, top_k=5, constraints: Optional[dict[str, dict[str, str]]] = {}
