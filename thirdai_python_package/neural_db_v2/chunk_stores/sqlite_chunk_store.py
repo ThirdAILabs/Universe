@@ -27,6 +27,8 @@ from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
 from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
+from sqlalchemy_utils import StringEncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
 
 def get_sql_columns(df: pd.DataFrame):
@@ -98,7 +100,7 @@ class SqlLiteIterator:
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, **kwargs):
+    def __init__(self, encryption_key=None, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -106,12 +108,18 @@ class SQLiteChunkStore(ChunkStore):
 
         self.metadata = MetaData()
 
+        text_type = (
+            StringEncryptedType(String, key=encryption_key, engine=AesEngine)
+            if encryption_key
+            else String
+        )
+
         self.chunk_table = Table(
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
-            Column("text", String),
-            Column("keywords", String),
+            Column("text", text_type),
+            Column("keywords", text_type),
             Column("document", String),
             Column("doc_id", String, index=True),
             Column("doc_version", Integer),
