@@ -493,6 +493,9 @@ set(THIRDAI_SOURCES
     versioning/src/Versions.cc)
 
 if(NOT WIN32)
+  # The OnDiskIndex doesn't work on windows because the bitfields for the
+  # DocCount struct still result in a size of > 8 bytes, so it will not be
+  # compatible with indexes created on mac/linux.
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES} search/src/inverted_index/OnDiskIndex.cc
       search/src/inverted_index/adapters/RocksDbAdapter.cc

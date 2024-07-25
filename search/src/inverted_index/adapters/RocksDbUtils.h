@@ -60,6 +60,14 @@ inline DocCount* docCountPtr(std::string& value) {
 
 // https://github.com/facebook/rocksdb/wiki/Merge-Operator
 class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
+  /**
+   * This merge operator appends a list of serialized DocCounts to another
+   * existing list. At the begining a TokenStatus is stored, this is to act as a
+   * tombstone in case the token is pruned. Without the token status we would
+   * have to worry about a token being pruned, then added back in a future doc,
+   * having the status allows us to distinguish between tokens that were pruned,
+   * and tokens that were not yet seen by the index.
+   */
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
@@ -101,6 +109,10 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
 };
 
 class IncrementCounter : public rocksdb::AssociativeMergeOperator {
+  /**
+   * This merge operator is a simple counter operator, that will add the new
+   * value to the existing value.
+   */
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
              const rocksdb::Slice& value, std::string* new_value,
