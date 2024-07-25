@@ -45,6 +45,7 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
         .explode(column.name)  # flattens column and repeats values in other column
         .dropna()  # explode converts [] to a row with a NaN in the exploded column
         .reset_index()  # explode repeats index values, this resets that
+        .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
     )
 
 
@@ -62,7 +63,7 @@ def get_sql_type(name, dtype):
 
 
 def get_sql_columns(df: pd.DataFrame):
-    return [Column(col, get_sql_type(col, df[col])) for col in df.columns]
+    return [Column(col, get_sql_type(col, df[col].dtype)) for col in df.columns]
 
 
 class SqlLiteIterator:
