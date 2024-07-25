@@ -66,12 +66,11 @@ void NerLearnedTag::applyConsecutiveTagsAndValidationFilter(
   // same tags.
   size_t index = 0;
   while (index < sentence_tags.size()) {
-    const std::string& tag =
-        sentence_tags[index].empty() ? "" : sentence_tags[index][0].first;
-
-    if (tag == _tag) {
-      uint32_t maximum_consecutive_tags =
-          utils::findMaxContiguousWindow(sentence_tags, index, tag);
+    if (!sentence_tags[index].empty() &&
+        sentence_tags[index][0].first == _tag) {
+      uint32_t maximum_consecutive_tags = utils::findMaxContiguousWindow(
+          sentence_tags, index,
+          /*tag_to_find=*/sentence_tags[index][0].first);
 
       std::string concatenated_tokens = tokens[index];
       for (uint32_t i = 1; i < maximum_consecutive_tags; ++i) {
