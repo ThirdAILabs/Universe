@@ -158,3 +158,5 @@ def test_neural_db_v2_on_disk():
     results_after = db.search_batch(queries, top_k=10)
 
     assert results_before == results_after
+
+    shutil.rmtree(save_path)

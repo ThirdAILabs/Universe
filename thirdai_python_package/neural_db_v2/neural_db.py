@@ -32,13 +32,13 @@ class NeuralDB:
 
         os.makedirs(save_path)
 
-        self.save_metadata(save_path)
         self.chunk_store = SQLiteChunkStore(
             save_path=self.chunk_store_path(save_path), **kwargs
         )
         self.retriever = FinetunableRetriever(
             save_path=self.retriever_path(save_path), **kwargs
         )
+        self.save_metadata(save_path)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         return self.insert([PrebatchedDoc(chunks)], **kwargs)
