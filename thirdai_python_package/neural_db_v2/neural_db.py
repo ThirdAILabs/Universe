@@ -17,10 +17,28 @@ class NeuralDB:
         self,
         chunk_store: Optional[ChunkStore] = None,
         retriever: Optional[Retriever] = None,
+        save_path: Optional[str] = None,
         **kwargs,
     ):
-        self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
-        self.retriever = retriever or Mach(**kwargs)
+        if save_path is None:
+            self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
+            self.retriever = retriever or FinetunableRetriever(**kwargs)
+            return
+
+        if chunk_store or retriever:
+            raise ValueError(
+                "When using 'save_path', cannot use custom 'retriever' or 'chunk_store'"
+            )
+
+        os.makedirs(save_path)
+
+        self.save_metadata(save_path)
+        self.chunk_store = SQLiteChunkStore(
+            save_path=self.chunk_store_path(save_path), **kwargs
+        )
+        self.retriever = FinetunableRetriever(
+            save_path=self.retriever_path(save_path), **kwargs
+        )
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         return self.insert([PrebatchedDoc(chunks)], **kwargs)
@@ -103,9 +121,10 @@ class NeuralDB:
     @staticmethod
     def load_chunk_store(path: str, chunk_store_name: str):
         chunk_store_name_map = {
-            "PandasChunkStore": PandasChunkStore,
-            "SQLiteChunkStore": SQLiteChunkStore,
+            PandasChunkStore.__name__: PandasChunkStore,
+            SQLiteChunkStore.__name__: SQLiteChunkStore,
         }
+
         if chunk_store_name not in chunk_store_name_map:
             raise ValueError(f"Class name {chunk_store_name} not found in registry.")
 
@@ -118,17 +137,13 @@ class NeuralDB:
             Mach.__name__: Mach,
             MachEnsemble.__name__: MachEnsemble,
         }
+
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")
 
         return retriever_name_map[retriever_name].load(path)
 
-    def save(self, path: str):
-        os.makedirs(path)
-
-        self.chunk_store.save(self.chunk_store_path(path))
-        self.retriever.save(self.retriever_path(path))
-
+    def save_metadata(self, path: str):
         metadata = {
             "chunk_store_name": self.chunk_store.__class__.__name__,
             "retriever_name": self.retriever.__class__.__name__,
@@ -136,6 +151,14 @@ class NeuralDB:
 
         with open(self.metadata_path(path), "w") as f:
             json.dump(metadata, f)
+
+    def save(self, path: str):
+        os.makedirs(path)
+
+        self.chunk_store.save(self.chunk_store_path(path))
+        self.retriever.save(self.retriever_path(path))
+
+        self.save_metadata(path)
 
     @staticmethod
     def load(path: str):
@@ -146,6 +169,7 @@ class NeuralDB:
             NeuralDB.chunk_store_path(path),
             chunk_store_name=metadata["chunk_store_name"],
         )
+
         retriever = NeuralDB.load_retriever(
             NeuralDB.retriever_path(path),
             retriever_name=metadata["retriever_name"],
