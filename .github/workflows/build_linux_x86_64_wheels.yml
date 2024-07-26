@@ -57,6 +57,7 @@ jobs:
             yum update -y && yum clean all
             yum install openssl11-devel -y
             yum install -y libxslt-devel libxml2-devel
+            export PATH="/usr/lib64/openssl11/bin:$PATH"
             export OPENSSL_FIPS=1
             openssl version -a
 
@@ -80,9 +81,6 @@ jobs:
           #
           # TODO(any): A more future proof solution when stuff starts working.
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp310-* cp311-*"
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
