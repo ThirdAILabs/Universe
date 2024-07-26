@@ -538,6 +538,10 @@ target_link_libraries(
   thirdai_core
   PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
          utf8proc nlohmann_json::nlohmann_json)
+if(NOT WIN32)
+  target_link_libraries(thirdai_core PUBLIC rocksdb)
+endif()
+
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
