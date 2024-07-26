@@ -109,14 +109,14 @@ void testFinetunableRetrieverSaveLoad(bool on_disk) {
 
   std::optional<std::string> db_name = std::nullopt;
   if (on_disk) {
-    db_name = "on_disk_finetunable_retriever";
+    db_name = randomPath() + ".db";
   }
   FinetunableRetriever retriever(IndexConfig(), db_name);
   retriever.index({ids.begin(), ids.begin() + n_docs / 2},
                   {docs.begin(), docs.begin() + n_docs / 2});
   auto original_partial_results = retriever.queryBatch(queries, /*k=*/5);
 
-  std::string save_path = "./finetunable_retriever.save";
+  std::string save_path = randomPath() + ".db";
   retriever.save(save_path);
 
   retriever.index({ids.begin() + n_docs / 2, ids.end()},

@@ -1,7 +1,7 @@
 enable_testing()
 include(GoogleTest)
 
-set(THIRDAI_UTILS_TESTS StringManipulationTests SymSpellTests)
+set(THIRDAI_UTILS_TESTS StringManipulationTests SymSpellTests UUIDTests)
 
 foreach(THIRDAI_UTILS_TEST IN LISTS THIRDAI_UTILS_TESTS)
   add_executable(${THIRDAI_UTILS_TEST} ${THIRDAI_UTILS_TEST}.cc)

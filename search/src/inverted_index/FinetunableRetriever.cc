@@ -2,11 +2,10 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <search/src/inverted_index/IdMap.h>
-#include <search/src/inverted_index/InMemoryIdMap.h>
+#include <search/src/inverted_index/id_map/InMemoryIdMap.h>
 #if !_WIN32
-#include <search/src/inverted_index/OnDiskIdMap.h>
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <search/src/inverted_index/id_map/OnDiskIdMap.h>
 #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
@@ -261,6 +260,7 @@ void FinetunableRetriever::save(const std::string& save_path) const {
 
   _doc_index->save(docIndexPath(save_path));
   _query_index->save(queryIndexPath(save_path));
+  _query_to_docs->save(queryToDocsPath(save_path));
 
   auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
   ar::serialize(metadataToArchive(), metadata);

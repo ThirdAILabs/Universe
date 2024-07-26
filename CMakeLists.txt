@@ -369,6 +369,7 @@ set(THIRDAI_SOURCES
     search/src/inverted_index/ShardedRetriever.cc
     search/src/inverted_index/IndexConfig.cc
     search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/id_map/InMemoryIdMap.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
@@ -497,9 +498,11 @@ if(NOT WIN32)
   # DocCount struct still result in a size of > 8 bytes, so it will not be
   # compatible with indexes created on mac/linux.
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES} search/src/inverted_index/OnDiskIndex.cc
+      ${THIRDAI_SOURCES}
+      search/src/inverted_index/OnDiskIndex.cc
       search/src/inverted_index/adapters/RocksDbAdapter.cc
-      search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.cc)
+      search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.cc
+      search/src/inverted_index/id_map/OnDiskIdMap.cc)
 endif()
 
 # Only add the licensing subdirectory and licensing cc files if the
@@ -541,7 +544,6 @@ target_link_libraries(
 if(NOT WIN32)
   target_link_libraries(thirdai_core PUBLIC rocksdb)
 endif()
-
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto

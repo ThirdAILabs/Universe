@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utils/Random.h>
 #include <chrono>
 #include <random>
 #include <string>
@@ -8,6 +9,9 @@ namespace thirdai::utils::uuid {
 
 class UUIDGenerator {
  public:
+  explicit UUIDGenerator(uint32_t seed = global_random::nextSeed())
+      : _rng(seed) {}
+
   uint64_t operator()() {
     uint32_t random_bytes = _rng();
 

@@ -18,7 +18,7 @@ class IdMap {
    * Adds a new key and set of values to the mapping. This is used to add a new
    * query id and corresponding set of doc ids.
    */
-  virtual void put(uint64_t key, std::vector<uint64_t> values) = 0;
+  virtual void put(uint64_t key, const std::vector<uint64_t>& values) = 0;
 
   /**
    * Deletes a value, returns a list of keys that mapped to only that value.
