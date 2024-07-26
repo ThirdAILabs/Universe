@@ -16,7 +16,9 @@ constexpr float DEFAULT_RARE_RATIO = 1e-6;
 TokenTagCounter::TokenTagCounter(
     uint32_t number_bins,
     std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _number_bins(number_bins), _tag_to_label(std::move(tag_to_label)) {
+    : _number_bins(number_bins),
+      _tag_to_label(std::move(tag_to_label)),
+      _total_tokens(0) {
   uint32_t max_label = 0;
   for (const auto& [tag, label] : _tag_to_label) {
     max_label = std::max(max_label, label);
@@ -57,7 +59,7 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
     float ratio =
         static_cast<float>(_token_tag_counts.at(token)[i]) / total_token_count;
     uint32_t bin_id = ratio * _number_bins;
-    encoding += "ratio_label_" + std::to_string(i * (_number_bins) + bin_id);
+    encoding += " ratio_label_" + std::to_string(i * (_number_bins) + bin_id);
   }
 
   return encoding;
