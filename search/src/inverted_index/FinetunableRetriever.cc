@@ -87,8 +87,11 @@ void FinetunableRetriever::index(const std::vector<DocId>& ids,
 void FinetunableRetriever::finetune(
     const std::vector<std::vector<DocId>>& doc_ids,
     const std::vector<std::string>& queries) {
+  // Note: this is not guaranteed to produce unique ids if multiple threads call
+  // this method at the same time.
   std::vector<QueryId> query_ids(doc_ids.size());
-  std::generate(query_ids.begin(), query_ids.end(), _uuid_gen);
+  std::iota(query_ids.begin(), query_ids.end(), _next_query_id);
+  _next_query_id += query_ids.size();
 
   for (size_t i = 0; i < query_ids.size(); i++) {
     _query_to_docs->put(query_ids[i], doc_ids[i]);
@@ -157,8 +160,6 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
     const std::vector<std::string>& queries, uint32_t k) const {
   std::vector<std::vector<DocScore>> scores(queries.size());
 
-#pragma omp parallel for default(none) \
-    shared(queries, scores, k) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
     scores[i] = query(queries[i], k, /*parallelize=*/false);
   }
@@ -308,6 +309,8 @@ FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
 
   _query_to_docs = loadIdMap(metadata->str("query_to_docs_map_type"),
                              queryToDocsPath(save_path));
+
+  _next_query_id = _query_to_docs->maxKey() + 1;
 }
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
@@ -330,7 +333,9 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
           archive.getAs<ar::MapU64VecU64>("query_to_docs"))),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
-      _top_queries(archive.u64("top_queries")) {}
+      _top_queries(archive.u64("top_queries")) {
+  _next_query_id = _query_to_docs->maxKey() + 1;
+}
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load_stream(
     std::istream& istream) {

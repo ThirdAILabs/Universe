@@ -43,6 +43,16 @@ std::vector<uint64_t> InMemoryIdMap::deleteValue(uint64_t value) {
   return empty_keys;
 }
 
+uint64_t InMemoryIdMap::maxKey() const {
+  uint64_t max_key = 0;
+  for (const auto& [key, _] : _key_to_values) {
+    if (key > max_key) {
+      max_key = key;
+    }
+  }
+  return max_key;
+}
+
 void InMemoryIdMap::save(const std::string& path) const {
   auto archive = ar::Map::make();
   archive->set("key_to_values", ar::mapU64VecU64(_key_to_values));

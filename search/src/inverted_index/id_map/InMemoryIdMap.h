@@ -22,6 +22,8 @@ class InMemoryIdMap final : public IdMap {
 
   std::vector<uint64_t> deleteValue(uint64_t value) final;
 
+  uint64_t maxKey() const final;
+
   void save(const std::string& path) const final;
 
   static std::unique_ptr<InMemoryIdMap> load(const std::string& path);

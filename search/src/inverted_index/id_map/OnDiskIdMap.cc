@@ -156,4 +156,20 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
   return empty_keys;
 }
 
+uint64_t OnDiskIdMap::maxKey() const {
+  auto* iter = _db->NewIterator(rocksdb::ReadOptions());
+
+  uint64_t max_key = 0;
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    uint64_t key = *reinterpret_cast<const uint64_t*>(iter->key().data());
+    if (key > max_key) {
+      max_key = key;
+    }
+  }
+
+  delete iter;
+
+  return max_key;
+}
+
 }  // namespace thirdai::search

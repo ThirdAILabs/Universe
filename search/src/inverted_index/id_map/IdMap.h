@@ -27,6 +27,8 @@ class IdMap {
    */
   virtual std::vector<uint64_t> deleteValue(uint64_t value) = 0;
 
+  virtual uint64_t maxKey() const = 0;
+
   virtual void save(const std::string& path) const = 0;
 
   virtual std::string type() const = 0;

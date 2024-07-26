@@ -24,6 +24,8 @@ class OnDiskIdMap final : public IdMap {
                           std::filesystem::copy_options::recursive);
   }
 
+  uint64_t maxKey() const final;
+
   static std::unique_ptr<OnDiskIdMap> load(const std::string& save_path) {
     return std::make_unique<OnDiskIdMap>(save_path);
   }

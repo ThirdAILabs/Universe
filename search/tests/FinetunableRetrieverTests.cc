@@ -56,85 +56,154 @@ TEST(FinetunableRetrieverTests, RemoveDocs) {
   checkRank(retriever, "x y z b c", {1, 2, 3}, {1});
 }
 
+std::tuple<std::vector<std::vector<DocId>>, std::vector<std::string>,
+           std::vector<std::string>>
+makeFinetuningData(size_t original_vocab_size, size_t n_docs) {
+  std::uniform_int_distribution<> query_len_dist(20, 70);
+
+  // This function creates finetuning queries using a separate vocab from the
+  // original dataset, so that the only way for it to get the correct answer is
+  // with finetuning.
+  Tokens vocab(original_vocab_size);
+  for (size_t i = 0; i < original_vocab_size; i++) {
+    vocab[i] = std::to_string(i + original_vocab_size);
+  }
+
+  std::vector<std::vector<DocId>> finetuning_ids;
+  std::vector<std::string> finetuning_queries;
+  std::vector<std::string> test_queries;
+
+  std::mt19937 rng(7294);
+
+  for (size_t i = 0; i < n_docs; i++) {
+    Tokens query_tokens;
+    std::sample(vocab.begin(), vocab.end(), std::back_inserter(query_tokens),
+                query_len_dist(rng), rng);
+
+    finetuning_ids.push_back({i});
+    finetuning_queries.push_back(text::join(query_tokens, " "));
+
+    Tokens test_query;
+    int test_query_len = 0.8 * query_tokens.size();
+    std::sample(query_tokens.begin(), query_tokens.end(),
+                std::back_inserter(test_query), test_query_len, rng);
+    test_queries.push_back(text::join(test_query, " "));
+  }
+
+  return {finetuning_ids, finetuning_queries, test_queries};
+}
+
 TEST(FinetunableRetrieverTests, SyntheticDataset) {
   size_t vocab_size = 10000;
   size_t n_docs = 1000;
 
-  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+  auto [ids, docs, unsup_queries] = makeDocsAndQueries(vocab_size, n_docs);
 
   FinetunableRetriever retriever;
   retriever.index(ids, docs);
 
-  std::vector<std::vector<DocId>> finetuning_ids;
-  finetuning_ids.reserve(ids.size());
-  for (const auto& id : ids) {
-    finetuning_ids.push_back({id});
-  }
-  retriever.finetune(finetuning_ids, queries);
+  auto [finetuning_ids, finetuning_queries, sup_queries] =
+      makeFinetuningData(vocab_size, n_docs);
 
-  auto results = retriever.queryBatch(queries, /*k=*/5);
-
-  for (size_t i = 0; i < queries.size(); i++) {
+  auto unsup_results = retriever.queryBatch(unsup_queries, /*k=*/5);
+  for (size_t i = 0; i < unsup_queries.size(); i++) {
     // i-th query goes to i-th doc.
-    ASSERT_EQ(results[i][0].first, i);
+    ASSERT_EQ(unsup_results[i][0].first, i);
     // Check single query vs batch query consistency.
-    ASSERT_EQ(retriever.query(queries[i], /*k=*/5), results[i]);
+    ASSERT_EQ(retriever.query(unsup_queries[i], /*k=*/5), unsup_results[i]);
+  }
+
+  retriever.finetune(finetuning_ids, finetuning_queries);
+
+  auto sup_results = retriever.queryBatch(sup_queries, /*k=*/5);
+  for (size_t i = 0; i < unsup_queries.size(); i++) {
+    // i-th query goes to i-th doc.
+    ASSERT_EQ(sup_results[i][0].first, i);
+    // Check single query vs batch query consistency.
+    ASSERT_EQ(retriever.query(sup_queries[i], /*k=*/5), sup_results[i]);
   }
 
   // Check that building index incrementally gets the same results.
-  FinetunableRetriever incremental_retriever;
-  size_t n_chunks = 10;
-  size_t chunksize = n_docs / n_chunks;
-  for (int i = 0; i < n_chunks; i++) {
-    size_t start = i * chunksize;
-    size_t end = start + chunksize;
-    incremental_retriever.index({ids.begin() + start, ids.begin() + end},
-                                {docs.begin() + start, docs.begin() + end});
-
-    incremental_retriever.finetune(
-        {finetuning_ids.begin() + start, finetuning_ids.begin() + end},
-        {queries.begin() + start, queries.begin() + end});
+  FinetunableRetriever incr_retriever;
+  const size_t n_chunks = 10;
+  const size_t chunksize = n_docs / n_chunks;
+  for (int start = 0; start < n_docs; start += chunksize) {
+    incr_retriever.index(
+        {ids.begin() + start, ids.begin() + start + chunksize},
+        {docs.begin() + start, docs.begin() + start + chunksize});
   }
 
-  auto incremental_results = incremental_retriever.queryBatch(queries, /*k=*/5);
+  auto unsup_incr_results = incr_retriever.queryBatch(unsup_queries, /*k=*/5);
+  ASSERT_EQ(unsup_results, unsup_incr_results);
 
-  ASSERT_EQ(results, incremental_results);
+  for (int start = 0; start < n_docs; start += chunksize) {
+    incr_retriever.finetune({finetuning_ids.begin() + start,
+                             finetuning_ids.begin() + start + chunksize},
+                            {finetuning_queries.begin() + start,
+                             finetuning_queries.begin() + start + chunksize});
+  }
+
+  auto sup_incr_results = incr_retriever.queryBatch(sup_queries, /*k=*/5);
+  ASSERT_EQ(sup_results, sup_incr_results);
 }
 
 void testFinetunableRetrieverSaveLoad(bool on_disk) {
   size_t vocab_size = 1000;
   size_t n_docs = 100;
 
-  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+  auto [ids, docs, unsup_queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  auto [finetuning_ids, finetuning_queries, sup_queries] =
+      makeFinetuningData(vocab_size, n_docs);
 
   std::optional<std::string> db_name = std::nullopt;
   if (on_disk) {
     db_name = randomPath() + ".db";
   }
+
   FinetunableRetriever retriever(IndexConfig(), db_name);
+
   retriever.index({ids.begin(), ids.begin() + n_docs / 2},
                   {docs.begin(), docs.begin() + n_docs / 2});
-  auto original_partial_results = retriever.queryBatch(queries, /*k=*/5);
+  retriever.finetune(
+      {finetuning_ids.begin(), finetuning_ids.begin() + n_docs / 2},
+      {finetuning_queries.begin(), finetuning_queries.begin() + n_docs / 2});
+
+  auto original_partial_unsup = retriever.queryBatch(unsup_queries, /*k=*/5);
+  auto original_partial_sup = retriever.queryBatch(sup_queries, /*k=*/5);
 
   std::string save_path = randomPath() + ".db";
   retriever.save(save_path);
 
   retriever.index({ids.begin() + n_docs / 2, ids.end()},
                   {docs.begin() + n_docs / 2, docs.end()});
-  auto original_full_results = retriever.queryBatch(queries, /*k=*/5);
+  retriever.finetune(
+      {finetuning_ids.begin() + n_docs / 2, finetuning_ids.end()},
+      {finetuning_queries.begin() + n_docs / 2, finetuning_queries.end()});
 
-  auto loaded_retriever =
+  auto original_full_unsup = retriever.queryBatch(unsup_queries, /*k=*/5);
+  auto original_full_sup = retriever.queryBatch(sup_queries, /*k=*/5);
+
+  auto new_retriever =
       FinetunableRetriever::load(save_path, /*read_only=*/false);
 
-  auto loaded_partial_results = loaded_retriever->queryBatch(queries, /*k=*/5);
+  auto loaded_partial_unsup = new_retriever->queryBatch(unsup_queries, /*k=*/5);
+  auto loaded_partial_sup = new_retriever->queryBatch(sup_queries, /*k=*/5);
 
-  ASSERT_EQ(original_partial_results, loaded_partial_results);
+  ASSERT_EQ(original_partial_unsup, loaded_partial_unsup);
+  ASSERT_EQ(original_partial_sup, loaded_partial_sup);
 
-  loaded_retriever->index({ids.begin() + n_docs / 2, ids.end()},
-                          {docs.begin() + n_docs / 2, docs.end()});
-  auto loaded_full_results = loaded_retriever->queryBatch(queries, /*k=*/5);
+  new_retriever->index({ids.begin() + n_docs / 2, ids.end()},
+                       {docs.begin() + n_docs / 2, docs.end()});
+  new_retriever->finetune(
+      {finetuning_ids.begin() + n_docs / 2, finetuning_ids.end()},
+      {finetuning_queries.begin() + n_docs / 2, finetuning_queries.end()});
 
-  ASSERT_EQ(original_full_results, loaded_full_results);
+  auto loaded_full_unsup = new_retriever->queryBatch(unsup_queries, /*k=*/5);
+  auto loaded_full_sup = new_retriever->queryBatch(sup_queries, /*k=*/5);
+
+  ASSERT_EQ(original_full_unsup, loaded_full_unsup);
+  ASSERT_EQ(original_full_sup, loaded_full_sup);
 
   std::filesystem::remove_all(save_path);
 
