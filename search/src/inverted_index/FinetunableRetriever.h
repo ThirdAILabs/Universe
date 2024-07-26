@@ -1,9 +1,9 @@
 #pragma once
 
-#include <search/src/inverted_index/id_map/IdMap.h>
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
+#include <search/src/inverted_index/id_map/IdMap.h>
 #include <utils/UUID.h>
 #include <unordered_map>
 
