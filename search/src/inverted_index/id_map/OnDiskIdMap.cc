@@ -119,17 +119,24 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
 
   const uint64_t* keys =
       reinterpret_cast<const uint64_t*>(serialized_keys.data());
-  // TODO(Nicholas): check size is multiple
+  if (serialized_keys.size() % sizeof(uint64_t) != 0) {
+    throw std::runtime_error("Data corruption");
+  }
   const size_t n_keys = serialized_keys.size() / sizeof(uint64_t);
 
   for (size_t i = 0; i < n_keys; i++) {
     const uint64_t key = keys[i];
     std::string serialized_values;
-    txn->GetForUpdate(rocksdb::ReadOptions(), asSlice(&key),
-                      &serialized_values);
+    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), asSlice(&key),
+                                        &serialized_values);
+    if (!get_status.ok()) {
+      throw std::runtime_error(get_status.ToString() + "txn get");
+    }
 
     uint64_t* values = reinterpret_cast<uint64_t*>(serialized_values.data());
-    // TODO(Nicholas): check size is multiple
+    if (serialized_values.size() % sizeof(uint64_t) != 0) {
+      throw std::runtime_error("Data corruption");
+    }
     size_t n_values = serialized_values.size() / sizeof(uint64_t);
 
     auto* loc = std::find(values, values + n_values, value);
@@ -138,18 +145,30 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
       n_values--;
     }
     if (n_values == 0) {
-      txn->Delete(_forward, asSlice(&key));
+      auto del_status = txn->Delete(_forward, asSlice(&key));
+      if (!del_status.ok()) {
+        throw std::runtime_error(del_status.ToString() + "txn delete");
+      }
       empty_keys.push_back(key);
     } else {
-      txn->Put(
+      auto put_status = txn->Put(
           _forward, asSlice(&key),
           {reinterpret_cast<const char*>(values), n_values * sizeof(uint64_t)});
+      if (!put_status.ok()) {
+        throw std::runtime_error(put_status.ToString() + "txn put");
+      }
     }
   }
 
-  txn->Delete(_reverse, asSlice(&value));
+  auto del_status = txn->Delete(_reverse, asSlice(&value));
+  if (!del_status.ok()) {
+    throw std::runtime_error(del_status.ToString() + "txn delete");
+  }
 
-  txn->Commit();
+  auto status = txn->Commit();
+  if (!status.ok()) {
+    throw std::runtime_error(status.ToString() + "txn commit");
+  }
 
   delete txn;
 
