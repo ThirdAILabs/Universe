@@ -20,8 +20,8 @@ class UUIDGenerator {
 
     uint64_t uuid = 0;
 
-    uuid |= (time & ((uint64_t(1) << 32) - 1));
-    uuid |= (uint64_t(random_bytes) << 32);
+    uuid |= (time & ((static_cast<uint64_t>(1) << 32) - 1));
+    uuid |= (static_cast<uint64_t>(random_bytes) << 32);
 
     return uuid;
   }
