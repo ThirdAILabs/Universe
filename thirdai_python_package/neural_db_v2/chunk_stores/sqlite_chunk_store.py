@@ -22,6 +22,8 @@ from sqlalchemy import (
     text,
     update,
 )
+from sqlalchemy_utils import StringEncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
 from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
@@ -97,8 +99,12 @@ class SqlLiteIterator:
         return self
 
 
+def encrypted_type(key: str):
+    return StringEncryptedType(String, key=key, engine=AesEngine)
+
+
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, **kwargs):
+    def __init__(self, encryption_key: Optional[str] = None, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -106,13 +112,15 @@ class SQLiteChunkStore(ChunkStore):
 
         self.metadata = MetaData()
 
+        text_type = encrypted_type(encryption_key) if encryption_key else String
+
         self.chunk_table = Table(
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
-            Column("text", String),
-            Column("keywords", String),
-            Column("document", String),
+            Column("text", text_type),
+            Column("keywords", text_type),
+            Column("document", text_type),
             Column("doc_id", String, index=True),
             Column("doc_version", Integer),
         )
@@ -315,7 +323,7 @@ class SQLiteChunkStore(ChunkStore):
         shutil.copyfile(self.db_name, path)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, encryption_key: Optional[str] = None):
         obj = cls.__new__(cls)
 
         obj.db_name = path
@@ -324,10 +332,15 @@ class SQLiteChunkStore(ChunkStore):
         obj.metadata = MetaData()
         obj.metadata.reflect(bind=obj.engine)
 
-        if "neural_db_chunks" in obj.metadata.tables:
-            obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
-        else:
+        if "neural_db_chunks" not in obj.metadata.tables:
             raise ValueError("neural_db_chunks table is missing in the database.")
+
+        obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+
+        if encryption_key:
+            obj.chunk_table.columns["text"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
