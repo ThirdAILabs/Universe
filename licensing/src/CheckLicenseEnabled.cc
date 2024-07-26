@@ -27,14 +27,14 @@ namespace thirdai::licensing {
 std::unique_ptr<LicenseMethod> _licensing_method = nullptr;
 
 void checkLicense() {
-  if (_licensing_method == nullptr) {
-    throw exceptions::LicenseCheckException(
-        "Please first call either licensing.set_path, "
-        "licensing.start_heartbeat, or licensing.activate with a valid "
-        "license.");
-  }
+  // if (_licensing_method == nullptr) {
+  //   throw exceptions::LicenseCheckException(
+  //       "Please first call either licensing.set_path, "
+  //       "licensing.start_heartbeat, or licensing.activate with a valid "
+  //       "license.");
+  // }
 
-  _licensing_method->checkLicense();
+  // _licensing_method->checkLicense();
 }
 
 Entitlements entitlements() {
