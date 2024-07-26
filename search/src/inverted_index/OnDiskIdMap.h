@@ -35,8 +35,8 @@ class OnDiskIdMap final : public IdMap {
       throw std::runtime_error(status.ToString() + "open");
     }
 
-    if (handles.size() != 3) {
-      throw std::runtime_error("Expected 3 handles to be created. Received " +
+    if (handles.size() != 2) {
+      throw std::runtime_error("Expected 2 handles to be created. Received " +
                                std::to_string(handles.size()) + " handles.");
     }
 
@@ -128,8 +128,9 @@ class OnDiskIdMap final : public IdMap {
         txn->Delete(_forward, asSlice(&key));
         empty_keys.push_back(key);
       } else {
-        txn->Put(_forward, asSlice(&key), reinterpret_cast<const char*>(values),
-                 n_values * sizeof(uint64_t));
+        txn->Put(_forward, asSlice(&key),
+                 {reinterpret_cast<const char*>(values),
+                  n_values * sizeof(uint64_t)});
       }
     }
 
