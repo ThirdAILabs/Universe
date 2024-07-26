@@ -216,6 +216,8 @@ std::string NerDyadicDataProcessor::processToken(
 
   // randomly dropping out the target token so that model can learn from the
   // context and does not overfit just on the tokens
+
+  // TODO(@shubh3ai) : make the dropout ratio configurable
   if (_for_inference || rand() % 2 == 0) {
     for (const auto& tokenizer : _target_word_tokenizers) {
       auto tokens = tokenizer->toStrings(target_token);

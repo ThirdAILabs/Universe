@@ -77,6 +77,9 @@ void NerLearnedTag::applyConsecutiveTagsAndValidationFilter(
         concatenated_tokens += " " + tokens[index + i];
       }
 
+      // TODO(@shubh3ai) : Match regex against substrings in the concatenated
+      // tokens string.
+
       if (maximum_consecutive_tags < _consecutive_tags_required ||
           (_validation_regex.has_value() and
            !std::regex_match(concatenated_tokens, _validation_regex.value()))) {
