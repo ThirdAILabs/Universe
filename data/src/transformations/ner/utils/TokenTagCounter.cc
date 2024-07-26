@@ -16,17 +16,12 @@ constexpr float DEFAULT_RARE_RATIO = 1e-6;
 TokenTagCounter::TokenTagCounter(
     uint32_t number_bins,
     std::unordered_map<std::string, uint32_t> tag_to_label)
-    : _tag_to_label(std::move(tag_to_label)) {
+    : _number_bins(number_bins), _tag_to_label(std::move(tag_to_label)) {
   uint32_t max_label = 0;
   for (const auto& [tag, label] : _tag_to_label) {
     max_label = std::max(max_label, label);
   }
   _num_unique_counters = max_label + 1;
-
-  _tag_encoders = std::vector<NumericalColumn>(_num_unique_counters);
-  for (const auto& [tag, label] : _tag_to_label) {
-    _tag_encoders[label] = NumericalColumn(tag, 0, 1, number_bins);
-  }
 }
 
 void TokenTagCounter::addTokenTag(const std::string& token,
@@ -61,8 +56,8 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
   for (uint32_t i = 0; i < _num_unique_counters; i++) {
     float ratio =
         static_cast<float>(_token_tag_counts.at(token)[i]) / total_token_count;
-    encoding +=
-        " " + std::to_string(_tag_encoders[i].encode(std::to_string(ratio)));
+    uint32_t bin_id = ratio * _number_bins;
+    encoding += "ratio_label_" + std::to_string(i * (_number_bins) + bin_id);
   }
 
   return encoding;
@@ -70,6 +65,7 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
 
 ar::ConstArchivePtr TokenTagCounter::toArchive() const {
   auto map = ar::Map::make();
+  map->set("number_bins", ar::u64(_number_bins));
   map->set("tag_to_label",
            ar::mapStrU64({_tag_to_label.begin(), _tag_to_label.end()}));
   map->set("num_unique_counters", ar::u64(_num_unique_counters));
@@ -83,18 +79,13 @@ ar::ConstArchivePtr TokenTagCounter::toArchive() const {
 
   map->set("token_tag_counts", ar::mapStrVecU64(std::move(token_tag_counts)));
 
-  auto numerical_columns = ar::List::make();
-  for (const auto& num_col : _tag_encoders) {
-    numerical_columns->append(num_col.toArchive());
-  }
-  map->set("tag_encoders", numerical_columns);
-
   map->set("token_counts", ar::mapStrU32(_token_counts));
   map->set("total_tokens", ar::u64(_total_tokens));
   return map;
 }
 
 TokenTagCounter::TokenTagCounter(const ar::Archive& archive) {
+  _number_bins = archive.u64("number_bins");
   const auto& tag_to_label = archive.getAs<ar::MapStrU64>("tag_to_label");
   _tag_to_label = {tag_to_label.begin(), tag_to_label.end()};
 
@@ -110,10 +101,6 @@ TokenTagCounter::TokenTagCounter(const ar::Archive& archive) {
       single_token_tag_counts.push_back(count);
     }
     _token_tag_counts[token] = single_token_tag_counts;
-  }
-
-  for (const auto& num_col : archive.get("tag_encoders")->list()) {
-    _tag_encoders.push_back(NumericalColumn(*num_col));
   }
 
   _token_counts = archive.getAs<ar::MapStrU32>("token_counts");

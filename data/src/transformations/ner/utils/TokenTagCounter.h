@@ -21,6 +21,7 @@ class TokenTagCounter {
   ar::ConstArchivePtr toArchive() const;
 
  private:
+  uint32_t _number_bins;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
   /*
    * multiple tags can be mapped to the same label in the model, we use only one
@@ -28,7 +29,6 @@ class TokenTagCounter {
    */
   uint32_t _num_unique_counters;
   std::unordered_map<std::string, std::vector<uint32_t>> _token_tag_counts;
-  std::vector<NumericalColumn> _tag_encoders;
 
   std::unordered_map<std::string, uint32_t> _token_counts;
   uint32_t _total_tokens;
