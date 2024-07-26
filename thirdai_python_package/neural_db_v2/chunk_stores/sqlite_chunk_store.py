@@ -120,7 +120,7 @@ class SQLiteChunkStore(ChunkStore):
             Column("chunk_id", Integer, primary_key=True),
             Column("text", text_type),
             Column("keywords", text_type),
-            Column("document", String),
+            Column("document", text_type),
             Column("doc_id", String, index=True),
             Column("doc_version", Integer),
         )
@@ -340,6 +340,7 @@ class SQLiteChunkStore(ChunkStore):
         if encryption_key:
             obj.chunk_table.columns["text"].type = encrypted_type(encryption_key)
             obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
