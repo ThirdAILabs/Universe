@@ -1,6 +1,11 @@
 #pragma once
 
+#include <archive/src/Archive.h>
+#include <archive/src/List.h>
+#include <archive/src/Map.h>
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -30,6 +35,13 @@ class Rule {
   std::vector<std::vector<TagsAndScores>> applyBatch(
       const std::vector<std::vector<std::string>>& batch) const;
 
+  virtual ar::ConstArchivePtr toArchive() const = 0;
+
+  virtual void addRule(const std::shared_ptr<Rule>& new_rule) {
+    (void)new_rule;
+    throw std::logic_error("Addrule not supported");
+  }
+
   virtual ~Rule() = default;
 };
 
@@ -47,6 +59,12 @@ class RuleCollection final : public Rule {
   std::vector<MatchResult> apply(const std::string& phrase) const final;
 
   std::vector<std::string> entities() const final;
+
+  ar::ConstArchivePtr toArchive() const final;
+
+  explicit RuleCollection(const ar::Archive& archive);
+
+  void addRule(const RulePtr& new_rule) override { _rules.push_back(new_rule); }
 
  private:
   std::vector<std::shared_ptr<Rule>> _rules;

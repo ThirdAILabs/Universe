@@ -10,6 +10,7 @@
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pytypes.h>
@@ -269,7 +270,10 @@ void defineAutomlInModule(py::module_& module) {
                   py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt)
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
-                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
+                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt)
+      .def("add_ner_rule", &udt::UDT::addNerRule, py::arg("rule"))
+      .def("add_new_entity_to_model", &udt::UDT::addNewEntityToModel,
+           py::arg("entity"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {

@@ -511,6 +511,14 @@ class UDT {
   static size_t estimateHashTableSize(size_t output_dim,
                                       std::optional<float> sparsity);
 
+  void addNerRule(const std::shared_ptr<data::ner::Pattern>& new_rule) {
+    _backend->addNerRule(new_rule);
+  }
+
+  void addNewEntityToModel(const std::string& entity) {
+    _backend->addNewEntityToModel(entity);
+  }
+
  private:
   UDT() {}
 

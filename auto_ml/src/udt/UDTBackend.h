@@ -9,6 +9,7 @@
 #include <auto_ml/src/udt/Defaults.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
+#include <data/src/transformations/ner/rules/Pattern.h>
 #include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/dataset_loaders/DatasetLoader.h>
@@ -407,6 +408,16 @@ class UDTBackend {
   }
 
   virtual ~UDTBackend() = default;
+
+  virtual void addNerRule(const std::shared_ptr<data::ner::Pattern>& new_rule) {
+    (void)new_rule;
+    throw notSupported("add_ner_rule");
+  }
+
+  virtual void addNewEntityToModel(const std::string& entity) {
+    (void)entity;
+    throw notSupported("add_new_entity_to_model");
+  }
 
  protected:
   UDTBackend() {}

@@ -254,6 +254,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
   }
 
   bool ignore_rule_tags = args.get<bool>("ignore_rule_tags", "boolean", true);
+  _ignore_rule_tags = ignore_rule_tags;
 
   if (args.get<bool>("rules", "boolean", false)) {
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
@@ -505,8 +506,10 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
   map->set("label_to_tag", ar::vecStr(_label_to_tag));
 
   if (_rule) {
-    map->set("use_rules_for", ar::vecStr(_rule->entities()));
+    map->set("rules", _rule->toArchive());
   }
+
+  map->set("ignore_rule_tags", ar::boolean(_ignore_rule_tags));
 
   return map;
 }
@@ -524,10 +527,11 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")),
-      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")) {
-  if (archive.contains("use_rules_for")) {
-    _rule = data::ner::getRuleForEntities(
-        archive.getAs<ar::VecStr>("use_rules_for"));
+      _label_to_tag(archive.getAs<ar::VecStr>("label_to_tag")),
+      _ignore_rule_tags(archive.boolean("ignore_rule_tags")) {
+  if (archive.contains("rules")) {
+    _rule = std::make_shared<data::ner::RuleCollection>(
+        data::ner::RuleCollection(*archive.get("rules")));
   }
 }
 
