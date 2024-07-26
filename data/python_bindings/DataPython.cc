@@ -28,6 +28,7 @@
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -534,14 +535,24 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
                     std::optional<FeatureEnhancementConfig>,
-                    std::optional<std::unordered_map<std::string, uint32_t>>>(),
+                    std::optional<std::unordered_map<std::string, uint32_t>>,
+                    ner::TokenTagCounterPtr>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
            py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
            py::arg("feature_enhancement_config") = std::nullopt,
-           py::arg("tag_to_label") = std::nullopt)
+           py::arg("tag_to_label") = std::nullopt,
+           py::arg("token_tag_counter") = nullptr)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
+
+  py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
+      transformations_submodule, "NerTokenTagCounter")
+      .def(py::init<uint32_t, std::unordered_map<std::string, uint32_t>>(),
+           py::arg("number_bins"), py::arg("tag_to_label"))
+      .def("add_token_tag", &ner::TokenTagCounter::addTokenTag,
+           py::arg("token"), py::arg("tag"))
+      .def("encode", &ner::TokenTagCounter::getTokenEncoding, py::arg("token"));
 #endif
 
   py::class_<FeatureEnhancementConfig,
@@ -552,6 +563,31 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
            py::arg("phone_numbers"));
+
+  py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
+      transformations_submodule, "NERLearnedTag")
+      .def(
+          py::init<std::string, std::string, uint32_t, std::unordered_set<char>,
+                   std::unordered_set<uint32_t>, std::optional<std::string>>(),
+          py::arg("tag"), py::arg("supported_type") = "all",
+          py::arg("consecutive_tags_required") = 1,
+          py::arg("special_characters") = std::unordered_set<char>{},
+          py::arg("invalid_sizes") = std::unordered_set<uint32_t>{},
+          py::arg("validation_pattern") = std::nullopt)
+      .def(
+          "process_tags",
+          [](ner::NerLearnedTag& self,
+             std::vector<std::vector<std::pair<std::string, float>>>&
+                 sentence_tags,
+             const std::vector<std::string>& tokens) {
+            if (sentence_tags.size() != tokens.size()) {
+              throw std::invalid_argument(
+                  "Size of tags and tokens should be the same.");
+            }
+            self.processTags(sentence_tags, tokens);
+            return sentence_tags;
+          },
+          py::arg("sentence_tags"), py::arg("tokens"));
 
   py::class_<SpladeConfig, std::shared_ptr<SpladeConfig>>(
       transformations_submodule, "SpladeConfig")

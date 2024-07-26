@@ -48,7 +48,8 @@ Rule::applyBatch(const std::vector<std::vector<std::string>>& batch) const {
   std::vector<std::vector<std::vector<std::pair<std::string, float>>>> results(
       batch.size());
 
-#pragma omp parallel for default(none) shared(batch, results)
+#pragma omp parallel for default(none) \
+    shared(batch, results) if (batch.size() > 1)
   for (size_t i = 0; i < batch.size(); i++) {
     results[i] = apply(batch[i]);
   }
