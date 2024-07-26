@@ -89,7 +89,7 @@ void FinetunableRetriever::finetune(
     const std::vector<std::vector<DocId>>& doc_ids,
     const std::vector<std::string>& queries) {
   std::vector<QueryId> query_ids(doc_ids.size());
-  std::iota(query_ids.begin(), query_ids.end(), _next_query_id);
+  std::generate(query_ids.begin(), query_ids.end(), _uuid_gen);
 
   for (size_t i = 0; i < query_ids.size(); i++) {
     _query_to_docs->put(query_ids[i], doc_ids[i]);
@@ -108,8 +108,6 @@ void FinetunableRetriever::finetune(
 
     _doc_index->update(flattened_doc_ids, flattened_queries);
   }
-
-  _next_query_id += query_ids.size();
 }
 
 void FinetunableRetriever::associate(const std::vector<std::string>& sources,
@@ -237,8 +235,6 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
 
   map->set("query_to_docs_map_type", ar::str(_query_to_docs->type()));
 
-  map->set("next_query_id", ar::u64(_next_query_id));
-
   map->set("lambda", ar::f32(_lambda));
   map->set("min_top_docs", ar::u64(_min_top_docs));
   map->set("top_queries", ar::u64(_top_queries));
@@ -247,7 +243,6 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
 }
 
 void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
-  _next_query_id = archive.u64("next_query_id");
   _lambda = archive.f32("lambda");
   _min_top_docs = archive.u64("min_top_docs");
   _top_queries = archive.u64("top_queries");
@@ -333,7 +328,6 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
       _query_to_docs(std::make_unique<InMemoryIdMap>(
           archive.getAs<ar::MapU64VecU64>("query_to_docs"))),
-      _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
       _top_queries(archive.u64("top_queries")) {}

@@ -4,6 +4,7 @@
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
+#include <utils/UUID.h>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -92,13 +93,12 @@ class FinetunableRetriever {
   std::shared_ptr<Retriever> _query_index;
 
   std::unique_ptr<IdMap> _query_to_docs;
-//   std::unique_ptr<IdMap> _doc_to_queries;
-
-  QueryId _next_query_id = 0;
 
   float _lambda;
   uint32_t _min_top_docs;
   uint32_t _top_queries;
+
+  utils::uuid::UUIDGenerator _uuid_gen;
 };
 
 }  // namespace thirdai::search
