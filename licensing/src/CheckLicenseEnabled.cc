@@ -46,13 +46,16 @@ Entitlements entitlements() {
 }
 
 void activate(std::string api_key) {
-  _licensing_method = std::make_unique<keygen::KeyMethod>(std::move(api_key));
+  // _licensing_method = std::make_unique<keygen::KeyMethod>(std::move(api_key));
+  (void)api_key;
 }
 
 void startHeartbeat(std::string heartbeat_url,
                     std::optional<uint32_t> heartbeat_timeout) {
-  _licensing_method = std::make_unique<heartbeat::LocalServerMethod>(
-      std::move(heartbeat_url), heartbeat_timeout);
+  // _licensing_method = std::make_unique<heartbeat::LocalServerMethod>(
+  //     std::move(heartbeat_url), heartbeat_timeout);
+  (void)heartbeat_timeout;
+  (void)heartbeat_url;
 }
 
 void setLicensePath(std::string license_path, bool verbose) {
