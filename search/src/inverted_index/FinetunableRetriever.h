@@ -92,7 +92,7 @@ class FinetunableRetriever {
   std::shared_ptr<Retriever> _query_index;
 
   std::unique_ptr<IdMap> _query_to_docs;
-  std::unique_ptr<IdMap> _doc_to_queries;
+//   std::unique_ptr<IdMap> _doc_to_queries;
 
   QueryId _next_query_id = 0;
 

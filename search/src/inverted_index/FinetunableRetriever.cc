@@ -43,12 +43,8 @@ std::string queryIndexPath(const std::string& save_path) {
   return (std::filesystem::path(save_path) / "secondary").string();
 }
 
-std::string docToQueriesPath(const std::string& save_path) {
-  return (std::filesystem::path(save_path) / "id_map_1").string();
-}
-
 std::string queryToDocsPath(const std::string& save_path) {
-  return (std::filesystem::path(save_path) / "id_map_2").string();
+  return (std::filesystem::path(save_path) / "id_map").string();
 }
 
 }  // namespace
@@ -67,14 +63,11 @@ FinetunableRetriever::FinetunableRetriever(
         std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
 
     _query_to_docs = std::make_unique<OnDiskIdMap>(queryToDocsPath(*save_path));
-    _doc_to_queries =
-        std::make_unique<OnDiskIdMap>(docToQueriesPath(*save_path));
   } else {
     _doc_index = std::make_shared<InvertedIndex>(config);
     _query_index = std::make_shared<InvertedIndex>(config);
 
     _query_to_docs = std::make_unique<InMemoryIdMap>();
-    _doc_to_queries = std::make_unique<InMemoryIdMap>();
   }
 #else
   if (save_path) {
@@ -84,7 +77,6 @@ FinetunableRetriever::FinetunableRetriever(
   _query_index = std::make_shared<InvertedIndex>(config);
 
   _query_to_docs = std::make_unique<InMemoryIdMap>();
-  _doc_to_queries = std::make_unique<InMemoryIdMap>();
 #endif
 }
 
@@ -101,9 +93,6 @@ void FinetunableRetriever::finetune(
 
   for (size_t i = 0; i < query_ids.size(); i++) {
     _query_to_docs->put(query_ids[i], doc_ids[i]);
-    for (DocId doc : doc_ids[i]) {
-      _doc_to_queries->append(doc, query_ids[i]);
-    }
   }
 
   _query_index->index(query_ids, queries);
@@ -232,28 +221,12 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
 
   std::vector<QueryId> irrelevant_queries;
   for (DocId doc : ids) {
-    if (!_doc_to_queries->contains(doc)) {
-      continue;
+    for (QueryId unused_query : _query_to_docs->deleteValue(doc)) {
+      irrelevant_queries.push_back(unused_query);
     }
-    for (QueryId query : _doc_to_queries->get(doc)) {
-      auto docs_for_query = _query_to_docs->get(query);
-      auto loc = std::find(docs_for_query.begin(), docs_for_query.end(), doc);
-      if (loc != docs_for_query.end()) {
-        docs_for_query.erase(loc);
-      }
-      if (docs_for_query.empty()) {
-        irrelevant_queries.push_back(query);
-      }
-    }
-    _doc_to_queries->del(doc);
   }
 
   _query_index->remove(irrelevant_queries);
-  for (QueryId query : irrelevant_queries) {
-    if (_query_to_docs->contains(query)) {
-      _query_to_docs->del(query);
-    }
-  }
 }
 
 ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
@@ -262,7 +235,6 @@ ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   map->set("doc_index_type", ar::str(_doc_index->type()));
   map->set("query_index_type", ar::str(_query_index->type()));
 
-  map->set("doc_to_queries_map_type", ar::str(_doc_to_queries->type()));
   map->set("query_to_docs_map_type", ar::str(_query_to_docs->type()));
 
   map->set("next_query_id", ar::u64(_next_query_id));
@@ -341,9 +313,6 @@ FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
 
   _query_to_docs = loadIdMap(metadata->str("query_to_docs_map_type"),
                              queryToDocsPath(save_path));
-
-  _doc_to_queries = loadIdMap(metadata->str("doc_to_queries_map_type"),
-                              docToQueriesPath(save_path));
 }
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
@@ -364,8 +333,6 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
       _query_to_docs(std::make_unique<InMemoryIdMap>(
           archive.getAs<ar::MapU64VecU64>("query_to_docs"))),
-      _doc_to_queries(std::make_unique<InMemoryIdMap>(
-          archive.getAs<ar::MapU64VecU64>("doc_to_queries"))),
       _next_query_id(archive.u64("next_query_id")),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
