@@ -2,8 +2,9 @@
 
 #include <cereal/access.hpp>
 #include <archive/src/Archive.h>
+#include <search/src/inverted_index/IndexConfig.h>
+#include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
-#include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <cstddef>
 #include <cstdint>
@@ -14,59 +15,33 @@
 
 namespace thirdai::search {
 
-using DocId = uint64_t;
-
-using DocScore = std::pair<DocId, float>;
-
-class InvertedIndex {
+class InvertedIndex final : public Retriever {
  public:
-  // The k1 and b defaults are the same as the defaults for BM25 in apache
-  // Lucene. The idf_cutoff_frac default is just what seemed to work fairly
-  // well in multiple experiments.
-  static constexpr size_t DEFAULT_MAX_DOCS_TO_SCORE = 10000;
-  static constexpr float DEFAULT_IDF_CUTOFF_FRAC = 0.2;
-  static constexpr float DEFAULT_K1 = 1.2;
-  static constexpr float DEFAULT_B = 0.75;
-  static constexpr size_t DEFAULT_SHARD_SIZE = 10000000;
-
-  explicit InvertedIndex(
-      size_t max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE,
-      float idf_cutoff_frac = DEFAULT_IDF_CUTOFF_FRAC, float k1 = DEFAULT_K1,
-      float b = DEFAULT_B,
-      TokenizerPtr tokenizer = std::make_shared<DefaultTokenizer>(),
-      size_t shard_size = DEFAULT_SHARD_SIZE);
+  explicit InvertedIndex(const IndexConfig& config = IndexConfig());
 
   explicit InvertedIndex(const ar::Archive& archive);
 
   void index(const std::vector<DocId>& ids,
-             const std::vector<std::string>& docs);
+             const std::vector<std::string>& docs) final;
 
   void update(const std::vector<DocId>& ids,
-              const std::vector<std::string>& extra_tokens);
-
-  std::vector<std::vector<DocScore>> queryBatch(
-      const std::vector<std::string>& queries, uint32_t k) const;
+              const std::vector<std::string>& extra_tokens) final;
 
   std::vector<DocScore> query(const std::string& query, uint32_t k,
-                              bool parallelize = true) const;
-
-  std::vector<std::vector<DocScore>> rankBatch(
-      const std::vector<std::string>& queries,
-      const std::vector<std::unordered_set<DocId>>& candidates,
-      uint32_t k) const;
+                              bool parallelize) const final;
 
   std::vector<DocScore> rank(const std::string& query,
                              const std::unordered_set<DocId>& candidates,
-                             uint32_t k, bool parallelize = true) const;
+                             uint32_t k, bool parallelize) const final;
 
-  void remove(const std::vector<DocId>& ids);
+  void remove(const std::vector<DocId>& ids) final;
 
   void updateIdfCutoff(float cutoff) {
     _idf_cutoff_frac = cutoff;
     computeIdfs();
   }
 
-  size_t size() const {
+  size_t size() const final {
     size_t total_size = 0;
     for (const auto& shard : _shards) {
       total_size += shard.size();
@@ -83,7 +58,7 @@ class InvertedIndex {
 
   static std::shared_ptr<InvertedIndex> fromArchive(const ar::Archive& archive);
 
-  void save(const std::string& filename) const;
+  void save(const std::string& filename) const final;
 
   void save_stream(std::ostream& ostream) const;
 
@@ -93,6 +68,10 @@ class InvertedIndex {
 
   static std::shared_ptr<InvertedIndex> load_stream_cereal(
       std::istream& istream);
+
+  std::string type() const final { return typeName(); }
+
+  static std::string typeName() { return "in-memory"; }
 
  private:
   std::vector<std::pair<size_t, std::unordered_map<Token, uint32_t>>>
@@ -105,13 +84,6 @@ class InvertedIndex {
   void computeIdfs();
 
   bool containsDoc(DocId doc_id) const;
-
-  inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len) const {
-    const float num = cnt_in_doc * (_k1 + 1);
-    const float denom =
-        cnt_in_doc + _k1 * (1 - _b + _b * doc_len / _avg_doc_length);
-    return idf * num / denom;
-  }
 
   using TokenCountInfo = std::pair<DocId, uint32_t>;
 

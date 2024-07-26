@@ -20,7 +20,7 @@ class NeuralDB:
         **kwargs,
     ):
         self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
-        self.retriever = retriever or Mach(**kwargs)
+        self.retriever = retriever or FinetunableRetriever(**kwargs)
 
     def insert_chunks(self, chunks: Iterable[NewChunkBatch], **kwargs):
         return self.insert([PrebatchedDoc(chunks)], **kwargs)
@@ -101,7 +101,7 @@ class NeuralDB:
         return os.path.join(directory, "metadata.json")
 
     @staticmethod
-    def load_chunk_store(path: str, chunk_store_name: str):
+    def load_chunk_store(path: str, chunk_store_name: str, **kwargs):
         chunk_store_name_map = {
             "PandasChunkStore": PandasChunkStore,
             "SQLiteChunkStore": SQLiteChunkStore,
@@ -109,7 +109,7 @@ class NeuralDB:
         if chunk_store_name not in chunk_store_name_map:
             raise ValueError(f"Class name {chunk_store_name} not found in registry.")
 
-        return chunk_store_name_map[chunk_store_name].load(path)
+        return chunk_store_name_map[chunk_store_name].load(path, **kwargs)
 
     @staticmethod
     def load_retriever(path: str, retriever_name: str):
@@ -138,13 +138,14 @@ class NeuralDB:
             json.dump(metadata, f)
 
     @staticmethod
-    def load(path: str):
+    def load(path: str, **kwargs):
         with open(NeuralDB.metadata_path(path), "r") as f:
             metadata = json.load(f)
 
         chunk_store = NeuralDB.load_chunk_store(
             NeuralDB.chunk_store_path(path),
             chunk_store_name=metadata["chunk_store_name"],
+            **kwargs,
         )
         retriever = NeuralDB.load_retriever(
             NeuralDB.retriever_path(path),

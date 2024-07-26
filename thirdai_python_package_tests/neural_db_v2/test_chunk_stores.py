@@ -428,3 +428,49 @@ def test_get_doc_chunks(chunk_store):
     )
 
     clean_up_sql_lite_db(store)
+
+
+def test_encryption():
+    key = "209402"
+    store = SQLiteChunkStore(encryption_key=key)
+
+    texts = [
+        "apples are an excellent fruit",
+        "i like nectarines",
+        "mangos are tasty too",
+    ]
+    doc = PrebatchedDoc(
+        [
+            NewChunkBatch(
+                text=pd.Series(texts),
+                keywords=pd.Series(["apples", "nectarines", "mangos"]),
+                metadata=None,
+                document=pd.Series(["a", "b", "c"]),
+            )
+        ],
+    )
+
+    store.insert([doc])
+
+    def check_queries(chunk_store, check_equal):
+        chunks = chunk_store.get_chunks([0, 1, 2])
+
+        for chunk, text in zip(chunks, texts):
+            assert (chunk.text == text) == check_equal
+
+    check_queries(store, check_equal=True)
+
+    save_path = store.db_name + ".tmp.save"
+    store.save(save_path)
+
+    store_wo_key = SQLiteChunkStore.load(save_path)
+    check_queries(store_wo_key, check_equal=False)
+
+    store_w_wrong_key = SQLiteChunkStore.load(save_path, encryption_key=key + "0")
+    with pytest.raises(ValueError, match="Invalid decryption key"):
+        check_queries(store_w_wrong_key, check_equal=False)
+
+    store_w_key = SQLiteChunkStore.load(save_path, encryption_key=key)
+    check_queries(store_w_key, check_equal=True)
+
+    os.remove(save_path)
