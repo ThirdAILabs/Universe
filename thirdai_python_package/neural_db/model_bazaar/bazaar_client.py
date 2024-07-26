@@ -160,15 +160,10 @@ class NeuralDBClient:
             Dict: A dict of search results containing keys: `query_text` and `references`.
         """
         print(self.base_url)
-        
-        base_params = {
-            "query": query,
-            "top_k": top_k
-        }
-        
-        ndb_params = {
-            "constraints": constraints
-        }
+
+        base_params = {"query": query, "top_k": top_k}
+
+        ndb_params = {"constraints": constraints}
 
         response = http_post_with_error(
             urljoin(self.base_url, "predict"),
@@ -179,7 +174,7 @@ class NeuralDBClient:
         return json.loads(response.content)["data"]
 
     @check_deployment_decorator
-    def insert(self, documents: list[dict[str, Any]], input_mode = "sync"):
+    def insert(self, documents: list[dict[str, Any]], input_mode="sync"):
         """
         Inserts documents into the ndb model.
 
@@ -462,17 +457,18 @@ class NeuralDBClient:
 
         return response.json()["data"]
 
+
 class UDTClient:
     """
     A client for interacting with deployed UDT Model
-    
+
     Attributes:
         deployment_identifier (str): The identifier for the deployment.
         deployment_id (str): The deployment ID for the deployed UDT model.
         bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
 
     """
-    
+
     def __init__(
         self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
     ):
@@ -484,39 +480,35 @@ class UDTClient:
             deployment_id (str): The deployment ID for the deployed UDT model.
             bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
-        
+
         self.deployment_identifier = deployment_identifier
         self.base_url = construct_deployment_url(
             re.sub(r"api/$", "", bazaar._base_url), deployment_id
         )
         self.bazaar = bazaar
-        
+
     @check_deployment_decorator
-    def query(
-        self, query, top_k=1 
-    ):
+    def search(self, query, top_k=1):
         """
         Queries the UDT Model
-        
+
         Args:
             query (str): The query to search for.
             top_k (int): The number of top results to retrieve (default is 5).
         """
         print(self.base_url)
-        
-        base_params = {
-            "query": query,
-            "top_k": top_k
-        }
-        
+
+        base_params = {"query": query, "top_k": top_k}
+
         response = http_post_with_error(
             urljoin(self.base_url, "predict"),
             json=base_params,
             headers=auth_header(self.bazaar._access_token),
         )
-        
+
         return json.loads(response.content)["data"]
-        
+
+
 class ModelBazaar(Bazaar):
     """
     A class representing ModelBazaar, providing functionality for managing models and deployments.
@@ -797,7 +789,7 @@ class ModelBazaar(Bazaar):
     def train_udt(
         self,
         model_name: str,
-        unsupervised_docs: List[str],
+        supervised_docs: List[str],
         test_doc: Optional[str] = None,
         doc_type: str = "local",
         is_async: bool = False,
@@ -825,15 +817,15 @@ class ModelBazaar(Bazaar):
                 f"Invalid doc_type value. Supported doc_type are {self._doc_types}"
             )
 
-        if not unsupervised_docs:
+        if not supervised_docs:
             raise ValueError("supervised docs are empty.")
 
         file_details_list = []
         docs = []
-        for doc in unsupervised_docs:
+        for doc in supervised_docs:
             docs.append(doc)
-            file_details_list.append({"mode": "unsupervised", "location": doc_type})
-            
+            file_details_list.append({"mode": "supervised", "location": doc_type})
+
         if test_doc:
             docs.append(test_doc)
             file_details_list.append({"mode": "test", "location": doc_type})
@@ -1087,7 +1079,7 @@ class ModelBazaar(Bazaar):
         model_identifier: str,
         deployment_name: str,
         memory: Optional[int] = None,
-        is_async=False
+        is_async=False,
     ):
         url = urljoin(self._base_url, f"deploy/run")
         params = {
@@ -1115,7 +1107,7 @@ class ModelBazaar(Bazaar):
         time.sleep(5)
         self.await_deploy(udt_client)
         return udt_client
-        
+
     def await_deploy(self, ndb_client: NeuralDBClient):
         """
         Waits for the deployment of a model to complete.
