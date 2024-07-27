@@ -257,6 +257,9 @@ TEST(FinetunableRetrieverTests, SaveLoadReadOnly) {
 
   ASSERT_EQ(original_unsup, read_only_unsup);
   ASSERT_EQ(original_sup, read_only_sup);
+
+  std::filesystem::remove_all(db_name);
+  std::filesystem::remove_all(save_path);
 }
 
 }  // namespace thirdai::search::tests
