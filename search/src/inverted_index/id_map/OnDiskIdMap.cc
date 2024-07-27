@@ -85,6 +85,8 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
   auto reverse_status = txn->GetForUpdate(rocksdb::ReadOptions(), _reverse,
                                           asSlice(&value), &serialized_keys);
   if (reverse_status.IsNotFound()) {
+    delete txn;
+
     return {};
   }
 
