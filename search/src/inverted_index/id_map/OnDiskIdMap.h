@@ -19,12 +19,12 @@ class OnDiskIdMap final : public IdMap {
 
   std::vector<uint64_t> deleteValue(uint64_t value) final;
 
+  uint64_t maxKey() const final;
+
   void save(const std::string& save_path) const final {
     std::filesystem::copy(_save_path, save_path,
                           std::filesystem::copy_options::recursive);
   }
-
-  uint64_t maxKey() const final;
 
   static std::unique_ptr<OnDiskIdMap> load(const std::string& save_path) {
     return std::make_unique<OnDiskIdMap>(save_path);
@@ -42,10 +42,6 @@ class OnDiskIdMap final : public IdMap {
   }
 
  private:
-  static inline rocksdb::Slice asSlice(const uint64_t* value) {
-    return {reinterpret_cast<const char*>(value), sizeof(uint64_t)};
-  }
-
   rocksdb::TransactionDB* _db;
 
   rocksdb::ColumnFamilyHandle* _forward;

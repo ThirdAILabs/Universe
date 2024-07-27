@@ -6,6 +6,7 @@
 #if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/id_map/OnDiskIdMap.h>
+#include <search/src/inverted_index/id_map/OnDiskIdMapReadOnly.h>
 #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
@@ -284,14 +285,19 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
 }
 
 std::unique_ptr<IdMap> loadIdMap(const std::string& type,
-                                 const std::string& path) {
+                                 const std::string& path, bool read_only) {
   if (type == InMemoryIdMap::typeName()) {
     return InMemoryIdMap::load(path);
   }
 #if !_WIN32
   if (type == OnDiskIdMap::typeName()) {
+    if (read_only) {
+      return OnDiskIdMapReadOnly::load(path);
+    }
     return OnDiskIdMap::load(path);
   }
+#else
+  (void)read_only;
 #endif
   throw std::invalid_argument("Invalid id map type '" + type + "'.");
 }
@@ -308,8 +314,9 @@ FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
                            queryIndexPath(save_path), read_only);
 
   _query_to_docs = loadIdMap(metadata->str("query_to_docs_map_type"),
-                             queryToDocsPath(save_path));
+                             queryToDocsPath(save_path), read_only);
 
+  // NOLINTNEXTLINE clang-tidy wants this in the member initialization.
   _next_query_id = _query_to_docs->maxKey() + 1;
 }
 
@@ -333,9 +340,8 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
           archive.getAs<ar::MapU64VecU64>("query_to_docs"))),
       _lambda(archive.f32("lambda")),
       _min_top_docs(archive.u64("min_top_docs")),
-      _top_queries(archive.u64("top_queries")) {
-  _next_query_id = _query_to_docs->maxKey() + 1;
-}
+      _top_queries(archive.u64("top_queries")),
+      _next_query_id(_query_to_docs->maxKey() + 1) {}
 
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load_stream(
     std::istream& istream) {

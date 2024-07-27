@@ -220,4 +220,43 @@ TEST(FinetunableRetrieverTests, SaveLoadOnDisk) {
   testFinetunableRetrieverSaveLoad(/*on_disk=*/true);
 }
 
+TEST(FinetunableRetrieverTests, SaveLoadReadOnly) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 100;
+
+  auto [ids, docs, unsup_queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  auto [finetuning_ids, finetuning_queries, sup_queries] =
+      makeFinetuningData(vocab_size, n_docs);
+
+  std::string db_name = randomPath() + ".db";
+
+  FinetunableRetriever retriever(IndexConfig(), db_name);
+
+  retriever.index({ids.begin(), ids.end()}, {docs.begin(), docs.end()});
+  retriever.finetune({finetuning_ids.begin(), finetuning_ids.end()},
+                     {finetuning_queries.begin(), finetuning_queries.end()});
+
+  std::string save_path = randomPath() + ".db";
+  retriever.save(save_path);
+
+  auto read_write = FinetunableRetriever::load(save_path, /*read_only=*/false);
+  auto read_only = FinetunableRetriever::load(save_path, /*read_only=*/true);
+
+  auto original_unsup = retriever.queryBatch(unsup_queries, /*k=*/5);
+  auto original_sup = retriever.queryBatch(sup_queries, /*k=*/5);
+
+  auto read_write_unsup = read_write->queryBatch(unsup_queries, /*k=*/5);
+  auto read_write_sup = read_write->queryBatch(sup_queries, /*k=*/5);
+
+  ASSERT_EQ(original_unsup, read_write_unsup);
+  ASSERT_EQ(original_sup, read_write_sup);
+
+  auto read_only_unsup = read_only->queryBatch(unsup_queries, /*k=*/5);
+  auto read_only_sup = read_only->queryBatch(sup_queries, /*k=*/5);
+
+  ASSERT_EQ(original_unsup, read_only_unsup);
+  ASSERT_EQ(original_sup, read_only_sup);
+}
+
 }  // namespace thirdai::search::tests
