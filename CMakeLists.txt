@@ -443,10 +443,13 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/NerDyadicDataProcessor.cc
+    data/src/transformations/ner/utils/TokenTagCounter.cc
+    data/src/transformations/ner/utils/utils.cc
     data/src/transformations/ner/rules/Rule.cc
     data/src/transformations/ner/rules/Pattern.cc
     data/src/transformations/ner/rules/CommonPatterns.cc
     data/src/transformations/ner/rules/IBANPattern.cc
+    data/src/transformations/ner/learned_tags/LearnedTag.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
