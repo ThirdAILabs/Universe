@@ -22,6 +22,7 @@ from .utils import (
     hash_path,
     http_get_with_error,
     http_post_with_error,
+    http_delete_with_error,
     zip_folder,
 )
 
@@ -159,6 +160,43 @@ class Bazaar:
 
     def login(self, email, password):
         self._login_instance = Login.with_email(self._base_url, email, password)
+
+    def add_admin(self, email):
+        response = http_post_with_error(
+            urljoin(self._base_url, "user/add-admin"),
+            json={"email": email},
+            headers=auth_header(self._login_instance.access_token),
+        )
+        return response
+
+    def delete_user(self, email):
+        response = http_delete_with_error(
+            urljoin(self._base_url, "user/delete-user"),
+            json={"email": email},
+            headers=auth_header(self._login_instance.access_token),
+        )
+        return response
+
+    def add_secret_key(self, email, key, value):
+        secret_data = {"email": email, "key": key, "value": value}
+
+        response = http_post_with_error(
+            urljoin(self._base_url, "vault/add-secret"),
+            json=secret_data,
+            headers=auth_header(self._login_instance.access_token),
+        )
+        return response
+
+    def get_secret_key(self, email, key):
+        secret_data = {"email": email, "key": key}
+
+        response = http_get_with_error(
+            urljoin(self._base_url, "vault/get-secret"),
+            json=secret_data,
+            headers=auth_header(self._login_instance.access_token),
+        )
+
+        return response
 
     def is_logged_in(self):
         return self._login_instance is not None
