@@ -114,6 +114,7 @@ def http_get_with_error(*args, **kwargs):
     2XX.
     """
     response = requests.get(*args, **kwargs)
+    print("Response GET:", response.json())
     check_response(response)
     return response
 
@@ -123,6 +124,16 @@ def http_post_with_error(*args, **kwargs):
     2XX.
     """
     response = requests.post(*args, **kwargs)
+    print("Response POST:", response.json())
+    check_response(response)
+    return response
+
+
+def http_delete_with_error(*args, **kwargs):
+    """Makes an HTTP POST request and raises an error if status code is not
+    2XX.
+    """
+    response = requests.delete(*args, **kwargs)
     check_response(response)
     return response
 

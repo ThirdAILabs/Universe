@@ -22,6 +22,7 @@ from .utils import (
     hash_path,
     http_get_with_error,
     http_post_with_error,
+    http_delete_with_error,
     zip_folder,
 )
 
@@ -163,36 +164,39 @@ class Bazaar:
     def add_admin(self, email):
         response = http_post_with_error(
             urljoin(self._base_url, "user/add-admin"),
-            params={"email": email},
+            json={"email": email},
             headers=auth_header(self._login_instance.access_token),
         )
+        return response
 
-    def delete_user(self, user_id):
-        response = http_post_with_error(
+    def delete_user(self, email):
+        response = http_delete_with_error(
             urljoin(self._base_url, "user/delete-user"),
-            params={"user_id": user_id},
+            json={"email": email},
             headers=auth_header(self._login_instance.access_token),
         )
+        return response
 
-    def add_key(self, user_id, key, value):
-        secret_data = {"user_id": user_id, "key": key, "value": value}
+    def add_secret_key(self, email, key, value):
+        secret_data = {"email": email, "key": key, "value": value}
 
-        reponse = http_post_with_error(
+        response = http_post_with_error(
             urljoin(self._base_url, "vault/add-secret"),
-            params=secret_data,
+            json=secret_data,
             headers=auth_header(self._login_instance.access_token),
         )
+        return response
 
-    def get_key(self, user_id, key):
-        secret_data = {"user_id": user_id, "key": key}
+    def get_secret_key(self, email, key):
+        secret_data = {"email": email, "key": key}
 
         response = http_get_with_error(
-            urljoin(self._base_url, "vault/get-key"),
-            params=secret_data,
+            urljoin(self._base_url, "vault/get-secret"),
+            json=secret_data,
             headers=auth_header(self._login_instance.access_token),
         )
 
-        return response.json()
+        return response
 
     def is_logged_in(self):
         return self._login_instance is not None
