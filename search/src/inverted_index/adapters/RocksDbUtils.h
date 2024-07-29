@@ -120,20 +120,20 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
     (void)key;
     (void)logger;
 
-    uint64_t counter = 0;
+    int64_t counter = 0;
     if (existing_value) {
       if (!deserialize(*existing_value, counter)) {
         return false;
       }
     }
 
-    uint64_t increment = 0;
+    int64_t increment = 0;
     if (!deserialize(value, increment)) {
       return false;
     }
 
-    *new_value = std::string(sizeof(uint64_t), 0);
-    *reinterpret_cast<uint64_t*>(new_value->data()) = counter + increment;
+    *new_value = std::string(sizeof(int64_t), 0);
+    *reinterpret_cast<int64_t*>(new_value->data()) = counter + increment;
 
     return true;
   }

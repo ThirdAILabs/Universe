@@ -6,6 +6,7 @@
 #include <rocksdb/write_batch.h>
 #include <search/src/inverted_index/adapters/RocksDbUtils.h>
 #include <filesystem>
+#include <stdexcept>
 
 namespace thirdai::search {
 
@@ -52,13 +53,13 @@ RocksDbAdapter::RocksDbAdapter(const std::string& save_path)
 
 void RocksDbAdapter::storeDocLens(const std::vector<DocId>& ids,
                                   const std::vector<uint32_t>& doc_lens) {
-  uint64_t sum_doc_lens = 0;
+  int64_t sum_doc_lens = 0;
 
   rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
 
   for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
-    const uint64_t doc_len = doc_lens[i];
+    const int64_t doc_len = doc_lens[i];
 
     const std::string key = docIdKey(doc_id);
 
@@ -133,9 +134,9 @@ void RocksDbAdapter::incrementDocLens(
     const std::vector<uint32_t>& doc_len_increments) {
   rocksdb::WriteBatch batch;
 
-  uint64_t sum_new_lens = 0;
+  int64_t sum_new_lens = 0;
   for (size_t i = 0; i < ids.size(); i++) {
-    const uint64_t doc_len = doc_len_increments[i];
+    const int64_t doc_len = doc_len_increments[i];
     sum_new_lens += doc_len;
 
     auto merge_status =
@@ -233,7 +234,7 @@ std::vector<std::vector<DocCount>> RocksDbAdapter::lookupDocs(
   return results;
 }
 
-void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
+void RocksDbAdapter::prune(int64_t max_docs_with_token) {
   rocksdb::Iterator* iter =
       _db->NewIterator(rocksdb::ReadOptions(), _token_to_docs);
 
@@ -241,7 +242,8 @@ void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
   TokenStatus prune = TokenStatus::Pruned;
 
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-    if (docsWithToken(iter->value()) > max_docs_with_token) {
+    const int64_t docs_w_token = docsWithToken(iter->value());
+    if (docs_w_token > max_docs_with_token) {
       auto write_status = batch.Put(
           _token_to_docs, iter->key(),
           rocksdb::Slice(reinterpret_cast<const char*>(&prune), sizeof(prune)));
@@ -268,12 +270,25 @@ void RocksDbAdapter::prune(uint64_t max_docs_with_token) {
 void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
 
+  int64_t sum_deleted_len = 0;
   for (const auto& doc : docs) {
+    std::string serialized_doc_len;
+    auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
+                                        docIdKey(doc), &serialized_doc_len);
+    int64_t doc_len;
+    if (!deserialize(serialized_doc_len, doc_len)) {
+      throw std::runtime_error("document length corrupted");
+    }
+    sum_deleted_len += doc_len;
+
     auto delete_status = txn->Delete(_counters, docIdKey(doc));
     if (!delete_status.ok()) {
       raiseError(delete_status, "txn delete");
     }
   }
+
+  updateSumDocLens(-sum_deleted_len);
+  updateNDocs(-docs.size());
 
   rocksdb::Iterator* iter =
       txn->GetIterator(rocksdb::ReadOptions(), _token_to_docs);
@@ -313,7 +328,7 @@ void RocksDbAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   delete txn;
 }
 
-uint64_t RocksDbAdapter::getDocLen(DocId doc_id) const {
+int64_t RocksDbAdapter::getDocLen(DocId doc_id) const {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
@@ -321,7 +336,7 @@ uint64_t RocksDbAdapter::getDocLen(DocId doc_id) const {
     raiseError(status, "get");
   }
 
-  uint64_t len;
+  int64_t len;
   if (!deserialize(value, len)) {
     throw std::invalid_argument("document length is corrupted");
   }
@@ -329,7 +344,7 @@ uint64_t RocksDbAdapter::getDocLen(DocId doc_id) const {
   return len;
 }
 
-uint64_t RocksDbAdapter::getNDocs() const {
+int64_t RocksDbAdapter::getNDocs() const {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
@@ -337,14 +352,14 @@ uint64_t RocksDbAdapter::getNDocs() const {
     raiseError(status, "get");
   }
 
-  uint64_t ndocs;
+  int64_t ndocs;
   if (!deserialize(serialized, ndocs)) {
     throw std::invalid_argument("Value of n_docs is corrupted.");
   }
   return ndocs;
 }
 
-uint64_t RocksDbAdapter::getSumDocLens() const {
+int64_t RocksDbAdapter::getSumDocLens() const {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
@@ -352,28 +367,28 @@ uint64_t RocksDbAdapter::getSumDocLens() const {
     raiseError(status, "get");
   }
 
-  uint64_t sum_doc_lens;
+  int64_t sum_doc_lens;
   if (!deserialize(serialized, sum_doc_lens)) {
     throw std::invalid_argument("Value of sum_doc_lens is corrupted.");
   }
   return sum_doc_lens;
 }
 
-void RocksDbAdapter::updateNDocs(uint64_t n_new_docs) {
+void RocksDbAdapter::updateNDocs(int64_t n_new_docs) {
   auto status =
       _db->Merge(rocksdb::WriteOptions(), _counters, "n_docs",
                  rocksdb::Slice(reinterpret_cast<const char*>(&n_new_docs),
-                                sizeof(uint64_t)));
+                                sizeof(int64_t)));
   if (!status.ok()) {
     raiseError(status, "merge");
   }
 }
 
-void RocksDbAdapter::updateSumDocLens(uint64_t sum_new_doc_lens) {
+void RocksDbAdapter::updateSumDocLens(int64_t sum_new_doc_lens) {
   auto status = _db->Merge(
       rocksdb::WriteOptions(), _counters, "sum_doc_lens",
       rocksdb::Slice(reinterpret_cast<const char*>(&sum_new_doc_lens),
-                     sizeof(uint64_t)));
+                     sizeof(int64_t)));
   if (!status.ok()) {
     raiseError(status, "merge");
   }

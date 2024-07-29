@@ -152,16 +152,16 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
 
   auto doc_counts = _db->lookupDocs(query_tokens);
 
-  const uint64_t n_docs = _db->getNDocs();
+  const int64_t n_docs = _db->getNDocs();
   const float avg_doc_len = static_cast<float>(_db->getSumDocLens()) / n_docs;
 
-  const uint64_t max_docs_with_token =
-      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
+  const int64_t max_docs_with_token =
+      std::max<int64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
   std::vector<std::pair<size_t, float>> token_indexes_and_idfs;
   token_indexes_and_idfs.reserve(doc_counts.size());
   for (size_t i = 0; i < doc_counts.size(); i++) {
-    const auto docs_w_token = doc_counts[i].size();
+    const int64_t docs_w_token = doc_counts[i].size();
     if (docs_w_token < max_docs_with_token) {
       const float token_idf = idf(n_docs, docs_w_token);
       token_indexes_and_idfs.emplace_back(i, token_idf);
@@ -250,10 +250,10 @@ void OnDiskIndex::remove(const std::vector<DocId>& ids) {
 }
 
 void OnDiskIndex::prune() {
-  uint64_t n_docs = _db->getNDocs();
+  int64_t n_docs = _db->getNDocs();
 
-  const uint64_t max_docs_with_token =
-      std::max<uint64_t>(_max_token_occurrence_frac * n_docs, 1000);
+  const int64_t max_docs_with_token =
+      std::max<int64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
   _db->prune(max_docs_with_token);
 }

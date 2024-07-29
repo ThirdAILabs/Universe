@@ -101,6 +101,13 @@ void ShardedRetriever::index(const std::vector<DocId>& ids,
   }
 }
 
+void ShardedRetriever::update(const std::vector<DocId>& ids,
+                              const std::vector<std::string>& extra_tokens) {
+  if (_shards.size() == 1) {
+    _shards[0]->update(ids, extra_tokens);
+  }
+}
+
 std::vector<DocScore> topkAcrossShards(
     const std::vector<std::vector<DocScore>>& results, uint32_t k) {
   std::vector<DocScore> top_scores;
