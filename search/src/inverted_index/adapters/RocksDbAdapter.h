@@ -29,15 +29,15 @@ class RocksDbAdapter final : public DbAdapter {
   std::vector<std::vector<DocCount>> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const final;
 
-  void prune(uint64_t max_docs_with_token) final;
+  void prune(int64_t max_docs_with_token) final;
 
   void removeDocs(const std::unordered_set<DocId>& docs) final;
 
-  uint64_t getDocLen(DocId doc_id) const final;
+  int64_t getDocLen(DocId doc_id) const final;
 
-  uint64_t getNDocs() const final;
+  int64_t getNDocs() const final;
 
-  uint64_t getSumDocLens() const final;
+  int64_t getSumDocLens() const final;
 
   void save(const std::string& save_path) const final;
 
@@ -46,9 +46,9 @@ class RocksDbAdapter final : public DbAdapter {
   ~RocksDbAdapter() final;
 
  private:
-  void updateNDocs(uint64_t n_new_docs);
+  void updateNDocs(int64_t n_new_docs);
 
-  void updateSumDocLens(uint64_t sum_new_doc_lens);
+  void updateSumDocLens(int64_t sum_new_doc_lens);
 
   rocksdb::TransactionDB* _db;
   rocksdb::ColumnFamilyHandle* _default;

@@ -41,17 +41,15 @@ class DbAdapter {
   virtual std::vector<std::vector<DocCount>> lookupDocs(
       const std::vector<HashedToken>& query_tokens) const = 0;
 
-  virtual void prune(uint64_t max_docs_with_token) {
-    (void)max_docs_with_token;
-  }
+  virtual void prune(int64_t max_docs_with_token) { (void)max_docs_with_token; }
 
   virtual void removeDocs(const std::unordered_set<DocId>& docs) = 0;
 
-  virtual uint64_t getDocLen(DocId doc_id) const = 0;
+  virtual int64_t getDocLen(DocId doc_id) const = 0;
 
-  virtual uint64_t getNDocs() const = 0;
+  virtual int64_t getNDocs() const = 0;
 
-  virtual uint64_t getSumDocLens() const = 0;
+  virtual int64_t getSumDocLens() const = 0;
 
   virtual void save(const std::string& save_path) const = 0;
 
