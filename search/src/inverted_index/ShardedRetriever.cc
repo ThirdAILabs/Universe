@@ -103,6 +103,12 @@ void ShardedRetriever::index(const std::vector<DocId>& ids,
 
 void ShardedRetriever::update(const std::vector<DocId>& ids,
                               const std::vector<std::string>& extra_tokens) {
+  // Upvote is only used so that the first few rlhf samples have a noticable
+  // effect before the secondary index is usable. Since this is mainly just a
+  // demo feature, we can disable it for larger than 1 shard (which by default
+  // is up to 10,000,000 docs) since supporting it for multiple shards makes the
+  // logic much more complicated to implement, since we cannot easily determine
+  // which updates need to go to which shards.
   if (_shards.size() == 1) {
     _shards[0]->update(ids, extra_tokens);
   }
