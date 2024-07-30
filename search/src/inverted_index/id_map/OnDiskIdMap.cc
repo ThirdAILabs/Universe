@@ -9,13 +9,13 @@ OnDiskIdMap::OnDiskIdMap(const std::string& save_path) : _save_path(save_path) {
   options.create_if_missing = true;
   options.create_missing_column_families = true;
 
-  rocksdb::ColumnFamilyOptions reverse_options;
-  reverse_options.merge_operator = std::make_shared<Append>();
+  rocksdb::ColumnFamilyOptions value_to_keys_options;
+  value_to_keys_options.merge_operator = std::make_shared<Append>();
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
                                       rocksdb::ColumnFamilyOptions()),
-      rocksdb::ColumnFamilyDescriptor("reverse", reverse_options),
+      rocksdb::ColumnFamilyDescriptor("value_to_keys", value_to_keys_options),
   };
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
@@ -32,14 +32,14 @@ OnDiskIdMap::OnDiskIdMap(const std::string& save_path) : _save_path(save_path) {
                              std::to_string(handles.size()) + " handles.");
   }
 
-  _forward = handles[0];
-  _reverse = handles[1];
+  _key_to_values = handles[0];
+  _value_to_keys = handles[1];
 }
 
 std::vector<uint64_t> OnDiskIdMap::get(uint64_t key) const {
   std::string value;
   auto status =
-      _db->Get(rocksdb::ReadOptions(), _forward, asSlice(&key), &value);
+      _db->Get(rocksdb::ReadOptions(), _key_to_values, asSlice(&key), &value);
   if (!status.ok()) {
     throw std::runtime_error(status.ToString() + "get");
   }
@@ -55,7 +55,7 @@ std::vector<uint64_t> OnDiskIdMap::get(uint64_t key) const {
 void OnDiskIdMap::put(uint64_t key, const std::vector<uint64_t>& values) {
   rocksdb::WriteBatch batch;
 
-  auto forward_status = batch.Put(_forward, asSlice(&key),
+  auto forward_status = batch.Put(_key_to_values, asSlice(&key),
                                   {reinterpret_cast<const char*>(values.data()),
                                    values.size() * sizeof(uint64_t)});
 
@@ -64,7 +64,8 @@ void OnDiskIdMap::put(uint64_t key, const std::vector<uint64_t>& values) {
   }
 
   for (const auto& value : values) {
-    auto reverse_status = batch.Merge(_reverse, asSlice(&value), asSlice(&key));
+    auto reverse_status =
+        batch.Merge(_value_to_keys, asSlice(&value), asSlice(&key));
 
     if (!reverse_status.ok()) {
       throw std::runtime_error(reverse_status.ToString() +
@@ -82,8 +83,9 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
   auto* txn = _db->BeginTransaction(rocksdb::WriteOptions());
 
   std::string serialized_keys;
-  auto reverse_status = txn->GetForUpdate(rocksdb::ReadOptions(), _reverse,
-                                          asSlice(&value), &serialized_keys);
+  auto reverse_status =
+      txn->GetForUpdate(rocksdb::ReadOptions(), _value_to_keys, asSlice(&value),
+                        &serialized_keys);
   if (reverse_status.IsNotFound()) {
     delete txn;
 
@@ -124,14 +126,14 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
       n_values--;
     }
     if (n_values == 0) {
-      auto del_status = txn->Delete(_forward, asSlice(&key));
+      auto del_status = txn->Delete(_key_to_values, asSlice(&key));
       if (!del_status.ok()) {
         throw std::runtime_error(del_status.ToString() + "txn delete");
       }
       empty_keys.push_back(key);
     } else {
       auto put_status = txn->Put(
-          _forward, asSlice(&key),
+          _key_to_values, asSlice(&key),
           {reinterpret_cast<const char*>(values), n_values * sizeof(uint64_t)});
       if (!put_status.ok()) {
         throw std::runtime_error(put_status.ToString() + "txn put");
@@ -139,7 +141,7 @@ std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
     }
   }
 
-  auto del_status = txn->Delete(_reverse, asSlice(&value));
+  auto del_status = txn->Delete(_value_to_keys, asSlice(&value));
   if (!del_status.ok()) {
     throw std::runtime_error(del_status.ToString() + "txn delete");
   }

@@ -35,8 +35,8 @@ class OnDiskIdMap final : public IdMap {
   static std::string typeName() { return "on-disk"; }
 
   ~OnDiskIdMap() final {
-    _db->DestroyColumnFamilyHandle(_forward);
-    _db->DestroyColumnFamilyHandle(_reverse);
+    _db->DestroyColumnFamilyHandle(_key_to_values);
+    _db->DestroyColumnFamilyHandle(_value_to_keys);
     _db->Close();
     delete _db;
   }
@@ -44,8 +44,8 @@ class OnDiskIdMap final : public IdMap {
  private:
   rocksdb::TransactionDB* _db;
 
-  rocksdb::ColumnFamilyHandle* _forward;
-  rocksdb::ColumnFamilyHandle* _reverse;
+  rocksdb::ColumnFamilyHandle* _key_to_values;
+  rocksdb::ColumnFamilyHandle* _value_to_keys;
 
   std::string _save_path;
 };
