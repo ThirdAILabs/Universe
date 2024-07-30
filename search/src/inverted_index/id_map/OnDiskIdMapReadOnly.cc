@@ -9,13 +9,13 @@ OnDiskIdMapReadOnly::OnDiskIdMapReadOnly(const std::string& save_path) {
   options.create_if_missing = true;
   options.create_missing_column_families = true;
 
-  rocksdb::ColumnFamilyOptions reverse_options;
-  reverse_options.merge_operator = std::make_shared<Append>();
+  rocksdb::ColumnFamilyOptions value_to_keys_options;
+  value_to_keys_options.merge_operator = std::make_shared<Append>();
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
                                       rocksdb::ColumnFamilyOptions()),
-      rocksdb::ColumnFamilyDescriptor("reverse", reverse_options),
+      rocksdb::ColumnFamilyDescriptor("value_to_keys", value_to_keys_options),
   };
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
@@ -31,14 +31,14 @@ OnDiskIdMapReadOnly::OnDiskIdMapReadOnly(const std::string& save_path) {
                              std::to_string(handles.size()) + " handles.");
   }
 
-  _forward = handles[0];
-  _reverse = handles[1];
+  _key_to_values = handles[0];
+  _value_to_keys = handles[1];
 }
 
 std::vector<uint64_t> OnDiskIdMapReadOnly::get(uint64_t key) const {
   std::string value;
   auto status =
-      _db->Get(rocksdb::ReadOptions(), _forward, asSlice(&key), &value);
+      _db->Get(rocksdb::ReadOptions(), _key_to_values, asSlice(&key), &value);
   if (!status.ok()) {
     throw std::runtime_error(status.ToString() + "get");
   }
