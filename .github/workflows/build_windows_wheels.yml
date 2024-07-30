@@ -61,6 +61,7 @@ jobs:
               CMAKE_ARGS='-DENABLE_COMPRESSION=OFF -DTHIRDAI_GTEST_DISCOVERY_TIMEOUT=30 -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake'
               KMP_DUPLICATE_LIB_OK=TRUE
               THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+              OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
 
           # Online compile cpython wheels (pytorch does this too), no big 
           # advantage to JIT compilation of python since most of our processing

@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::ar {
@@ -182,6 +183,7 @@ using MapU64VecU64 = std::unordered_map<uint64_t, std::vector<uint64_t>>;
 using MapU64VecF32 = std::unordered_map<uint64_t, std::vector<float>>;
 using MapStrU64 = std::unordered_map<std::string, uint64_t>;
 using MapStrI64 = std::unordered_map<std::string, int64_t>;
+using MapStrU32 = std::unordered_map<std::string, uint32_t>;
 using MapStrVecU64 = std::unordered_map<std::string, std::vector<uint64_t>>;
 using MapI64VecStr = std::unordered_map<int64_t, std::vector<std::string>>;
 
@@ -196,6 +198,12 @@ ConstArchivePtr f32(float val);
 ConstArchivePtr character(char val);
 
 ConstArchivePtr str(std::string val);
+
+ConstArchivePtr setStr(std::unordered_set<std::string> val);
+
+ConstArchivePtr setU32(std::unordered_set<std::uint32_t> val);
+
+ConstArchivePtr setCharacter(std::unordered_set<char> val);
 
 ConstArchivePtr vecU32(std::vector<uint32_t> val);
 
@@ -222,6 +230,8 @@ ConstArchivePtr mapU64VecF32(MapU64VecF32 val);
 ConstArchivePtr mapStrU64(std::unordered_map<std::string, uint64_t> val);
 
 ConstArchivePtr mapStrI64(std::unordered_map<std::string, int64_t> val);
+
+ConstArchivePtr mapStrU32(std::unordered_map<std::string, uint32_t> val);
 
 ConstArchivePtr mapStrVecU64(MapStrVecU64 val);
 

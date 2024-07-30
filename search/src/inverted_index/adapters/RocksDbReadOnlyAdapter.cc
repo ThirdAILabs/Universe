@@ -106,7 +106,7 @@ std::vector<std::vector<DocCount>> RocksDbReadOnlyAdapter::lookupDocs(
   return results;
 }
 
-void RocksDbReadOnlyAdapter::prune(uint64_t max_docs_with_token) {
+void RocksDbReadOnlyAdapter::prune(int64_t max_docs_with_token) {
   (void)max_docs_with_token;
   throw std::invalid_argument("This method is not supported for read only db.");
 }
@@ -116,7 +116,7 @@ void RocksDbReadOnlyAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
   throw std::invalid_argument("This method is not supported for read only db.");
 }
 
-uint64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
+int64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
   std::string value;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
@@ -124,7 +124,7 @@ uint64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
     raiseError(status, "get");
   }
 
-  uint64_t len;
+  int64_t len;
   if (!deserialize(value, len)) {
     throw std::invalid_argument("document length is corrupted");
   }
@@ -132,7 +132,7 @@ uint64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
   return len;
 }
 
-uint64_t RocksDbReadOnlyAdapter::getNDocs() const {
+int64_t RocksDbReadOnlyAdapter::getNDocs() const {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
@@ -140,14 +140,14 @@ uint64_t RocksDbReadOnlyAdapter::getNDocs() const {
     raiseError(status, "get");
   }
 
-  uint64_t ndocs;
+  int64_t ndocs;
   if (!deserialize(serialized, ndocs)) {
     throw std::invalid_argument("Value of n_docs is corrupted.");
   }
   return ndocs;
 }
 
-uint64_t RocksDbReadOnlyAdapter::getSumDocLens() const {
+int64_t RocksDbReadOnlyAdapter::getSumDocLens() const {
   std::string serialized;
   auto status =
       _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
@@ -155,7 +155,7 @@ uint64_t RocksDbReadOnlyAdapter::getSumDocLens() const {
     raiseError(status, "get");
   }
 
-  uint64_t sum_doc_lens;
+  int64_t sum_doc_lens;
   if (!deserialize(serialized, sum_doc_lens)) {
     throw std::invalid_argument("Value of sum_doc_lens is corrupted.");
   }
