@@ -67,7 +67,17 @@ ShardedRetriever::ShardedRetriever(IndexConfig config,
     : _config(std::move(config)), _shard_size(config.shard_size) {
 #if !_WIN32
   if (save_path) {
+    createDirectory(*save_path);
+
     _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
+
+    auto metadata = ar::Map::make();
+    metadata->set("type", ar::str(_factory->type()));
+    metadata->set("config", _config.toArchive());
+    metadata->set("shard_size", ar::u64(_shard_size));
+    auto metadata_file = dataset::SafeFileIO::ofstream(
+        (std::filesystem::path(*save_path) / "metadata").string());
+    ar::serialize(metadata, metadata_file);
   } else {
     _factory = std::make_shared<InMemoryFactory>();
   }
@@ -196,18 +206,15 @@ void ShardedRetriever::prune() {
 }
 
 void ShardedRetriever::save(const std::string& new_save_path) const {
-  std::vector<std::string> saved_shards;
   for (size_t i = 0; i < _shards.size(); i++) {
     std::string shard_file = "shard_" + std::to_string(i);
     _shards[i]->save(
         (std::filesystem::path(new_save_path) / shard_file).string());
-    saved_shards.push_back(shard_file);
   }
 
   auto metadata = ar::Map::make();
   metadata->set("type", ar::str(_factory->type()));
   metadata->set("config", _config.toArchive());
-  metadata->set("shards", ar::vecStr(saved_shards));
   metadata->set("shard_size", ar::u64(_shard_size));
 
   auto metadata_file = dataset::SafeFileIO::ofstream(
@@ -239,7 +246,15 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     throw std::invalid_argument("Invalid factory type: '" + type + "'.");
   }
 
-  for (const auto& shard_file : metadata->getAs<ar::VecStr>("shards")) {
+  uint32_t num_shards = 0;
+  for (const auto& entry : std::filesystem::directory_iterator(save_path)) {
+    if (entry.path().filename().string().find("shard_") == 0) {
+      num_shards++;
+    }
+  }
+
+  for (size_t i = 0; i < num_shards; i++) {
+    std::string shard_file = "shard_" + std::to_string(i);
     _shards.push_back(_factory->load(
         (std::filesystem::path(save_path) / shard_file).string()));
   }
