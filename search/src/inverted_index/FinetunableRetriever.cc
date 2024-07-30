@@ -2,10 +2,17 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#if !_WIN32
+#include <search/src/inverted_index/OnDiskIndex.h>
+#endif
+#include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <search/src/inverted_index/Utils.h>
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -23,19 +30,42 @@ namespace thirdai::search {
  */
 constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 
-FinetunableRetriever::FinetunableRetriever(float lambda, uint32_t min_top_docs,
-                                           uint32_t top_queries,
-                                           size_t shard_size)
-    : _doc_index(std::make_shared<InvertedIndex>(
-          /*max_docs_to_score=*/InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
-          /*idf_cutoff_frac=*/InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
-          /*k1=*/InvertedIndex::DEFAULT_K1, /*b=*/InvertedIndex::DEFAULT_B,
-          /*tokenizer=*/std::make_shared<DefaultTokenizer>(),
-          /*shard_size=*/shard_size)),
-      _query_index(std::make_shared<InvertedIndex>()),
-      _lambda(lambda),
-      _min_top_docs(min_top_docs),
-      _top_queries(top_queries) {}
+namespace {
+
+std::string docIndexPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "primary").string();
+}
+
+std::string queryIndexPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "secondary").string();
+}
+
+}  // namespace
+
+FinetunableRetriever::FinetunableRetriever(
+    float lambda, uint32_t min_top_docs, uint32_t top_queries,
+    const IndexConfig& config, const std::optional<std::string>& save_path)
+    : _lambda(lambda), _min_top_docs(min_top_docs), _top_queries(top_queries) {
+#if !_WIN32
+  if (save_path) {
+    createDirectory(*save_path);
+
+    _doc_index =
+        std::make_shared<ShardedRetriever>(config, docIndexPath(*save_path));
+    _query_index =
+        std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
+  } else {
+    _doc_index = std::make_shared<InvertedIndex>(config);
+    _query_index = std::make_shared<InvertedIndex>(config);
+  }
+#else
+  if (save_path) {
+    throw std::invalid_argument("on-disk is not supported for windows.");
+  }
+  _doc_index = std::make_shared<InvertedIndex>(config);
+  _query_index = std::make_shared<InvertedIndex>(config);
+#endif
+}
 
 void FinetunableRetriever::index(const std::vector<DocId>& ids,
                                  const std::vector<std::string>& docs) {
@@ -92,13 +122,15 @@ void FinetunableRetriever::associate(const std::vector<std::string>& sources,
 }
 
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
-                                                  uint32_t k) const {
+                                                  uint32_t k,
+                                                  bool parallelize) const {
   if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
-    return _doc_index->query(query, k);
+    return _doc_index->query(query, k, parallelize);
   }
 
-  auto top_docs = _doc_index->query(query, std::max(_min_top_docs, k));
-  auto top_queries = _query_index->query(query, _top_queries);
+  auto top_docs =
+      _doc_index->query(query, std::max(_min_top_docs, k), parallelize);
+  auto top_queries = _query_index->query(query, _top_queries, parallelize);
 
   std::unordered_map<DocId, float> top_scores;
   for (const auto& [doc, score] : top_docs) {
@@ -121,7 +153,7 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
 #pragma omp parallel for default(none) \
     shared(queries, scores, k) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = query(queries[i], k);
+    scores[i] = query(queries[i], k, /*parallelize=*/false);
   }
 
   return scores;
@@ -129,14 +161,14 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
 
 std::vector<DocScore> FinetunableRetriever::rank(
     const std::string& query, const std::unordered_set<DocId>& candidates,
-    uint32_t k) const {
+    uint32_t k, bool parallelize) const {
   if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
-    return _doc_index->rank(query, candidates, k);
+    return _doc_index->rank(query, candidates, k, parallelize);
   }
 
-  auto top_docs =
-      _doc_index->rank(query, candidates, std::max(_min_top_docs, k));
-  auto top_queries = _query_index->query(query, _top_queries);
+  auto top_docs = _doc_index->rank(query, candidates,
+                                   std::max(_min_top_docs, k), parallelize);
+  auto top_queries = _query_index->query(query, _top_queries, parallelize);
 
   std::unordered_map<DocId, float> top_scores;
   for (const auto& [doc, score] : top_docs) {
@@ -168,7 +200,7 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::rankBatch(
 #pragma omp parallel for default(none) \
     shared(queries, candidates, scores, k) if (queries.size() > 1)
   for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = rank(queries[i], candidates[i], k);
+    scores[i] = rank(queries[i], candidates[i], k, /*parallelize=*/false);
   }
 
   return scores;
@@ -203,11 +235,11 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
   }
 }
 
-ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
+ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   auto map = ar::Map::make();
 
-  map->set("doc_index", _doc_index->toArchive());
-  map->set("query_index", _query_index->toArchive());
+  map->set("doc_index_type", ar::str(_doc_index->type()));
+  map->set("query_index_type", ar::str(_query_index->type()));
 
   map->set("query_to_docs", ar::mapU64VecU64(_query_to_docs));
   map->set("doc_to_queries", ar::mapU64VecU64(_doc_to_queries));
@@ -221,6 +253,74 @@ ar::ConstArchivePtr FinetunableRetriever::toArchive() const {
   return map;
 }
 
+void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
+  _query_to_docs = archive.getAs<ar::MapU64VecU64>("query_to_docs");
+  _doc_to_queries = archive.getAs<ar::MapU64VecU64>("doc_to_queries");
+  _next_query_id = archive.u64("next_query_id");
+  _lambda = archive.f32("lambda");
+  _min_top_docs = archive.u64("min_top_docs");
+  _top_queries = archive.u64("top_queries");
+}
+
+namespace {
+
+std::string metadataPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "metadata").string();
+}
+
+}  // namespace
+
+void FinetunableRetriever::save(const std::string& save_path) const {
+  createDirectory(save_path);
+
+  _doc_index->save(docIndexPath(save_path));
+  _query_index->save(queryIndexPath(save_path));
+
+  auto metadata = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+  ar::serialize(metadataToArchive(), metadata);
+}
+
+std::shared_ptr<Retriever> loadIndex(const std::string& type,
+                                     const std::string& path, bool read_only) {
+  if (type == InvertedIndex::typeName()) {
+    return InvertedIndex::load(path);
+  }
+#if !_WIN32
+  if (type == OnDiskIndex::typeName()) {
+    return OnDiskIndex::load(path, read_only);
+  }
+#endif
+  if (type == ShardedRetriever::typeName()) {
+    return ShardedRetriever::load(path, read_only);
+  }
+  throw std::invalid_argument("Invalid retriever type '" + type + "'.");
+}
+
+FinetunableRetriever::FinetunableRetriever(const std::string& save_path,
+                                           bool read_only) {
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto metadata = ar::deserialize(metadata_file);
+  metadataFromArchive(*metadata);
+
+  _doc_index = loadIndex(metadata->str("doc_index_type"),
+                         docIndexPath(save_path), read_only);
+  _query_index = loadIndex(metadata->str("query_index_type"),
+                           queryIndexPath(save_path), read_only);
+}
+
+std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
+    const std::string& save_path, bool read_only) {
+  return std::shared_ptr<FinetunableRetriever>(
+      new FinetunableRetriever(save_path, read_only));
+}
+
+void FinetunableRetriever::save_stream(std::ostream& ostream) const {
+  (void)ostream;
+  (void)this;  // Otherwise clang-tidy wants this to be static.
+  throw std::invalid_argument(
+      "Pickling is not supported for FinetunableRetriever.");
+}
+
 FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
     : _doc_index(InvertedIndex::fromArchive(*archive.get("doc_index"))),
       _query_index(InvertedIndex::fromArchive(*archive.get("query_index"))),
@@ -231,30 +331,12 @@ FinetunableRetriever::FinetunableRetriever(const ar::Archive& archive)
       _min_top_docs(archive.u64("min_top_docs")),
       _top_queries(archive.u64("top_queries")) {}
 
-std::shared_ptr<FinetunableRetriever> FinetunableRetriever::fromArchive(
-    const ar::Archive& archive) {
-  return std::make_shared<FinetunableRetriever>(archive);
-}
-
-void FinetunableRetriever::save(const std::string& filename) const {
-  auto ostream = dataset::SafeFileIO::ofstream(filename);
-  save_stream(ostream);
-}
-
-void FinetunableRetriever::save_stream(std::ostream& ostream) const {
-  ar::serialize(toArchive(), ostream);
-}
-
-std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load(
-    const std::string& filename) {
-  auto istream = dataset::SafeFileIO::ifstream(filename);
-  return load_stream(istream);
-}
-
 std::shared_ptr<FinetunableRetriever> FinetunableRetriever::load_stream(
     std::istream& istream) {
   auto archive = ar::deserialize(istream);
-  return fromArchive(*archive);
+
+  return std::shared_ptr<FinetunableRetriever>(
+      new FinetunableRetriever(*archive));
 }
 
 }  // namespace thirdai::search

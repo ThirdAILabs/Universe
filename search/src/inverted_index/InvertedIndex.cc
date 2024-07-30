@@ -9,10 +9,11 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <licensing/src/CheckLicense.h>
+#include <search/src/inverted_index/BM25.h>
+#include <search/src/inverted_index/Utils.h>
 #include <utils/text/PorterStemmer.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
-#include <cmath>
 #include <exception>
 #include <limits>
 #include <memory>
@@ -23,15 +24,13 @@
 
 namespace thirdai::search {
 
-InvertedIndex::InvertedIndex(size_t max_docs_to_score, float idf_cutoff_frac,
-                             float k1, float b, TokenizerPtr tokenizer,
-                             size_t shard_size)
-    : _shard_size(shard_size),
-      _max_docs_to_score(max_docs_to_score),
-      _idf_cutoff_frac(idf_cutoff_frac),
-      _k1(k1),
-      _b(b),
-      _tokenizer(std::move(tokenizer)) {
+InvertedIndex::InvertedIndex(const IndexConfig& config)
+    : _shard_size(config.shard_size),
+      _max_docs_to_score(config.max_docs_to_score),
+      _idf_cutoff_frac(config.max_token_occurrence_frac),
+      _k1(config.k1),
+      _b(config.b),
+      _tokenizer(config.tokenizer) {
   licensing::checkLicense();
 }
 
@@ -120,15 +119,6 @@ std::unordered_map<Token, size_t> InvertedIndex::tokenCountsAcrossShards()
   return counts;
 }
 
-inline float idf(size_t n_docs, size_t docs_w_token) {
-  const float num = n_docs - docs_w_token + 0.5;
-  const float denom = docs_w_token + 0.5;
-  // This is technically different from the BM25 definition, the added 1 is to
-  // ensure that this does not yield a negative value. This trick is how apache
-  // lucene solves the problem.
-  return std::log(1.0 + num / denom);
-}
-
 void InvertedIndex::computeIdfs() {
   const size_t n_docs = size();
 
@@ -198,14 +188,6 @@ void InvertedIndex::Shard::updateDoc(
   doc_lens[doc_id] += extra_len;
 }
 
-template <typename T>
-struct HighestScore {
-  using Item = std::pair<T, float>;
-  bool operator()(const Item& a, const Item& b) const {
-    return a.second > b.second;
-  }
-};
-
 std::vector<std::pair<Token, float>> InvertedIndex::rankByIdf(
     const std::string& query) const {
   auto tokens = _tokenizer->tokenize(query);
@@ -242,7 +224,8 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       // will change. So if we do not need to support small incremental
       // additions then it might make sense to precompute these values.
       if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
-        doc_scores[doc_id] += bm25(token_idf, cnt_in_doc, doc_len);
+        doc_scores[doc_id] +=
+            bm25(token_idf, cnt_in_doc, doc_len, _avg_doc_length, _k1, _b);
       }
     }
   }
@@ -354,39 +337,6 @@ std::vector<DocScore> InvertedIndex::rank(
   return top_scores;
 }
 
-std::vector<std::vector<DocScore>> InvertedIndex::queryBatch(
-    const std::vector<std::string>& queries, uint32_t k) const {
-  std::vector<std::vector<DocScore>> scores(queries.size());
-
-#pragma omp parallel for default(none) \
-    shared(queries, scores, k) if (queries.size() > 1)
-  for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = query(queries[i], k, /*parallelize=*/false);
-  }
-
-  return scores;
-}
-
-std::vector<std::vector<DocScore>> InvertedIndex::rankBatch(
-    const std::vector<std::string>& queries,
-    const std::vector<std::unordered_set<DocId>>& candidates,
-    uint32_t k) const {
-  if (queries.size() != candidates.size()) {
-    throw std::invalid_argument(
-        "Number of queries must match number of candidate sets for ranking.");
-  }
-
-  std::vector<std::vector<DocScore>> scores(queries.size());
-
-#pragma omp parallel for default(none) \
-    shared(queries, candidates, scores, k) if (queries.size() > 1)
-  for (size_t i = 0; i < queries.size(); i++) {
-    scores[i] = rank(queries[i], candidates[i], k, /*parallelize=*/false);
-  }
-
-  return scores;
-}
-
 void InvertedIndex::remove(const std::vector<DocId>& ids) {
   for (DocId id : ids) {
     for (auto& shard : _shards) {
@@ -455,7 +405,8 @@ ar::ConstArchivePtr InvertedIndex::toArchive() const {
 }
 
 InvertedIndex::InvertedIndex(const ar::Archive& archive)
-    : _shard_size(archive.getOr<ar::U64>("shard_size", DEFAULT_SHARD_SIZE)),
+    : _shard_size(
+          archive.getOr<ar::U64>("shard_size", IndexConfig().shard_size)),
       _max_docs_to_score(archive.u64("max_docs_to_score")),
       _idf_cutoff_frac(archive.f32("idf_cutoff_frac")),
       _sum_doc_lens(archive.u64("sum_doc_lens")),
@@ -556,7 +507,7 @@ void InvertedIndex::serialize(Archive& archive) {
   _shards.push_back(Shard());
   _shards[0].token_to_docs = std::move(token_to_docs);
   _shards[0].doc_lens = std::move(doc_lens);
-  _max_docs_to_score = DEFAULT_MAX_DOCS_TO_SCORE;
+  _max_docs_to_score = IndexConfig().max_docs_to_score;
 
   _tokenizer = std::make_shared<DefaultTokenizer>(stem, lowercase);
 }

@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Dict, Iterable, Optional
 
 import thirdai.neural_db.parsing_utils.doc_parse as doc_parse
 
@@ -8,8 +8,13 @@ from .utils import join_metadata, series_from_value
 
 
 class DOCX(Document):
-    def __init__(self, path, doc_metadata=None):
-        super().__init__()
+    def __init__(
+        self,
+        path: str,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
+    ):
+        super().__init__(doc_id=doc_id)
 
         self.path = path
         self.doc_metadata = doc_metadata
@@ -30,7 +35,6 @@ class DOCX(Document):
 
         return [
             NewChunkBatch(
-                custom_id=None,
                 text=text,
                 keywords=series_from_value("", len(text)),
                 metadata=metadata,

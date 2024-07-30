@@ -20,6 +20,12 @@ RulePtr ssnPattern();
 
 RulePtr cvvPattern();
 
+RulePtr usDriversLicensePattern();
+
+RulePtr usPassportPattern();
+
+RulePtr ipAddressPattern();
+
 RulePtr getRuleForEntity(const std::string& entity);
 
 RulePtr getRuleForEntities(const std::vector<std::string>& entities);

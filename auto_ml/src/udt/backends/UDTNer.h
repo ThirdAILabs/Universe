@@ -4,7 +4,10 @@
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
 #include <auto_ml/src/udt/utils/Models.h>
+#include <data/src/transformations/ner/learned_tags/CommonLearnedTags.h>
+#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/rules/Rule.h>
+#include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <string>
 
 namespace thirdai::automl::udt {
@@ -85,7 +88,9 @@ class UDTNer final : public UDTBackend {
   std::string _tokens_column;
   std::string _tags_column;
 
-  std::vector<std::string> _label_to_tag;
+  std::vector<data::ner::NerTagPtr> _label_to_tag;
+
+  thirdai::data::ner::TokenTagCounterPtr _token_tag_counter;
 };
 
 }  // namespace thirdai::automl::udt
