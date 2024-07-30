@@ -127,7 +127,12 @@ def encrypted_type(key: str):
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, save_path: Optional[str] = None, encryption_key: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        save_path: Optional[str] = None,
+        encryption_key: Optional[str] = None,
+        **kwargs,
+    ):
         super().__init__()
 
         self.db_name = save_path or f"{uuid.uuid4()}.db"

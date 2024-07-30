@@ -62,6 +62,14 @@ class InMemoryFactory final : public RetrieverFactory {
   std::string type() const final { return InvertedIndex::typeName(); }
 };
 
+namespace {
+
+std::string metadataPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "metadata").string();
+}
+
+}  // namespace
+
 ShardedRetriever::ShardedRetriever(IndexConfig config,
                                    const std::optional<std::string>& save_path)
     : _config(std::move(config)), _shard_size(config.shard_size) {
@@ -71,13 +79,9 @@ ShardedRetriever::ShardedRetriever(IndexConfig config,
 
     _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
 
-    auto metadata = ar::Map::make();
-    metadata->set("type", ar::str(_factory->type()));
-    metadata->set("config", _config.toArchive());
-    metadata->set("shard_size", ar::u64(_shard_size));
-    auto metadata_file = dataset::SafeFileIO::ofstream(
-        (std::filesystem::path(*save_path) / "metadata").string());
-    ar::serialize(metadata, metadata_file);
+    auto metadata_file =
+        dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+    ar::serialize(metadataToArchive(), metadata_file);
   } else {
     _factory = std::make_shared<InMemoryFactory>();
   }
@@ -205,6 +209,16 @@ void ShardedRetriever::prune() {
   }
 }
 
+ar::ConstArchivePtr ShardedRetriever::metadataToArchive() const {
+  auto metadata = ar::Map::make();
+
+  metadata->set("type", ar::str(_factory->type()));
+  metadata->set("config", _config.toArchive());
+  metadata->set("shard_size", ar::u64(_shard_size));
+
+  return metadata;
+}
+
 void ShardedRetriever::save(const std::string& new_save_path) const {
   for (size_t i = 0; i < _shards.size(); i++) {
     std::string shard_file = "shard_" + std::to_string(i);
@@ -212,20 +226,14 @@ void ShardedRetriever::save(const std::string& new_save_path) const {
         (std::filesystem::path(new_save_path) / shard_file).string());
   }
 
-  auto metadata = ar::Map::make();
-  metadata->set("type", ar::str(_factory->type()));
-  metadata->set("config", _config.toArchive());
-  metadata->set("shard_size", ar::u64(_shard_size));
-
-  auto metadata_file = dataset::SafeFileIO::ofstream(
-      (std::filesystem::path(new_save_path) / "metadata").string());
-  ar::serialize(metadata, metadata_file);
+  auto metadata_file =
+      dataset::SafeFileIO::ofstream(metadataPath(new_save_path));
+  ar::serialize(metadataToArchive(), metadata_file);
 }
 
 ShardedRetriever::ShardedRetriever(const std::string& save_path,
                                    bool read_only) {
-  auto metadata_file = dataset::SafeFileIO::ifstream(
-      (std::filesystem::path(save_path) / "metadata").string());
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
   auto metadata = ar::deserialize(metadata_file);
 
   _shard_size = metadata->u64("shard_size");
