@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 import pandas as pd
-from sqlalchemy import Table
+from sqlalchemy import Table, select
 
 
 class Constraint(ABC):
@@ -36,6 +36,18 @@ class AnyOf(Constraint):
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name].isin(self.values)
+    
+
+class NoneOf(Constraint):
+    def __init__(self, values):
+        super().__init__()
+        self.values = values
+
+    def sql_condition(self, column_name: str, table: Table):
+        return select([table]).where(~table.c[column_name].in_(self.values))
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        return df[~df[column_name].isin(self.values)]
 
 
 class GreaterThan(Constraint):
