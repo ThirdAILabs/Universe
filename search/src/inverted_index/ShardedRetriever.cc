@@ -269,6 +269,10 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     _shards.push_back(_factory->load(filename));
   }
 
+  if (_shards.empty()) {
+    throw std::invalid_argument("No shards found, db is in invalid state.");
+  }
+
 #if _WIN32
   (void)read_only;
 #endif
