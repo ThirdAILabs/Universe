@@ -17,6 +17,13 @@
 
 namespace thirdai::search {
 
+namespace {
+std::string shardName(size_t shard_id) {
+  return "shard_" + std::to_string(shard_id);
+}
+
+}  // namespace
+
 #if !_WIN32
 class OnDiskFactory final : public RetrieverFactory {
  public:
@@ -30,9 +37,7 @@ class OnDiskFactory final : public RetrieverFactory {
           "Cannot create new shards in read only mode.");
     }
     return std::make_shared<OnDiskIndex>(
-        std::filesystem::path(_save_path) /
-            ("shard_" + std::to_string(shard_id)),
-        config);
+        std::filesystem::path(_save_path) / shardName(shard_id), config);
   }
 
   std::shared_ptr<Retriever> load(const std::string& path) const final {
@@ -220,10 +225,9 @@ ar::ConstArchivePtr ShardedRetriever::metadataToArchive() const {
 }
 
 void ShardedRetriever::save(const std::string& new_save_path) const {
-  for (size_t i = 0; i < _shards.size(); i++) {
-    std::string shard_file = "shard_" + std::to_string(i);
-    _shards[i]->save(
-        (std::filesystem::path(new_save_path) / shard_file).string());
+  for (size_t shard_id = 0; shard_id < _shards.size(); shard_id++) {
+    _shards[shard_id]->save(
+        (std::filesystem::path(new_save_path) / shardName(shard_id)).string());
   }
 
   auto metadata_file =
@@ -254,17 +258,15 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     throw std::invalid_argument("Invalid factory type: '" + type + "'.");
   }
 
-  uint32_t num_shards = 0;
-  for (const auto& entry : std::filesystem::directory_iterator(save_path)) {
-    if (entry.path().filename().string().find("shard_") == 0) {
-      num_shards++;
-    }
-  }
+  for (size_t shard_id = 0;; shard_id++) {
+    std::string filename =
+        (std::filesystem::path(save_path) / shardName(shard_id)).string();
 
-  for (size_t i = 0; i < num_shards; i++) {
-    std::string shard_file = "shard_" + std::to_string(i);
-    _shards.push_back(_factory->load(
-        (std::filesystem::path(save_path) / shard_file).string()));
+    if (!std::filesystem::exists(filename)) {
+      break;
+    }
+
+    _shards.push_back(_factory->load(filename));
   }
 
 #if _WIN32

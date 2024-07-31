@@ -145,7 +145,11 @@ def test_neural_db_v2_on_disk():
     assert os.path.exists(save_path / "retriever")
     assert os.path.exists(save_path / "metadata.json")
 
-    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)], epochs=4)
+    del db
+
+    db = ndb.NeuralDB.load(str(save_path))
+
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)])
 
     queries = ["lorem ipsum", "contrary"]
     results_before = db.search_batch(queries, top_k=10)
