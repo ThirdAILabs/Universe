@@ -5,6 +5,7 @@
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <random>
+#include <string>
 
 namespace thirdai::search::tests {
 
@@ -64,10 +65,10 @@ makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
 
 inline std::string randomPath() {
   std::mt19937 process_rng(getpid());  // To handle parallel tests
-  std::mt19937 time_rng(time(0));
 
-  return "tmp_" + std::to_string(process_rng()) + "_" +
-         std::to_string(time_rng());
+  static int count = 0;
+
+  return "tmp_" + std::to_string(process_rng()) + "_" + std::to_string(count++);
 }
 
 }  // namespace thirdai::search::tests
