@@ -1,9 +1,8 @@
 import operator
-import os
 import shutil
 import uuid
 from functools import reduce
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,38 +16,59 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    func,
+    join,
     select,
     text,
 )
-from thirdai.neural_db.utils import pickle_to, unpickle_from
+from sqlalchemy_utils import StringEncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
-from ..core.chunk_store import ChunkStore, CustomIDType
-from ..core.types import (
-    Chunk,
-    ChunkBatch,
-    ChunkId,
-    CustomIdSupervisedBatch,
-    NewChunkBatch,
-    SupervisedBatch,
-)
+from ..core.chunk_store import ChunkStore
+from ..core.documents import Document
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
 
 
-def get_sql_columns(df: pd.DataFrame):
-    columns = []
+def separate_multivalue_columns(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, List[pd.Series]]:
+    multivalue_columns = []
     for col in df.columns:
-        dtype = df[col].dtype
-        if dtype == int:
-            columns.append(Column(col, Integer))
-        elif dtype == float:
-            columns.append(Column(col, Float))
-        elif dtype == object:
-            columns.append(Column(col, String))
-        else:
-            raise ValueError(
-                f"Column {col} has dtype {str(dtype)} which is not a supported type for metadata columns."
-            )
-    return columns
+        if df[col].dtype == object and df[col].map(lambda x: isinstance(x, List)).any():
+            multivalue_columns.append(df[col])
+
+    return df.drop([c.name for c in multivalue_columns], axis=1), multivalue_columns
+
+
+def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.DataFrame:
+    return (
+        pd.DataFrame({"chunk_id": chunk_ids, column.name: column})
+        .explode(column.name)  # flattens column and repeats values in other column
+        .dropna()  # explode converts [] to a row with a NaN in the exploded column
+        .reset_index(drop=True)  # explode repeats index values, this resets that
+        .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
+    )
+
+
+MULTIVALUE_METADATA_PREFIX = "multivalue_metadata_"
+
+
+def get_sql_type(name, dtype):
+    if dtype == int:
+        return Integer
+    elif dtype == float:
+        return Float
+    elif dtype == object:
+        return String
+    else:
+        raise ValueError(
+            f"Column {name} has dtype {str(dtype)} which is not a supported type for metadata columns."
+        )
+
+
+def get_sql_columns(df: pd.DataFrame):
+    return [Column(col, get_sql_type(col, df[col].dtype)) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -64,8 +84,8 @@ class SqlLiteIterator:
         self.engine = engine
 
         # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
-        # through a range of chunk_ids. We need a min and a max we do an insertion
-        # while another iterator still exists
+        # through a range of chunk_ids. We need a min and a max in the case
+        # we do an insertion while another iterator instance still exists
         self.min_insertion_chunk_id = min_insertion_chunk_id
         self.max_insertion_chunk_id = max_insertion_chunk_id
 
@@ -102,8 +122,12 @@ class SqlLiteIterator:
         return self
 
 
+def encrypted_type(key: str):
+    return StringEncryptedType(String, key=key, engine=AesEngine)
+
+
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, max_in_memory_batches=10000, **kwargs):
+    def __init__(self, encryption_key: Optional[str] = None, **kwargs):
         super().__init__()
 
         self.db_name = f"{uuid.uuid4()}.db"
@@ -111,24 +135,26 @@ class SQLiteChunkStore(ChunkStore):
 
         self.metadata = MetaData()
 
+        text_type = encrypted_type(encryption_key) if encryption_key else String
+
         self.chunk_table = Table(
             "neural_db_chunks",
             self.metadata,
             Column("chunk_id", Integer, primary_key=True),
-            Column("custom_id", Integer),
-            Column("text", String),
-            Column("keywords", String),
-            Column("document", String),
+            Column("text", text_type),
+            Column("keywords", text_type),
+            Column("document", text_type),
+            Column("doc_id", String, index=True),
+            Column("doc_version", Integer),
         )
-        self.metadata.create_all(self.engine)
 
-        self.custom_id_table = None
+        self.metadata.create_all(self.engine)
 
         self.metadata_table = None
 
-        self.next_id = 0
+        self.multivalue_metadata_tables = {}
 
-        self.max_in_memory_batches = max_in_memory_batches
+        self.next_id = 0
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
@@ -138,30 +164,6 @@ class SQLiteChunkStore(ChunkStore):
             if_exists="append",
             index=False,
         )
-
-    def _create_custom_id_table(self):
-        custom_id_dtype = (
-            Integer if self.custom_id_type == CustomIDType.Integer else String
-        )
-        self.custom_id_table = Table(
-            "neural_db_custom_ids",
-            self.metadata,
-            Column("custom_id", custom_id_dtype, primary_key=True),
-            Column("chunk_id", Integer),
-        )
-        self.metadata.create_all(self.engine)
-
-    def _update_custom_ids(self, custom_ids, chunk_ids):
-        self._set_or_validate_custom_id_type(custom_ids)
-
-        if custom_ids is not None:
-            if self.custom_id_table is None:
-                self._create_custom_id_table()
-
-            custom_id_df = pd.DataFrame(
-                {"custom_id": custom_ids, "chunk_id": chunk_ids}
-            )
-            self._write_to_table(df=custom_id_df, table=self.custom_id_table)
 
     def _add_metadata_column(self, column: Column):
         column_name = column.compile(dialect=self.engine.dialect)
@@ -180,7 +182,7 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata_table.name, self.metadata, autoload_with=self.engine
         )
 
-    def _store_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
+    def _store_singlevalue_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
         metadata_columns = get_sql_columns(metadata)
         if self.metadata_table is None:
             self.metadata_table = Table(
@@ -204,23 +206,67 @@ class SQLiteChunkStore(ChunkStore):
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
-    def insert(self, chunks: Iterable[NewChunkBatch], **kwargs) -> Iterable[ChunkBatch]:
-        min_insertion_chunk_id = self.next_id
-        for batch in chunks:
-            chunk_ids = pd.Series(
-                np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+    def _store_multivalue_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
+        flattened_metadata = flatten_multivalue_column(metadata_col, chunk_ids)
+
+        if metadata_col.name not in self.multivalue_metadata_tables:
+            table = Table(
+                MULTIVALUE_METADATA_PREFIX + metadata_col.name,
+                self.metadata,
+                Column("chunk_id", Integer, index=True, primary_key=True),
+                Column(
+                    metadata_col.name,
+                    get_sql_type(
+                        metadata_col.name, flattened_metadata[metadata_col.name].dtype
+                    ),
+                    primary_key=True,
+                ),
             )
-            self.next_id += len(batch)
+            self.metadata.create_all(self.engine)
+            self.multivalue_metadata_tables[metadata_col.name] = table
 
-            chunk_df = batch.to_df()
-            chunk_df["chunk_id"] = chunk_ids
+        self._write_to_table(
+            flattened_metadata, self.multivalue_metadata_tables[metadata_col.name]
+        )
 
-            self._update_custom_ids(custom_ids=batch.custom_id, chunk_ids=chunk_ids)
+    def insert(
+        self, docs: List[Document], max_in_memory_batches=10000, **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
+        min_insertion_chunk_id = self.next_id
 
-            if batch.metadata is not None:
-                self._store_metadata(batch.metadata, chunk_ids=chunk_ids)
+        inserted_doc_metadata = []
+        for doc in docs:
+            doc_id = doc.doc_id()
+            doc_version = self.max_version_for_doc(doc_id) + 1
 
-            self._write_to_table(df=chunk_df, table=self.chunk_table)
+            doc_chunk_ids = []
+            for batch in doc.chunks():
+                chunk_ids = pd.Series(
+                    np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+                )
+                self.next_id += len(batch)
+                doc_chunk_ids.extend(chunk_ids)
+
+                chunk_df = batch.to_df()
+                chunk_df["chunk_id"] = chunk_ids
+                chunk_df["doc_id"] = doc_id
+                chunk_df["doc_version"] = doc_version
+
+                if batch.metadata is not None:
+                    singlevalue_metadata, multivalue_metadata = (
+                        separate_multivalue_columns(batch.metadata)
+                    )
+                    self._store_singlevalue_metadata(singlevalue_metadata, chunk_ids)
+                    for col in multivalue_metadata:
+                        self._store_multivalue_metadata(col, chunk_ids)
+
+                self._write_to_table(df=chunk_df, table=self.chunk_table)
+
+            inserted_doc_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunk_ids
+                )
+            )
 
         max_insertion_chunk_id = self.next_id
 
@@ -229,10 +275,10 @@ class SQLiteChunkStore(ChunkStore):
             engine=self.engine,
             min_insertion_chunk_id=min_insertion_chunk_id,
             max_insertion_chunk_id=max_insertion_chunk_id,
-            max_in_memory_batches=self.max_in_memory_batches,
+            max_in_memory_batches=max_in_memory_batches,
         )
 
-        return inserted_chunks_iterator
+        return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
         with self.engine.begin() as conn:
@@ -247,12 +293,6 @@ class SQLiteChunkStore(ChunkStore):
                 )
                 conn.execute(delete_metadata)
 
-            if self.custom_id_table is not None:
-                delete_chunk_ids = delete(self.custom_id_table).where(
-                    self.custom_id_table.c.chunk_id.in_(chunk_ids)
-                )
-                conn.execute(delete_chunk_ids)
-
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
 
@@ -262,12 +302,13 @@ class SQLiteChunkStore(ChunkStore):
             )
             for row in conn.execute(chunk_stmt).all():
                 id_to_chunk[row.chunk_id] = Chunk(
-                    custom_id=row.custom_id,
                     text=row.text,
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
                     metadata=None,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
                 )
 
             if self.metadata_table is not None:
@@ -278,6 +319,17 @@ class SQLiteChunkStore(ChunkStore):
                     metadata = row._asdict()
                     del metadata["chunk_id"]
                     id_to_chunk[row.chunk_id].metadata = metadata
+
+            for key, table in self.multivalue_metadata_tables.items():
+                multivalue_stmt = select(table).where(table.c.chunk_id.in_(chunk_ids))
+                for row in conn.execute(multivalue_stmt).all():
+                    if id_to_chunk[row.chunk_id].metadata is None:
+                        id_to_chunk[row.chunk_id].metadata = {}
+
+                    if key not in id_to_chunk[row.chunk_id].metadata:
+                        id_to_chunk[row.chunk_id].metadata[key] = []
+
+                    id_to_chunk[row.chunk_id].metadata[key].append(getattr(row, key))
 
         chunks = []
         for chunk_id in chunk_ids:
@@ -296,73 +348,95 @@ class SQLiteChunkStore(ChunkStore):
         if self.metadata_table is None:
             raise ValueError("Cannot filter constraints with no metadata.")
 
-        condition = reduce(
-            operator.and_,
-            [
-                constraint.sql_condition(column_name=column, table=self.metadata_table)
-                for column, constraint in constraints.items()
-            ],
+        select_from = self.metadata_table
+        conditions = []
+        for column, constraint in constraints.items():
+            if column in self.multivalue_metadata_tables:
+                table = self.multivalue_metadata_tables[column]
+                conditions.append(
+                    constraint.sql_condition(column_name=column, table=table)
+                )
+                select_from = join(
+                    select_from,
+                    table,
+                    self.metadata_table.c.chunk_id == table.c.chunk_id,
+                )
+            else:
+                conditions.append(
+                    constraint.sql_condition(
+                        column_name=column, table=self.metadata_table
+                    )
+                )
+
+        stmt = (
+            select(self.metadata_table.c.chunk_id)
+            .select_from(select_from)
+            .where(reduce(operator.and_, conditions))
         )
 
-        stmt = select(self.metadata_table.c.chunk_id).where(condition)
-
-        chunk_ids = set()
         with self.engine.connect() as conn:
-            for row in conn.execute(stmt):
-                chunk_ids.add(row.chunk_id)
+            return set(row.chunk_id for row in conn.execute(stmt))
 
-        return chunk_ids
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
+        stmt = select(self.chunk_table.c.chunk_id).where(
+            (self.chunk_table.c.doc_id == doc_id)
+            & (self.chunk_table.c.doc_version < before_version)
+        )
 
-    def remap_custom_ids(
-        self, samples: Iterable[CustomIdSupervisedBatch]
-    ) -> Iterable[SupervisedBatch]:
-        remapped_batches = []
+        with self.engine.connect() as conn:
+            return [row.chunk_id for row in conn.execute(stmt)]
 
-        if self.custom_id_table is None:
-            raise ValueError(f"Chunk Store does not contain custom ids.")
+    def max_version_for_doc(self, doc_id: str) -> int:
+        stmt = select(func.max(self.chunk_table.c.doc_version)).where(
+            self.chunk_table.c.doc_id == doc_id
+        )
 
-        for batch in samples:
-            chunk_ids = []
-            with self.engine.connect() as conn:
-                for custom_ids in batch.custom_id:
-                    sample_ids = []
-                    for custom_id in custom_ids:
-                        stmt = select(self.custom_id_table.c.chunk_id).where(
-                            self.custom_id_table.c.custom_id == custom_id
-                        )
-                        if result := conn.execute(stmt).first():
-                            sample_ids.append(result.chunk_id)
-                        else:
-                            raise ValueError(
-                                f"Could not find chunk with custom id {custom_id}."
-                            )
-                    chunk_ids.append(sample_ids)
-
-            remapped_batches.append(
-                SupervisedBatch(query=batch.query, chunk_id=pd.Series(chunk_ids))
-            )
-
-        return remapped_batches
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            return result.scalar() or 0
 
     def save(self, path: str):
-        os.makedirs(path)
-        db_target_path = os.path.join(path, self.db_name)
-        shutil.copyfile(self.db_name, db_target_path)
-
-        contents = {k: v for k, v in self.__dict__.items() if k != "engine"}
-        pickle_path = os.path.join(path, "object.pkl")
-        pickle_to(contents, pickle_path)
+        shutil.copyfile(self.db_name, path)
 
     @classmethod
-    def load(cls, path: str):
-        pickle_path = os.path.join(path, "object.pkl")
-        contents = unpickle_from(pickle_path)
-
+    def load(cls, path: str, encryption_key: Optional[str] = None):
         obj = cls.__new__(cls)
-        obj.__dict__.update(contents)
 
-        db_name = os.path.basename(obj.db_name)
-        obj.db_name = os.path.join(path, db_name)
+        obj.db_name = path
         obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+
+        obj.metadata = MetaData()
+        obj.metadata.reflect(bind=obj.engine)
+
+        if "neural_db_chunks" not in obj.metadata.tables:
+            raise ValueError("neural_db_chunks table is missing in the database.")
+
+        obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+
+        if encryption_key:
+            obj.chunk_table.columns["text"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
+
+        if "neural_db_metadata" in obj.metadata.tables:
+            obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+        else:
+            obj.metadata_table = None
+
+        obj.multivalue_metadata_tables = {}
+        for name, table in obj.metadata.tables.items():
+            if name.startswith(MULTIVALUE_METADATA_PREFIX):
+                obj.multivalue_metadata_tables[
+                    name[len(MULTIVALUE_METADATA_PREFIX) :]
+                ] = table
+
+        with obj.engine.connect() as conn:
+            result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
+            max_id = result.scalar()
+            obj.next_id = (max_id or 0) + 1
+
+            chunk_count = conn.execute(
+                select(func.count()).select_from(obj.chunk_table)
+            ).scalar()
 
         return obj

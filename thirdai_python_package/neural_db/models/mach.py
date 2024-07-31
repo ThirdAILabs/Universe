@@ -315,6 +315,7 @@ class Mach(Model):
 
     def save(self, path: Path):
         pickle_to(self, filepath=path)
+        self.save_meta(path.parent / "model")
 
     def get_model(self) -> bolt.UniversalDeepTransformer:
         return self.model
@@ -323,10 +324,12 @@ class Mach(Model):
         self.model = model
 
     def save_meta(self, directory: Path):
-        pass
+        if self.finetunable_retriever:
+            self.finetunable_retriever.save_meta(directory / "finetunable_retriever")
 
     def load_meta(self, directory: Path):
-        pass
+        if self.finetunable_retriever:
+            self.finetunable_retriever.load_meta(directory / "finetunable_retriever")
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids
