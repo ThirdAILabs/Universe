@@ -503,8 +503,6 @@ if(NOT WIN32)
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES}
       search/src/inverted_index/OnDiskIndex.cc
-      search/src/inverted_index/adapters/RocksDbAdapter.cc
-      search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.cc
       search/src/inverted_index/id_map/OnDiskIdMap.cc
       search/src/inverted_index/id_map/OnDiskIdMapReadOnly.cc)
 endif()
