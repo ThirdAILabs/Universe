@@ -154,3 +154,40 @@ def get_file_size(file_path, unit="B"):
 
     size = file_size / 1024 ** exponents_map[unit]
     return round(size, 3)
+
+
+def restore_postgres_db_from_file(db_uri, dump_file_path):
+    import subprocess
+
+    try:
+        command = f'psql "{db_uri}" -f {dump_file_path}'
+
+        process = subprocess.run(command, shell=True, check=True)
+        print("Database restored successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to restore database: {e}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
+def download_files_from_s3(bucket_name, local_dir):
+    import boto3
+
+    s3_client = boto3.client("s3")
+    os.makedirs(local_dir, exist_ok=True)
+
+    try:
+        response = s3_client.list_objects_v2(Bucket=bucket_name)
+        if "Contents" in response:
+            for obj in response["Contents"]:
+                file_name = obj["Key"]
+                local_file_path = os.path.join(local_dir, file_name)
+                s3_client.download_file(bucket_name, file_name, local_file_path)
+                print(f"Downloaded {file_name} to {local_file_path}")
+
+                if file_name == "db_backup.sql":
+                    restore_postgres_db_from_file(
+                        os.getenv("DATABASE_URI"), local_file_path
+                    )
+    except Exception as e:
+        print(f"An error occurred during download: {str(e)}")
