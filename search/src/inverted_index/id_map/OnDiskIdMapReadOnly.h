@@ -47,8 +47,8 @@ class OnDiskIdMapReadOnly final : public IdMap {
   }
 
   ~OnDiskIdMapReadOnly() final {
-    _db->DestroyColumnFamilyHandle(_forward);
-    _db->DestroyColumnFamilyHandle(_reverse);
+    _db->DestroyColumnFamilyHandle(_key_to_values);
+    _db->DestroyColumnFamilyHandle(_value_to_keys);
     _db->Close();
     delete _db;
   }
@@ -56,8 +56,8 @@ class OnDiskIdMapReadOnly final : public IdMap {
  private:
   rocksdb::DB* _db;
 
-  rocksdb::ColumnFamilyHandle* _forward;
-  rocksdb::ColumnFamilyHandle* _reverse;
+  rocksdb::ColumnFamilyHandle* _key_to_values;
+  rocksdb::ColumnFamilyHandle* _value_to_keys;
 };
 
 }  // namespace thirdai::search
