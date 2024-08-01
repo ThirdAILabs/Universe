@@ -456,6 +456,16 @@ class NeuralDBClient:
         )
 
         return response.json()["data"]
+    
+    @check_deployment_decorator
+    def pii_detect(self, sentence: str):
+        response = http_post_with_error(
+            urljoin(self.base_url, "pii-detect"),
+            params={"query": sentence},
+            headers=auth_header(self.bazaar._access_token)
+        )
+        
+        return response.json()["data"]
 
 
 class UDTClient:
@@ -1035,6 +1045,7 @@ class ModelBazaar(Bazaar):
         deployment_name: str,
         memory: Optional[int] = None,
         is_async=False,
+        use_llm_guardrail:bool = False,
     ):
         """
         Deploys a model and returns a NeuralDBClient instance.
@@ -1052,7 +1063,9 @@ class ModelBazaar(Bazaar):
             "model_identifier": model_identifier,
             "deployment_name": deployment_name,
             "memory": memory,
+            "use_llm_guardrail": use_llm_guardrail,
         }
+        print(params)
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
         )
