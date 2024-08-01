@@ -36,7 +36,7 @@ class AnyOf(Constraint):
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name].isin(self.values)
-    
+
 
 class NoneOf(Constraint):
     def __init__(self, values):
