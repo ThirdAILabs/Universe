@@ -11,7 +11,10 @@ from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
 
 class FinetunableRetriever(Model):
     def __init__(
-        self, retriever: Optional[search.FinetunableRetriever] = None, on_disk=False
+        self,
+        retriever: Optional[search.FinetunableRetriever] = None,
+        on_disk=False,
+        **kwargs,
     ):
         save_path = None
         if on_disk:
