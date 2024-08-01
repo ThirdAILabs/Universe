@@ -47,6 +47,10 @@ std::string queryToDocsPath(const std::string& save_path) {
   return (std::filesystem::path(save_path) / "id_map").string();
 }
 
+std::string metadataPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "metadata").string();
+}
+
 }  // namespace
 
 FinetunableRetriever::FinetunableRetriever(
@@ -63,6 +67,9 @@ FinetunableRetriever::FinetunableRetriever(
         std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
 
     _query_to_docs = std::make_unique<OnDiskIdMap>(queryToDocsPath(*save_path));
+
+    auto metadata = dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+    ar::serialize(metadataToArchive(), metadata);
   } else {
     _doc_index = std::make_shared<InvertedIndex>(config);
     _query_index = std::make_shared<InvertedIndex>(config);
@@ -248,14 +255,6 @@ void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
   _min_top_docs = archive.u64("min_top_docs");
   _top_queries = archive.u64("top_queries");
 }
-
-namespace {
-
-std::string metadataPath(const std::string& save_path) {
-  return (std::filesystem::path(save_path) / "metadata").string();
-}
-
-}  // namespace
 
 void FinetunableRetriever::save(const std::string& save_path) const {
   createDirectory(save_path);
