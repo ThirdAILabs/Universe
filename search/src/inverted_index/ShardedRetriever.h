@@ -55,6 +55,8 @@ class ShardedRetriever final : public Retriever {
  private:
   explicit ShardedRetriever(const std::string& save_path, bool read_only);
 
+  ar::ConstArchivePtr metadataToArchive() const;
+
   std::shared_ptr<RetrieverFactory> _factory;
   IndexConfig _config;
 
