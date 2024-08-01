@@ -177,6 +177,8 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
   // avoid the DB lookup. This speeds up query processing.
   std::unordered_map<DocId, uint32_t> doc_lens;
 
+  const uint64_t query_len = token_indexes_and_idfs.size();
+
   for (const auto& [token_index, token_idf] : token_indexes_and_idfs) {
     const auto& counts = doc_counts[token_index];
     const size_t docs_w_token = counts.size();
@@ -185,8 +187,10 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
       const DocId doc_id = counts[i].doc_id;
 
       if (doc_scores.count(doc_id)) {
-        const float score = bm25(token_idf, counts[i].count,
-                                 doc_lens.at(doc_id), avg_doc_len, _k1, _b);
+        const float score =
+            bm25(/*idf=*/token_idf, /*cnt_in_doc=*/counts[i].count,
+                 /*doc_len=*/doc_lens.at(doc_id), /*avg_doc_len=*/avg_doc_len,
+                 /*query_len=*/query_len, /*k1=*/_k1, /*b=*/_b);
         doc_scores[counts[i].doc_id] += score;
       } else if (doc_scores.size() < _max_docs_to_score) {
         uint32_t doc_len;
@@ -198,7 +202,9 @@ std::unordered_map<DocId, float> OnDiskIndex::scoreDocuments(
         }
 
         const float score =
-            bm25(token_idf, counts[i].count, doc_len, avg_doc_len, _k1, _b);
+            bm25(/*idf=*/token_idf, /*cnt_in_doc=*/counts[i].count,
+                 /*doc_len=*/doc_len, /*avg_doc_len=*/avg_doc_len,
+                 /*query_len=*/query_len, /*k1=*/_k1, /*b=*/_b);
         doc_scores[counts[i].doc_id] += score;
       }
     }

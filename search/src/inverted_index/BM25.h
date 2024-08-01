@@ -14,10 +14,10 @@ inline float idf(size_t n_docs, size_t docs_w_token) {
 }
 
 inline float bm25(float idf, uint32_t cnt_in_doc, uint64_t doc_len,
-                  float avg_doc_len, float k1, float b) {
+                  float avg_doc_len, uint64_t query_len, float k1, float b) {
   const float num = cnt_in_doc * (k1 + 1);
   const float denom = cnt_in_doc + k1 * (1 - b + b * doc_len / avg_doc_len);
-  return idf * num / denom;
+  return idf * num / (denom * query_len);
 }
 
 }  // namespace thirdai::search
