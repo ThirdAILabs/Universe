@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Dict, Iterable, Optional
 
 import thirdai.neural_db.parsing_utils.url_parse as url_parse
 from requests.models import Response
@@ -14,9 +14,10 @@ class URL(Document):
         url: str,
         response: Response = None,
         title_is_strong: bool = False,
-        doc_metadata=None,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.url = url
         self.response = response
@@ -39,7 +40,6 @@ class URL(Document):
         )
         return [
             NewChunkBatch(
-                custom_id=None,
                 text=text,
                 keywords=keywords,
                 metadata=metadata,

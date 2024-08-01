@@ -5,13 +5,14 @@
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <random>
+#include <string>
 
 namespace thirdai::search::tests {
 
 template <class Index>
 inline void checkQuery(const Index& index, const std::string& query,
                        const std::vector<DocId>& expected_ids) {
-  auto results = index.query(query, expected_ids.size());
+  auto results = index.query(query, expected_ids.size(), true);
   ASSERT_EQ(results.size(), expected_ids.size());
   for (size_t i = 0; i < expected_ids.size(); i++) {
     ASSERT_EQ(results.at(i).first, expected_ids.at(i));
@@ -22,7 +23,7 @@ template <class Index>
 inline void checkRank(const Index& index, const std::string& query,
                       const std::unordered_set<DocId>& candidates,
                       const std::vector<DocId>& expected_ids) {
-  auto results = index.rank(query, candidates, expected_ids.size());
+  auto results = index.rank(query, candidates, expected_ids.size(), true);
   ASSERT_EQ(results.size(), expected_ids.size());
   for (size_t i = 0; i < expected_ids.size(); i++) {
     ASSERT_EQ(results.at(i).first, expected_ids.at(i));
@@ -60,6 +61,14 @@ makeDocsAndQueries(size_t vocab_size, size_t n_docs) {
   }
 
   return {ids, docs, queries};
+}
+
+inline std::string randomPath() {
+  std::mt19937 process_rng(getpid());  // To handle parallel tests
+
+  static int count = 0;
+
+  return "tmp_" + std::to_string(process_rng()) + "_" + std::to_string(count++);
 }
 
 }  // namespace thirdai::search::tests

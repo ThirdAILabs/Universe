@@ -1,0 +1,178 @@
+#include "RocksDbReadOnlyAdapter.h"
+#include <rocksdb/merge_operator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/slice.h>
+#include <rocksdb/table.h>
+#include <rocksdb/write_batch.h>
+#include <search/src/inverted_index/adapters/RocksDbUtils.h>
+#include <filesystem>
+#include <stdexcept>
+
+namespace thirdai::search {
+
+RocksDbReadOnlyAdapter::RocksDbReadOnlyAdapter(const std::string& save_path) {
+  rocksdb::Options options;
+  options.create_if_missing = false;
+  options.create_missing_column_families = false;
+
+  rocksdb::ColumnFamilyOptions counter_options;
+  counter_options.merge_operator = std::make_shared<IncrementCounter>();
+
+  rocksdb::ColumnFamilyOptions token_to_docs_options;
+  token_to_docs_options.merge_operator = std::make_shared<AppendDocCounts>();
+
+  std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
+      rocksdb::ColumnFamilyDescriptor(rocksdb::kDefaultColumnFamilyName,
+                                      rocksdb::ColumnFamilyOptions()),
+      rocksdb::ColumnFamilyDescriptor("counters", counter_options),
+      rocksdb::ColumnFamilyDescriptor("token_to_docs", token_to_docs_options),
+  };
+
+  std::vector<rocksdb::ColumnFamilyHandle*> handles;
+
+  auto status = rocksdb::DB::OpenForReadOnly(options, save_path,
+                                             column_families, &handles, &_db);
+  if (!status.ok()) {
+    raiseError(status, "open database");
+  }
+
+  if (handles.size() != 3) {
+    throw std::runtime_error("Expected 3 handles to be created. Received " +
+                             std::to_string(handles.size()) + " handles.");
+  }
+
+  _default = handles[0];
+  _counters = handles[1];
+  _token_to_docs = handles[2];
+}
+
+void RocksDbReadOnlyAdapter::storeDocLens(
+    const std::vector<DocId>& ids, const std::vector<uint32_t>& doc_lens) {
+  (void)ids;
+  (void)doc_lens;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+void RocksDbReadOnlyAdapter::updateTokenToDocs(
+    const std::unordered_map<HashedToken, std::vector<DocCount>>&
+        token_to_new_docs) {
+  (void)token_to_new_docs;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+void RocksDbReadOnlyAdapter::incrementDocLens(
+    const std::vector<DocId>& ids,
+    const std::vector<uint32_t>& doc_len_increments) {
+  (void)ids;
+  (void)doc_len_increments;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+void RocksDbReadOnlyAdapter::incrementDocTokenCounts(
+    const std::unordered_map<HashedToken, std::vector<DocCount>>&
+        token_to_doc_updates) {
+  (void)token_to_doc_updates;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+std::vector<std::vector<DocCount>> RocksDbReadOnlyAdapter::lookupDocs(
+    const std::vector<HashedToken>& query_tokens) const {
+  std::vector<rocksdb::Slice> keys;
+  keys.reserve(query_tokens.size());
+
+  for (const auto& token : query_tokens) {
+    keys.emplace_back(reinterpret_cast<const char*>(&token), sizeof(token));
+  }
+  std::vector<rocksdb::PinnableSlice> values(keys.size());
+  std::vector<rocksdb::Status> statuses(keys.size());
+
+  _db->MultiGet(rocksdb::ReadOptions(), _token_to_docs, keys.size(),
+                keys.data(), values.data(), statuses.data());
+
+  std::vector<std::vector<DocCount>> results;
+  results.reserve(keys.size());
+  for (size_t i = 0; i < keys.size(); i++) {
+    if (statuses[i].ok()) {
+      if (!isPruned(values[i])) {
+        const DocCount* ptr = docCountPtr(values[i]);
+        const size_t n_docs_w_token = docsWithToken(values[i]);
+        results.emplace_back(ptr, ptr + n_docs_w_token);
+      }
+    } else if (!statuses[i].IsNotFound()) {
+      raiseError(statuses[i], "batch get");
+    }
+  }
+
+  return results;
+}
+
+void RocksDbReadOnlyAdapter::prune(int64_t max_docs_with_token) {
+  (void)max_docs_with_token;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+void RocksDbReadOnlyAdapter::removeDocs(const std::unordered_set<DocId>& docs) {
+  (void)docs;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+int64_t RocksDbReadOnlyAdapter::getDocLen(DocId doc_id) const {
+  std::string value;
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, docIdKey(doc_id), &value);
+  if (!status.ok()) {
+    raiseError(status, "get");
+  }
+
+  int64_t len;
+  if (!deserialize(value, len)) {
+    throw std::invalid_argument("document length is corrupted");
+  }
+
+  return len;
+}
+
+int64_t RocksDbReadOnlyAdapter::getNDocs() const {
+  std::string serialized;
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, "n_docs", &serialized);
+  if (!status.ok()) {
+    raiseError(status, "get");
+  }
+
+  int64_t ndocs;
+  if (!deserialize(serialized, ndocs)) {
+    throw std::invalid_argument("Value of n_docs is corrupted.");
+  }
+  return ndocs;
+}
+
+int64_t RocksDbReadOnlyAdapter::getSumDocLens() const {
+  std::string serialized;
+  auto status =
+      _db->Get(rocksdb::ReadOptions(), _counters, "sum_doc_lens", &serialized);
+  if (!status.ok()) {
+    raiseError(status, "get");
+  }
+
+  int64_t sum_doc_lens;
+  if (!deserialize(serialized, sum_doc_lens)) {
+    throw std::invalid_argument("Value of sum_doc_lens is corrupted.");
+  }
+  return sum_doc_lens;
+}
+
+void RocksDbReadOnlyAdapter::save(const std::string& save_path) const {
+  (void)save_path;
+  throw std::invalid_argument("This method is not supported for read only db.");
+}
+
+RocksDbReadOnlyAdapter::~RocksDbReadOnlyAdapter() {
+  _db->DestroyColumnFamilyHandle(_default);
+  _db->DestroyColumnFamilyHandle(_counters);
+  _db->DestroyColumnFamilyHandle(_token_to_docs);
+  _db->Close();
+  delete _db;
+}
+
+}  // namespace thirdai::search

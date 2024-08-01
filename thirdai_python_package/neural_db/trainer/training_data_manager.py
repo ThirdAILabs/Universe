@@ -164,6 +164,8 @@ class TrainingDataManager:
                 f" {manager.model_location}"
             )
 
+        manager.model.load_meta(manager.model_location.parent / "model")
+
         if for_supervised:
             tracker = SupervisedProgressTracker.load(manager.tracker_folder)
             if not data_manager:
