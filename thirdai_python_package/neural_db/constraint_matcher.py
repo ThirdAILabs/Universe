@@ -54,7 +54,7 @@ class AnyOf(Filter[ItemT]):
 
 class NoneOf(Filter[ItemT]):
     def __init__(self, values: Iterable[Any]):
-        self.values = values
+        self.values = set(values)
 
     def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
         matches = set()
