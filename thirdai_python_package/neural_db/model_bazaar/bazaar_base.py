@@ -26,6 +26,7 @@ from .utils import (
     zip_folder,
     restore_postgres_db_from_file,
     download_files_from_s3,
+    create_s3_client,
 )
 
 
@@ -647,27 +648,13 @@ class Bazaar:
 
         print("Successfully requested admin to delete the model.")
 
+    @staticmethod
     def full_backup_restore(bucket_name, local_dir, database_uri):
         import boto3
-        import subprocess
 
         os.environ["DATABASE_URI"] = database_uri
         os.environ["SHARE_DIR"] = local_dir
 
-        s3_client = boto3.client("s3")
-
-        os.makedirs(local_dir, exist_ok=True)
-
-        response = s3_client.list_objects_v2(Bucket=bucket_name)
-        if "Contents" in response:
-            for obj in response["Contents"]:
-                file_name = obj["Key"]
-                local_file_path = os.path.join(local_dir, file_name)
-                s3_client.download_file(bucket_name, file_name, local_file_path)
-                print(f"Downloaded {file_name} to {local_file_path}")
-
-                # If it's the database dump, restore it immediately
-                if file_name == "db_backup.sql":
-                    restore_postgres_db_from_file(database_uri, local_file_path)
+        download_files_from_s3(bucket_name, local_dir)
 
         print("Backup and restore operations completed successfully.")
