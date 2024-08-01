@@ -161,9 +161,9 @@ class Bazaar:
     def login(self, email, password):
         self._login_instance = Login.with_email(self._base_url, email, password)
 
-    def add_admin(self, email):
+    def add_global_admin(self, email):
         response = http_post_with_error(
-            urljoin(self._base_url, "user/add-admin"),
+            urljoin(self._base_url, "user/add-global-admin"),
             json={"email": email},
             headers=auth_header(self._login_instance.access_token),
         )
@@ -177,8 +177,8 @@ class Bazaar:
         )
         return response
 
-    def add_secret_key(self, email, key, value):
-        secret_data = {"email": email, "key": key, "value": value}
+    def add_secret_key(self, key, value):
+        secret_data = {"key": key, "value": value}
 
         response = http_post_with_error(
             urljoin(self._base_url, "vault/add-secret"),
@@ -187,8 +187,8 @@ class Bazaar:
         )
         return response
 
-    def get_secret_key(self, email, key):
-        secret_data = {"email": email, "key": key}
+    def get_secret_key(self, key):
+        secret_data = {"key": key}
 
         response = http_get_with_error(
             urljoin(self._base_url, "vault/get-secret"),
@@ -196,6 +196,38 @@ class Bazaar:
             headers=auth_header(self._login_instance.access_token),
         )
 
+        return response
+
+    def create_team(self, name):
+        response = http_post_with_error(
+            urljoin(self._base_url, "team/create-team"),
+            json={"name": name},
+            headers=auth_header(self._access_token),
+        )
+        return response
+
+    def add_user_to_team(self, user_email, team_name):
+        response = http_post_with_error(
+            urljoin(self._base_url, "team/add-user-to-team"),
+            json={"user_email": user_email, "team_name": team_name},
+            headers=auth_header(self._access_token),
+        )
+        return response
+
+    def assign_team_admin(self, user_email, team_name):
+        response = http_post_with_error(
+            urljoin(self._base_url, "team/assign-team-admin"),
+            json={"user_email": user_email, "team_name": team_name},
+            headers=auth_header(self._access_token),
+        )
+        return response
+
+    def delete_team(self, team_name):
+        response = http_delete_with_error(
+            urljoin(self._base_url, "team/delete-team"),
+            json={"team_name": team_name},
+            headers=auth_header(self._access_token),
+        )
         return response
 
     def is_logged_in(self):
