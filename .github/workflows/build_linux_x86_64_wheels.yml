@@ -44,6 +44,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+            OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
          
           # TODO: Upgrade distro to supported version.
           # CentOS 7 is deprecated, and the following commmands are a workaround to still use that version.

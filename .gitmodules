@@ -34,3 +34,6 @@
 [submodule "deps/utf8proc"]
 	path = deps/utf8proc
 	url = https://github.com/ThirdAILabs/Utf8procFork
+[submodule "deps/rocksdb"]
+	path = deps/rocksdb
+	url = https://github.com/facebook/rocksdb

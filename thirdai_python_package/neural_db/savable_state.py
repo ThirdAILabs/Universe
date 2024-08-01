@@ -95,13 +95,15 @@ class State:
         return str(directory)
 
     @staticmethod
-    def load(location: Path, on_progress: Callable = lambda *args, **kwargs: None):
+    def load(
+        location: Path, on_progress: Callable = lambda *args, **kwargs: None, **kwargs
+    ):
         total_steps = 6
 
         # load model
         model = unpickle_from(State.model_pkl_path(location))
         on_progress(1 / total_steps)
-        model.load_meta(State.model_meta_path(location))
+        model.load_meta(State.model_meta_path(location), **kwargs)
         on_progress(2 / total_steps)
 
         # load logger

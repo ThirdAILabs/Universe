@@ -16,8 +16,8 @@ def textfile():
     )
 
 
-def build_db():
-    db = ndb.NeuralDB()
+def build_db(on_disk):
+    db = ndb.NeuralDB(on_disk=on_disk)
 
     db.insert([ndb.CSV(path=textfile(), id_column="id", weak_columns=["text"])])
 
@@ -35,8 +35,9 @@ def check_basic_query_accuracy(db):
         assert db.search(query, top_k=1)[0].id == row.id
 
 
-def test_ndb_finetunable_retriever_search():
-    db = build_db()
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_ndb_finetunable_retriever_search(on_disk):
+    db = build_db(on_disk)
     check_basic_query_accuracy(db)
 
     for _, row in pd.read_csv(textfile()).iterrows():
@@ -79,8 +80,9 @@ def get_supervised_samples():
     return ids, acronyms
 
 
-def test_ndb_finetunable_retriever_finetuning():
-    db = build_db()
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_ndb_finetunable_retriever_finetuning(on_disk):
+    db = build_db(on_disk)
 
     ids, acronyms = get_supervised_samples()
 
@@ -95,8 +97,9 @@ def test_ndb_finetunable_retriever_finetuning():
     assert acc_after_finetuning >= 0.9
 
 
-def test_ndb_finetunable_retriever_upvote():
-    db = build_db()
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_ndb_finetunable_retriever_upvote(on_disk):
+    db = build_db(on_disk)
 
     ids, acronyms = get_supervised_samples()
 
@@ -123,8 +126,9 @@ def get_association_samples():
     return ids, acronyms, list(zip(acronyms, targets))
 
 
-def test_ndb_finetunable_retriever_associate():
-    db = build_db()
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_ndb_finetunable_retriever_associate(on_disk):
+    db = build_db(on_disk)
 
     ids, acronyms, associations = get_association_samples()
 
@@ -139,8 +143,9 @@ def test_ndb_finetunable_retriever_associate():
     assert acc_after_associate >= 0.9
 
 
-def test_ndb_finetunable_retriever_save_load():
-    db = build_db()
+@pytest.mark.parametrize("on_disk", [True, False])
+def test_ndb_finetunable_retriever_save_load(on_disk):
+    db = build_db(on_disk)
 
     save_path = "./finetunable_retriever.ndb"
 

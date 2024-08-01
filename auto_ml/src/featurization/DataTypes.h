@@ -13,20 +13,17 @@
 #include <cereal/types/vector.hpp>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
+#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/blocks/text/WordpieceTokenizer.h>
 #include <utils/Logging.h>
 #include <utils/text/StringManipulation.h>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
-#include <regex>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -293,8 +290,9 @@ struct NodeIDDataType : DataType {
 };
 
 struct TokenTagsDataType : DataType {
-  explicit TokenTagsDataType(std::vector<std::string> tags,
-                             std::string default_tag = "O")
+  explicit TokenTagsDataType(
+      std::vector<std::variant<std::string, data::ner::NerLearnedTag>> tags,
+      std::string default_tag = "O")
       : tags(std::move(tags)), default_tag(std::move(default_tag)) {
     if (this->default_tag.find(' ') != std::string::npos) {
       throw std::invalid_argument(
@@ -303,9 +301,14 @@ struct TokenTagsDataType : DataType {
     }
     // Check each tag in the list
     for (const auto& tag : this->tags) {
-      if (tag.find(' ') != std::string::npos) {
+      auto tag_string = std::holds_alternative<std::string>(tag)
+                            ? std::get<std::string>(tag)
+                            : std::get<data::ner::NerLearnedTag>(tag).tag();
+
+      if (tag_string.find(' ') != std::string::npos) {
         throw std::invalid_argument(
-            "Tags with spaces are not allowed. Found tag: '" + tag + "'");
+            "Tags with spaces are not allowed. Found tag: '" + tag_string +
+            "'");
       }
     }
   }
@@ -314,7 +317,7 @@ struct TokenTagsDataType : DataType {
 
   std::string typeName() const final { return "token_tags"; }
 
-  std::vector<std::string> tags;
+  std::vector<std::variant<std::string, data::ner::NerLearnedTag>> tags;
   std::string default_tag;
 };
 
