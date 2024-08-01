@@ -5,6 +5,7 @@
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -21,7 +22,8 @@ using HashedToken = uint32_t;
 class OnDiskIndex final : public Retriever {
  public:
   explicit OnDiskIndex(const std::string& save_path,
-                       const IndexConfig& config = IndexConfig());
+                       const IndexConfig& config = IndexConfig(),
+                       bool read_only = false);
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs) final;
@@ -63,6 +65,14 @@ class OnDiskIndex final : public Retriever {
 
   std::vector<HashedToken> tokenize(const std::string& text) const;
 
+  rocksdb::Transaction* startTransaction() {
+    if (!_transaction_db) {
+      throw std::invalid_argument(
+          "This operation is not supported in read only mode");
+    }
+    return _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+  }
+
   void storeDocLens(const std::vector<DocId>& ids,
                     const std::vector<uint32_t>& doc_lens);
 
@@ -87,7 +97,9 @@ class OnDiskIndex final : public Retriever {
 
   void updateSumDocLens(int64_t sum_new_doc_lens);
 
-  rocksdb::TransactionDB* _db;
+  rocksdb::DB* _db;
+  rocksdb::TransactionDB* _transaction_db;
+
   rocksdb::ColumnFamilyHandle* _default;
   rocksdb::ColumnFamilyHandle* _counters;
   rocksdb::ColumnFamilyHandle* _token_to_docs;

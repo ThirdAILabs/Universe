@@ -171,7 +171,7 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
 }  // namespace
 
 OnDiskIndex::OnDiskIndex(const std::string& save_path,
-                         const IndexConfig& config)
+                         const IndexConfig& config, bool read_only)
     : _save_path(save_path),
       _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
@@ -206,11 +206,20 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
 
-  auto status =
-      rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
-                                   save_path, column_families, &handles, &_db);
-  if (!status.ok()) {
-    raiseError(status, "open database");
+  rocksdb::Status open_status;
+  if (!read_only) {
+    open_status = rocksdb::TransactionDB::Open(
+        options, rocksdb::TransactionDBOptions(), save_path, column_families,
+        &handles, &_transaction_db);
+    _db = _transaction_db;
+  } else {
+    open_status = rocksdb::DB::OpenForReadOnly(options, save_path,
+                                               column_families, &handles, &_db);
+    _transaction_db = nullptr;
+  }
+
+  if (!open_status.ok()) {
+    raiseError(open_status, "open database");
   }
 
   if (handles.size() != 3) {
@@ -222,8 +231,10 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   _counters = handles[1];
   _token_to_docs = handles[2];
 
-  updateNDocs(0);
-  updateSumDocLens(0);
+  if (!read_only) {
+    updateNDocs(0);
+    updateSumDocLens(0);
+  }
 }
 
 std::unordered_map<HashedToken, std::vector<DocCount>> coalesceCounts(
@@ -264,7 +275,7 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
                                const std::vector<uint32_t>& doc_lens) {
   int64_t sum_doc_lens = 0;
 
-  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+  rocksdb::Transaction* txn = startTransaction();
 
   for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
@@ -386,7 +397,7 @@ void OnDiskIndex::incrementDocLens(
 void OnDiskIndex::incrementDocTokenCounts(
     const std::unordered_map<HashedToken, std::vector<DocCount>>&
         token_to_doc_updates) {
-  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+  rocksdb::Transaction* txn = startTransaction();
 
   for (const auto& [token, updates] : token_to_doc_updates) {
     rocksdb::Slice key(reinterpret_cast<const char*>(&token), sizeof(token));
@@ -572,7 +583,7 @@ std::vector<DocScore> OnDiskIndex::rank(
 void OnDiskIndex::remove(const std::vector<DocId>& id_list) {
   std::unordered_set<DocId> ids(id_list.begin(), id_list.end());
 
-  rocksdb::Transaction* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+  rocksdb::Transaction* txn = startTransaction();
 
   int64_t sum_deleted_len = 0;
   for (const auto& doc : ids) {
@@ -752,7 +763,6 @@ void OnDiskIndex::save(const std::string& new_save_path) const {
 
 std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path,
                                                bool read_only) {
-  (void)read_only;
   licensing::entitlements().verifySaveLoad();
 
   auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
@@ -760,7 +770,7 @@ std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path,
 
   auto config = IndexConfig::fromArchive(*metadata->get("config"));
 
-  return std::make_shared<OnDiskIndex>(save_path, config);
+  return std::make_shared<OnDiskIndex>(save_path, config, read_only);
 }
 
 OnDiskIndex::~OnDiskIndex() {
