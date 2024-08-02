@@ -1,5 +1,5 @@
 #include <pybind11/stl.h>
-#include <telemetry/src/PrometheusClient.h>
+// #include <telemetry/src/PrometheusClient.h>
 #include <utils/UUID.h>
 #include <optional>
 #include <string>

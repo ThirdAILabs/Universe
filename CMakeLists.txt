@@ -170,7 +170,7 @@ add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 # copies of gmock
 set(ENABLE_TESTING OFF)
 set(ENABLE_PUSH OFF)
-add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
+# add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
 
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
@@ -462,8 +462,7 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal utf8proc)
 if(NOT WIN32)
   target_link_libraries(thirdai PUBLIC rocksdb)
 endif()
