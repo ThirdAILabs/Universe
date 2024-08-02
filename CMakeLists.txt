@@ -501,12 +501,8 @@ if(NOT WIN32)
   # DocCount struct still result in a size of > 8 bytes, so it will not be
   # compatible with indexes created on mac/linux.
   set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES}
-      search/src/inverted_index/OnDiskIndex.cc
-      search/src/inverted_index/adapters/RocksDbAdapter.cc
-      search/src/inverted_index/adapters/RocksDbReadOnlyAdapter.cc
-      search/src/inverted_index/id_map/OnDiskIdMap.cc
-      search/src/inverted_index/id_map/OnDiskIdMapReadOnly.cc)
+      ${THIRDAI_SOURCES} search/src/inverted_index/OnDiskIndex.cc
+      search/src/inverted_index/id_map/OnDiskIdMap.cc)
 endif()
 
 # Only add the licensing subdirectory and licensing cc files if the
