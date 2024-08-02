@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
+    branches: [main, cohesity-ner-random-drop-frequency-counter]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
