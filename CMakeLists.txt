@@ -450,10 +450,10 @@ endif()
 if(${LICENSE_CHECK_FLAG_FOUND})
   set(THIRDAI_SOURCES
       ${THIRDAI_SOURCES}
-      # licensing/src/methods/keygen/KeygenCommunication.cc
+      licensing/src/methods/keygen/KeygenCommunication.cc
       # licensing/src/methods/heartbeat/Heartbeat.cc
       licensing/src/CheckLicenseEnabled.cc
-      # licensing/src/methods/keygen/KeyMethod.cc
+      licensing/src/methods/keygen/KeyMethod.cc
       # licensing/src/methods/heartbeat/LocalServerMethod.cc
       licensing/src/methods/file/FileMethod.cc)
 else()
