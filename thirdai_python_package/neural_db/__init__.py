@@ -23,7 +23,7 @@ from .documents import (
     SQLDatabase,
     Unstructured,
 )
-from .model_bazaar import Login, ModelBazaar, NeuralDBClient
+from .model_bazaar import Login, ModelBazaar, NeuralDBClient, WorkflowClient
 from .neural_db import CancelState, CheckpointConfig, NeuralDB, Strength, Sup
 from .question_generation import gen_questions
 from .trainer import training_data_manager, training_progress_manager

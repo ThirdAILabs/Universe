@@ -20,9 +20,9 @@ from .utils import (
     get_directory_size,
     get_file_size,
     hash_path,
+    http_delete_with_error,
     http_get_with_error,
     http_post_with_error,
-    http_delete_with_error,
     zip_folder,
 )
 

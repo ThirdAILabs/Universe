@@ -97,9 +97,7 @@ class NeuralDBClient:
             Gets the source names and ids of documents in the ndb model
     """
 
-    def __init__(
-        self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
-    ):
+    def __init__(self, model_identifier: str, model_id: str, bazaar: ModelBazaar):
         """
         Initializes a new instance of the NeuralDBClient.
 
@@ -108,9 +106,9 @@ class NeuralDBClient:
             deployment_id (str): The deployment ID for the deployed NeuralDB model.
             bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
-        self.deployment_identifier = deployment_identifier
+        self.model_identifier = model_identifier
         self.base_url = construct_deployment_url(
-            re.sub(r"api/$", "", bazaar._base_url), deployment_id
+            re.sub(r"api/$", "", bazaar._base_url), model_id
         )
         self.bazaar = bazaar
 
@@ -456,15 +454,15 @@ class NeuralDBClient:
         )
 
         return response.json()["data"]
-    
+
     @check_deployment_decorator
     def pii_detect(self, sentence: str):
         response = http_post_with_error(
             urljoin(self.base_url, "pii-detect"),
             params={"query": sentence},
-            headers=auth_header(self.bazaar._access_token)
+            headers=auth_header(self.bazaar._access_token),
         )
-        
+
         return response.json()["data"]
 
 
@@ -479,9 +477,7 @@ class UDTClient:
 
     """
 
-    def __init__(
-        self, deployment_identifier: str, deployment_id: str, bazaar: ModelBazaar
-    ):
+    def __init__(self, model_identifier: str, model_id: str, bazaar: ModelBazaar):
         """
         Initializes a new instance of the UDTClient.
 
@@ -491,9 +487,9 @@ class UDTClient:
             bazaar (thirdai.neural_db.ModelBazaar): The bazaar object corresponding to a NeuralDB Enterprise installation
         """
 
-        self.deployment_identifier = deployment_identifier
+        self.model_identifier = model_identifier
         self.base_url = construct_deployment_url(
-            re.sub(r"api/$", "", bazaar._base_url), deployment_id
+            re.sub(r"api/$", "", bazaar._base_url), model_id
         )
         self.bazaar = bazaar
 
@@ -1028,11 +1024,11 @@ class ModelBazaar(Bazaar):
         while True:
             response_data = self.train_status(model)
 
-            if response_data["status"] == "complete":
+            if response_data["train_status"] == "complete":
                 print("\nTraining completed")
                 return
 
-            if response_data["status"] == "failed":
+            if response_data["train_status"] == "failed":
                 print("\nTraining Failed")
                 raise ValueError(f"Training Failed for {model.model_identifier}")
 
@@ -1042,10 +1038,8 @@ class ModelBazaar(Bazaar):
     def deploy(
         self,
         model_identifier: str,
-        deployment_name: str,
         memory: Optional[int] = None,
         is_async=False,
-        use_llm_guardrail:bool = False,
     ):
         """
         Deploys a model and returns a NeuralDBClient instance.
@@ -1061,9 +1055,7 @@ class ModelBazaar(Bazaar):
         url = urljoin(self._base_url, f"deploy/run")
         params = {
             "model_identifier": model_identifier,
-            "deployment_name": deployment_name,
             "memory": memory,
-            "use_llm_guardrail": use_llm_guardrail,
         }
         print(params)
         response = http_post_with_error(
@@ -1072,12 +1064,8 @@ class ModelBazaar(Bazaar):
         response_data = json.loads(response.content)["data"]
 
         ndb_client = NeuralDBClient(
-            deployment_identifier=create_deployment_identifier(
-                model_identifier=model_identifier,
-                deployment_name=deployment_name,
-                deployment_username=self._username,
-            ),
-            deployment_id=response_data["deployment_id"],
+            model_identifier=model_identifier,
+            model_id=response_data["model_id"],
             bazaar=self,
         )
         if is_async:
@@ -1090,14 +1078,12 @@ class ModelBazaar(Bazaar):
     def deploy_udt(
         self,
         model_identifier: str,
-        deployment_name: str,
         memory: Optional[int] = None,
         is_async=False,
     ):
         url = urljoin(self._base_url, f"deploy/run")
         params = {
             "model_identifier": model_identifier,
-            "deployment_name": deployment_name,
             "memory": memory,
         }
         response = http_post_with_error(
@@ -1106,12 +1092,8 @@ class ModelBazaar(Bazaar):
         response_data = json.loads(response.content)["data"]
 
         udt_client = UDTClient(
-            deployment_identifier=create_deployment_identifier(
-                model_identifier=model_identifier,
-                deployment_name=deployment_name,
-                deployment_username=self._username,
-            ),
-            deployment_id=response_data["deployment_id"],
+            model_identifier=model_identifier,
+            model_id=response_data["model_id"],
             bazaar=self,
         )
         if is_async:
@@ -1130,14 +1112,14 @@ class ModelBazaar(Bazaar):
         """
         url = urljoin(self._base_url, f"deploy/status")
 
-        params = {"deployment_identifier": ndb_client.deployment_identifier}
+        params = {"model_identifier": ndb_client.model_identifier}
         while True:
             response = http_get_with_error(
                 url, params=params, headers=auth_header(self._access_token)
             )
             response_data = json.loads(response.content)["data"]
 
-            if response_data["status"] == "complete":
+            if response_data["deploy_status"] == "complete":
                 print("\nDeployment completed")
                 return
 
@@ -1153,7 +1135,7 @@ class ModelBazaar(Bazaar):
         """
         url = urljoin(self._base_url, f"deploy/stop")
         params = {
-            "deployment_identifier": ndb_client.deployment_identifier,
+            "model_identifier": ndb_client.model_identifier,
         }
         response = http_post_with_error(
             url, params=params, headers=auth_header(self._access_token)
@@ -1193,7 +1175,7 @@ class ModelBazaar(Bazaar):
 
         return deployments
 
-    def connect(self, deployment_identifier: str):
+    def connect(self, model_identifier: str):
         """
         Connects to a deployed model and returns a NeuralDBClient instance.
 
@@ -1203,21 +1185,21 @@ class ModelBazaar(Bazaar):
         Returns:
             NeuralDBClient: A NeuralDBClient instance.
         """
-        url = urljoin(self._base_url, f"jobs/deploy-status")
+        url = urljoin(self._base_url, f"deploy/status")
 
         response = http_get_with_error(
             url,
-            params={"deployment_identifier": deployment_identifier},
+            params={"model_identifier": model_identifier},
             headers=auth_header(self._access_token),
         )
 
         response_data = json.loads(response.content)["data"]
 
-        if response_data["status"] == "complete":
+        if response_data["deploy_status"] == "complete":
             print("Connection obtained...")
             return NeuralDBClient(
-                deployment_identifier=deployment_identifier,
-                deployment_id=response_data["deployment_id"],
+                model_identifier=model_identifier,
+                model_id=response_data["model_id"],
                 bazaar=self,
             )
 
@@ -1257,3 +1239,76 @@ class ModelBazaar(Bazaar):
         )
 
         return model
+
+
+from typing import List
+from urllib.parse import urljoin
+
+
+class WorkflowClient:
+    def __init__(self, bazaar: ModelBazaar):
+        self.bazaar = bazaar
+
+    def create_workflow(self, name: str, type: str):
+        url = urljoin(self.bazaar._base_url, "workflow/create")
+        response = http_post_with_error(
+            url,
+            params={
+                "name": name,
+                "type": type,
+            },
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+        response_content = json.loads(response.content)
+        return response_content["data"]["workflow_id"]
+
+    def add_models(self, workflow_id: str, model_identifiers: List[str]):
+        url = urljoin(self.bazaar._base_url, "workflow/add-models")
+        response = http_post_with_error(
+            url,
+            json={
+                "workflow_id": workflow_id,
+                "model_identifiers": model_identifiers,
+            },
+            headers=auth_header(self.bazaar._access_token),
+        )
+        response_content = json.loads(response.content)
+        return response_content["data"]["models"]
+
+    def delete_models(self, workflow_id: str, model_identifiers: List[str]):
+        url = urljoin(self.bazaar._base_url, "workflow/delete-models")
+        response = http_post_with_error(
+            url,
+            params={
+                "workflow_id": workflow_id,
+                "model_identifiers": model_identifiers,
+            },
+            headers=auth_header(self.bazaar._access_token),
+        )
+        response_content = json.loads(response.content)
+        return response_content["data"]["models"]
+
+    def validate_workflow(self, workflow_id: str):
+        url = urljoin(self.bazaar._base_url, "workflow/validate")
+        response = http_post_with_error(
+            url,
+            params={"workflow_id": workflow_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+    def stop_workflow(self, workflow_id: str):
+        url = urljoin(self.bazaar._base_url, "workflow/stop")
+        response = http_post_with_error(
+            url,
+            params={"workflow_id": workflow_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
+
+    def start_workflow(self, workflow_id: str):
+        url = urljoin(self.bazaar._base_url, "workflow/start")
+        response = http_post_with_error(
+            url,
+            params={"workflow_id": workflow_id},
+            headers=auth_header(self.bazaar._access_token),
+        )
