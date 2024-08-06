@@ -1,2 +1,2 @@
 from .bazaar_base import Login
-from .bazaar_client import ModelBazaar, NeuralDBClient
+from .bazaar_client import ModelBazaar, NeuralDBClient, WorkflowClient
