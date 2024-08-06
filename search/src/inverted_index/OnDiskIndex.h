@@ -6,6 +6,7 @@
 #include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 
 namespace thirdai::search {
@@ -96,6 +97,40 @@ class OnDiskIndex final : public Retriever {
   void updateNDocs(int64_t n_new_docs);
 
   void updateSumDocLens(int64_t sum_new_doc_lens);
+
+  template <typename T, typename UpdateFn>
+  void updateKey(rocksdb::ColumnFamilyHandle* column_family,
+                 const rocksdb::Slice& key, const T& delta,
+                 UpdateFn update_fn) {
+    static_assert(
+        std::is_convertible<
+            UpdateFn,
+            std::function<std::string(const std::string&, const T&)>>::value,
+        "Should be convertible to UpdateFn");
+
+    auto* txn = _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+
+    std::string value;
+    auto get_status =
+        txn->GetForUpdate(rocksdb::ReadOptions(), column_family, key, &value);
+    if (!get_status.ok() && !get_status.IsNotFound()) {
+      throw std::runtime_error("Transaction get error");
+    }
+
+    std::string new_value = update_fn(value, delta);
+
+    auto put_status = txn->Put(column_family, key, new_value);
+    if (!put_status.ok()) {
+      throw std::runtime_error("Transaction put error");
+    }
+
+    auto commit_status = txn->Commit();
+    if (!commit_status.ok()) {
+      throw std::runtime_error("Transaction commit error");
+    }
+
+    delete txn;
+  }
 
   rocksdb::DB* _db;
   rocksdb::TransactionDB* _transaction_db;
