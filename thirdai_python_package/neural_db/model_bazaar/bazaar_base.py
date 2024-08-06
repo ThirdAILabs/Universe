@@ -202,7 +202,7 @@ class Bazaar:
         response = http_post_with_error(
             urljoin(self._base_url, "team/create-team"),
             json={"name": name},
-            headers=auth_header(self._access_token),
+            headers=auth_header(self._login_instance.access_token),
         )
         return response
 
@@ -210,7 +210,7 @@ class Bazaar:
         response = http_post_with_error(
             urljoin(self._base_url, "team/add-user-to-team"),
             json={"user_email": user_email, "team_name": team_name},
-            headers=auth_header(self._access_token),
+            headers=auth_header(self._login_instance.access_token),
         )
         return response
 
@@ -218,7 +218,7 @@ class Bazaar:
         response = http_post_with_error(
             urljoin(self._base_url, "team/assign-team-admin"),
             json={"user_email": user_email, "team_name": team_name},
-            headers=auth_header(self._access_token),
+            headers=auth_header(self._login_instance.access_token),
         )
         return response
 
@@ -226,7 +226,7 @@ class Bazaar:
         response = http_delete_with_error(
             urljoin(self._base_url, "team/delete-team"),
             json={"team_name": team_name},
-            headers=auth_header(self._access_token),
+            headers=auth_header(self._login_instance.access_token),
         )
         return response
 
