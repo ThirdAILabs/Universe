@@ -114,6 +114,7 @@ class OnDiskIndex final : public Retriever {
     auto get_status =
         txn->GetForUpdate(rocksdb::ReadOptions(), column_family, key, &value);
     if (!get_status.ok() && !get_status.IsNotFound()) {
+      // TODO(Nicholas): check for busy/timeout for txn conflicts and retry
       throw std::runtime_error("Transaction get error");
     }
 
@@ -121,6 +122,7 @@ class OnDiskIndex final : public Retriever {
 
     auto put_status = txn->Put(column_family, key, new_value);
     if (!put_status.ok()) {
+      // TODO(Nicholas): check for busy/timeout for txn conflicts and retry
       throw std::runtime_error("Transaction put error");
     }
 
