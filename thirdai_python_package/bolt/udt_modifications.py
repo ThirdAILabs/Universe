@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Tuple
+import types
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import thirdai
@@ -6,6 +7,7 @@ import thirdai._thirdai.bolt as bolt
 import thirdai._thirdai.data as data
 import thirdai._thirdai.dataset as dataset
 
+from .udt_builder import task_detector
 from .udt_docs import *
 
 
@@ -82,7 +84,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         shuffle_reservoir_size: int = 64000,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -106,7 +108,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_train_on_data_source(
@@ -121,7 +123,7 @@ def modify_udt():
         metrics: List[str] = [],
         logging_interval: Optional[int] = None,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -142,7 +144,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_evaluate(
@@ -151,7 +153,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -161,7 +163,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_evaluate_on_data_source(
@@ -170,7 +172,7 @@ def modify_udt():
         metrics: List[str] = [],
         use_sparse_inference: bool = False,
         verbose: bool = True,
-        **kwargs
+        **kwargs,
     ):
         return original_evaluate(
             self,
@@ -178,7 +180,7 @@ def modify_udt():
             metrics=metrics,
             sparse_inference=use_sparse_inference,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_cold_start(
@@ -200,7 +202,7 @@ def modify_udt():
         logging_interval: Optional[int] = None,
         comm=None,
         shuffle_reservoir_size: int = 64000,
-        **kwargs
+        **kwargs,
     ):
         data_source = _create_data_source(filename)
 
@@ -227,7 +229,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     def wrapped_cold_start_on_data_source(
@@ -247,7 +249,7 @@ def modify_udt():
         verbose: bool = True,
         logging_interval: Optional[int] = None,
         comm=None,
-        **kwargs
+        **kwargs,
     ):
         val_data, val_metrics, train_options = _process_validation_and_options(
             validation=None,
@@ -271,7 +273,7 @@ def modify_udt():
             callbacks=callbacks,
             options=train_options,
             comm=comm,
-            **kwargs
+            **kwargs,
         )
 
     delattr(bolt.UniversalDeepTransformer, "train")
@@ -415,3 +417,46 @@ def modify_graph_udt():
     bolt.UniversalDeepTransformer.index_nodes_on_data_source = (
         original_index_nodes_method
     )
+
+
+def modify_udt_constructor():
+    original_init = bolt.UniversalDeepTransformer.__init__
+
+    def wrapped_init(
+        self,
+        target: str = None,
+        data_types=None,
+        dataset_path: str = None,
+        **kwargs,
+    ):
+        if target == None:
+            raise ValueError(
+                "The 'target' parameter is required but was not specified. Please "
+                "provide a valid target column name."
+            )
+
+        if data_types:
+            return original_init(self, target=target, data_types=data_types, **kwargs)
+
+        if dataset_path:
+            detected_template: task_detector.UDTDataTemplate = (
+                task_detector.detect_template(
+                    dataset_path=dataset_path,
+                    target=target,
+                    **kwargs,
+                )
+            )
+
+            return original_init(
+                self,
+                target=target,
+                data_types=detected_template.bolt_data_types,
+                extreme_classification=detected_template.extreme_classification,
+                **kwargs,
+            )
+
+        raise ValueError(
+            "Needs a valid target parameter and either data_types or dataset_path for constructing a model."
+        )
+
+    bolt.UniversalDeepTransformer.__init__ = wrapped_init

@@ -104,7 +104,10 @@ std::vector<std::string> tokenizeSentenceUnicodeSafe(
   // \s : whitespace
   // Together: match strings of at least one alphanumeric character or a single
   // non-alphanumeric non-whitespace character
-  std::wregex regex(LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9]+|[^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s])");
+  // Note(pratik): Added the unicode range for devanigiri for better devanigiri
+  // tokenization [\u0900-\u097F]
+  std::wregex regex(
+      LR"([A-Za-zÀ-ÖØ-öø-ÿ0-9\u0900-\u097F]+|[^A-Za-zÀ-ÖØ-öø-ÿ0-9\s\u0900-\u097F])");
 
   std::wcregex_iterator iter(sentence.data(), sentence.data() + sentence.size(),
                              regex);
@@ -144,16 +147,17 @@ std::vector<std::string> tokenizeSentence(const std::string& sentence) {
 std::vector<std::string> charKGrams(const std::string_view& text, uint32_t k) {
   utils::validateGreaterThanZero(k, "k for Char-k grams");
 
-  std::string text_str(text);
-  if (text_str.empty()) {
+  std::wstring wideText = toUnicode(std::string(text));
+  if (wideText.empty()) {
     return {};
   }
 
   std::vector<std::string> char_k_grams;
-  size_t n_kgrams = text_str.size() >= k ? text_str.size() - (k - 1) : 1;
-  size_t len = std::min(text_str.size(), static_cast<size_t>(k));
-  for (uint32_t offset = 0; offset < n_kgrams; offset++) {
-    char_k_grams.push_back(text_str.substr(offset, len));
+  size_t const n_kgrams = wideText.size() >= k ? wideText.size() - (k - 1) : 1;
+
+  for (size_t offset = 0; offset < n_kgrams; ++offset) {
+    std::wstring const kgram = wideText.substr(offset, k);
+    char_k_grams.push_back(fromUnicode(kgram));
   }
 
   return char_k_grams;
@@ -397,17 +401,16 @@ std::wstring toUnicode(const std::string& text) {
 }
 
 std::string fromUnicode(const std::wstring& wText) {
-  char buffer[64];
-  std::string ret;
-  for (auto c : wText) {
-    utf8proc_ssize_t num_bytes_written =
-        utf8proc_encode_char(c, reinterpret_cast<utf8proc_uint8_t*>(buffer));
-    if (num_bytes_written <= 0) {
-      return "";
+  std::string result;
+  for (const wchar_t wc : wText) {
+    char buffer[4];
+    const utf8proc_ssize_t bytes =
+        utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+    if (bytes > 0) {
+      result.append(buffer, bytes);
     }
-    ret += std::string(buffer, buffer + num_bytes_written);
   }
-  return ret;
+  return result;
 }
 
 std::string normalize(const std::string& s) {

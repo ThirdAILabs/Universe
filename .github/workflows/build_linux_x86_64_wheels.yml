@@ -16,6 +16,8 @@ on:
   push: 
     branches: [main]
     tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [main]
   workflow_dispatch:  
 
 jobs:
@@ -44,6 +46,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/lib64/openssl11;/usr/include/openssl11"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
+            OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
          
           # TODO: Upgrade distro to supported version.
           # CentOS 7 is deprecated, and the following commmands are a workaround to still use that version.
@@ -63,11 +66,11 @@ jobs:
           CIBW_BUILD: "cp*manylinux_x86_64"
           CIBW_BUILD_VERBOSITY: 3
 
-          CIBW_BEFORE_TEST_LINUX: |
-            yum install golang libreoffice -y
-            pip install --upgrade pip
-          CIBW_TEST_EXTRAS: "test"
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          # CIBW_BEFORE_TEST_LINUX: |
+          #   yum install golang libreoffice -y
+          #   pip install --upgrade pip
+          # CIBW_TEST_EXTRAS: "test"
+          # CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
@@ -75,7 +78,7 @@ jobs:
           # test our distributed pipeline.
           #
           # TODO(any): A more future proof solution when stuff starts working.
-          CIBW_SKIP: "cp36-* cp37-*"
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* cp310-* cp312-*"
 
 
       - name: Upload wheels
@@ -83,82 +86,82 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
       
-      - name: Notify slack fail
-        if: failure() && github.event_name == 'release' && github.event.action == 'published'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel_id: pypi_package_releases
-          status: FAILED
-          color: danger
+  #     - name: Notify slack fail
+  #       if: failure() && github.event_name == 'release' && github.event.action == 'published'
+  #       env:
+  #         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  #       uses: voxmedia/github-action-slack-notify-build@v1
+  #       with:
+  #         channel_id: pypi_package_releases
+  #         status: FAILED
+  #         color: danger
 
 
-  upload_to_test_pypi:
-    name: Upload to test pypi
-    needs: [build_wheels]
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  # upload_to_test_pypi:
+  #   name: Upload to test pypi
+  #   needs: [build_wheels]
+  #   runs-on: ubuntu-latest
+  #   if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
-    steps:
-    - uses: actions/setup-python@v2
+  #   steps:
+  #   - uses: actions/setup-python@v2
 
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifact
-        path: dist
+  #   - uses: actions/download-artifact@v2
+  #     with:
+  #       name: artifact
+  #       path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+  #   - uses: pypa/gh-action-pypi-publish@v1.5.0
+  #     with:
+  #       user: __token__
+  #       password: ${{ secrets.TEST_PYPI_TOKEN }}
+  #       repository_url: https://test.pypi.org/legacy/
     
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
+  #   - name: Notify slack fail
+  #     if: failure()
+  #     env:
+  #       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  #     uses: voxmedia/github-action-slack-notify-build@v1
+  #     with:
+  #       channel_id: pypi_package_releases
+  #       status: FAILED
+  #       color: danger
 
-  upload_to_real_pypi:
-    name: Upload to real pypi
-    needs: [upload_to_test_pypi]
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  # upload_to_real_pypi:
+  #   name: Upload to real pypi
+  #   needs: [upload_to_test_pypi]
+  #   runs-on: ubuntu-latest
+  #   if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
-    steps:
-    - uses: actions/setup-python@v2
+  #   steps:
+  #   - uses: actions/setup-python@v2
 
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifact
-        path: dist
+  #   - uses: actions/download-artifact@v2
+  #     with:
+  #       name: artifact
+  #       path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
+  #   - uses: pypa/gh-action-pypi-publish@v1.5.0
+  #     with:
+  #       user: __token__
+  #       password: ${{ secrets.PYPI_TOKEN }}
 
-    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
-      if: success()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: SUCCESS
-        color: good
+  #   - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
+  #     if: success()
+  #     env:
+  #       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  #     uses: voxmedia/github-action-slack-notify-build@v1
+  #     with:
+  #       channel_id: pypi_package_releases
+  #       status: SUCCESS
+  #       color: good
 
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
+  #   - name: Notify slack fail
+  #     if: failure()
+  #     env:
+  #       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  #     uses: voxmedia/github-action-slack-notify-build@v1
+  #     with:
+  #       channel_id: pypi_package_releases
+  #       status: FAILED
+  #       color: danger

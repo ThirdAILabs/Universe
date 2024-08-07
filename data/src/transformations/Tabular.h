@@ -6,6 +6,13 @@
 
 namespace thirdai::data {
 
+inline float parseFloat(const std::string& str) {
+  if (str.empty()) {
+    return 0.0;
+  }
+  return std::stof(str);
+}
+
 struct NumericalColumn {
   explicit NumericalColumn(std::string _name, float min, float max,
                            uint32_t num_bins)
@@ -19,7 +26,27 @@ struct NumericalColumn {
 
   explicit NumericalColumn(const ar::Archive& archive);
 
-  inline uint32_t encode(const std::string& val) const;
+  inline uint32_t encode(const std::string& str_val) const {
+    float val;
+    try {
+      val = parseFloat(str_val);
+    } catch (...) {
+      std::stringstream error;
+      error << "Cannot cast '" << str_val << "' to a float";
+      throw std::invalid_argument(error.str());
+    }
+
+    uint32_t bin;
+    if (val <= _min) {
+      bin = 0;
+    } else if (val >= _max) {
+      bin = _num_bins - 1;
+    } else {
+      bin = (val - _min) / _binsize;
+    }
+
+    return hashing::combineHashes(bin, _salt);
+  }
 
   std::string name;
 

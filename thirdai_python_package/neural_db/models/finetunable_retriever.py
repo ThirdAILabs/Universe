@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
@@ -9,15 +10,23 @@ from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
 
 
 class FinetunableRetriever(Model):
-    def __init__(self, retriever: Optional[search.FinetunableRetriever] = None):
-        self.retriever = retriever or search.FinetunableRetriever()
+    def __init__(
+        self,
+        retriever: Optional[search.FinetunableRetriever] = None,
+        on_disk=False,
+        **kwargs,
+    ):
+        save_path = None
+        if on_disk:
+            save_path = f"{uuid.uuid4()}.db"
+        self.retriever = retriever or search.FinetunableRetriever(save_path=save_path)
 
     def index_from_start(
         self,
         intro_documents: DocumentDataSource,
         on_progress: Callable = lambda *args, **kwargs: None,
         batch_size=100000,
-        **kwargs
+        **kwargs,
     ):
         docs = []
         ids = []
@@ -36,6 +45,8 @@ class FinetunableRetriever(Model):
         if len(docs):
             self.retriever.index(ids=ids, docs=docs)
             on_progress(self.retriever.size() / intro_documents.size)
+
+        self.retriever.prune()
 
     def forget_documents(self) -> None:
         self.retriever = search.FinetunableRetriever()
@@ -74,10 +85,14 @@ class FinetunableRetriever(Model):
         return add_retriever_tag(results, "finetunable_retriever")
 
     def save_meta(self, directory: Path) -> None:
-        pass
+        self.retriever.save(str(directory))
 
-    def load_meta(self, directory: Path):
-        pass
+    def load_meta(self, directory: Path, read_only: bool = False):
+        if not self.retriever:
+            self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
+
+    def __getstate__(self) -> object:
+        return {"retriever": None}
 
     def associate(self, pairs: List[Tuple[str, str]], retriever_strength=4, **kwargs):
         sources, targets = list(zip(*pairs))

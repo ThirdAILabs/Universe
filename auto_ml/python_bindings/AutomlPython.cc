@@ -339,8 +339,10 @@ void createUDTTypesSubmodule(py::module_& module) {
 
   py::class_<TokenTagsDataType, DataType, TokenTagsDataTypePtr>(
       udt_types_submodule, "token_tags")
-      .def(py::init<std::vector<std::string>, std::string>(), py::arg("tags"),
-           py::arg("default_tag"));
+      .def(py::init<
+               std::vector<std::variant<std::string, data::ner::NerLearnedTag>>,
+               std::string>(),
+           py::arg("tags"), py::arg("default_tag"));
 }
 
 void createUDTTemporalSubmodule(py::module_& module) {
@@ -431,6 +433,7 @@ config::ArgumentMap createArgumentMap(const py::dict& input_args) {
     } else if (py::isinstance<data::FeatureEnhancementConfig>(v)) {
       auto value = v.cast<data::FeatureEnhancementConfig>();
       args.insert(name, value);
+    } else if (v.is_none()) {
     } else {
       throw std::invalid_argument(
           "Invalid type '" + py::str(v.get_type()).cast<std::string>() +
