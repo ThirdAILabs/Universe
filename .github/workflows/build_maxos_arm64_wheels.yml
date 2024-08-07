@@ -14,7 +14,7 @@ concurrency:
 # for more details.
 on: 
   push: 
-    branches: [main]
+    branches: [main, new-platform-changes+udt]
     tags: [ 'v*.*.*' ]
   workflow_dispatch:  
 
