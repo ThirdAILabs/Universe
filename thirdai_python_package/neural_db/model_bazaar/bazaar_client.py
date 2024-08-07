@@ -1244,7 +1244,7 @@ class WorkflowClient:
             url,
             params={
                 "name": name,
-                "type": type,
+                "type_name": type,
             },
             headers=auth_header(self.bazaar._access_token),
         )
