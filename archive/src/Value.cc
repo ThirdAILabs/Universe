@@ -3,10 +3,13 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <archive/src/Archive.h>
 #include <archive/src/StringCipher.h>
+#include <cstdint>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::ar {
 
@@ -38,6 +41,21 @@ std::string Value<char>::typeName() {
 template <>
 std::string Value<std::string>::typeName() {
   return "Value[std::string]";
+}
+
+template <>
+std::string Value<std::unordered_set<std::string>>::typeName() {
+  return "Value[std::unordered_set<std::string>]";
+}
+
+template <>
+std::string Value<std::unordered_set<uint32_t>>::typeName() {
+  return "Value[std::unordered_set<uint32_t>]";
+}
+
+template <>
+std::string Value<std::unordered_set<char>>::typeName() {
+  return "Value[std::unordered_set<char>]";
 }
 
 template <>
@@ -105,6 +123,11 @@ std::string Value<std::unordered_map<std::string, uint64_t>>::typeName() {
 template <>
 std::string Value<std::unordered_map<std::string, int64_t>>::typeName() {
   return "Value[std::unordered_map<std::string, int64_t>]";
+}
+
+template <>
+std::string Value<std::unordered_map<std::string, uint32_t>>::typeName() {
+  return "Value[std::unordered_map<std::string, uint32_t>]";
 }
 
 template <>

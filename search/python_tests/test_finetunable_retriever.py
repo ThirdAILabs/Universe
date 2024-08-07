@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 import pytest
@@ -61,7 +62,7 @@ def test_finetunable_retriever(download_scifact_dataset):
     index.save(path)
 
     index = search.FinetunableRetriever.load(path)
-    os.remove(path)
+    shutil.rmtree(path)
 
     after_load_acc = evaluate(index, query_df)
     print("after_load_acc=", after_load_acc)

@@ -11,41 +11,10 @@
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Transformation.h>
 #include <exception>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace thirdai::data {
-
-inline float parseFloat(const std::string& str) {
-  if (str.empty()) {
-    return 0.0;
-  }
-  return std::stof(str);
-}
-
-inline uint32_t NumericalColumn::encode(const std::string& str_val) const {
-  float val;
-  try {
-    val = parseFloat(str_val);
-  } catch (...) {
-    std::stringstream error;
-    error << "Cannot cast '" << str_val << "' to a float";
-    throw std::invalid_argument(error.str());
-  }
-
-  uint32_t bin;
-  if (val <= _min) {
-    bin = 0;
-  } else if (val >= _max) {
-    bin = _num_bins - 1;
-  } else {
-    bin = (val - _min) / _binsize;
-  }
-
-  return hashing::combineHashes(bin, _salt);
-}
 
 inline uint32_t CategoricalColumn::encode(const std::string& val) const {
   return hashing::MurmurHash(val.data(), val.size(), _salt);

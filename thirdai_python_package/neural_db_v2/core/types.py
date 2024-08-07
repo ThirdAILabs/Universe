@@ -13,11 +13,8 @@ Score = float
 
 
 @dataclass
-class NewChunk:
-    """A chunk that has not been assigned a unique ID."""
-
-    # An optional identifier supplied by the user.
-    custom_id: Union[str, int, None]
+class Chunk:
+    """A chunk that has been assigned a unique ID."""
 
     # The text content of the chunk, e.g. a paragraph.
     text: str
@@ -31,10 +28,11 @@ class NewChunk:
     # Parent document name
     document: str
 
+    # UUID for the document
+    doc_id: str
 
-@dataclass
-class Chunk(NewChunk):
-    """A chunk that has been assigned a unique ID."""
+    # Version of the document
+    doc_version: int
 
     # A unique identifier assigned by a chunk store.
     chunk_id: ChunkId
@@ -57,23 +55,18 @@ class Chunk(NewChunk):
 
 @dataclass
 class NewChunkBatch:
-    custom_id: Union[pt.Series[str], pt.Series[int], None]
     text: pt.Series[str]
     keywords: pt.Series[str]
     metadata: Optional[pt.DataFrame]
     document: pt.Series[str]
 
     def __post_init__(self):
-        assert isinstance(self.custom_id, pd.Series) or self.custom_id is None
         assert isinstance(self.text, pd.Series)
         assert isinstance(self.keywords, pd.Series)
         assert isinstance(self.metadata, pd.DataFrame) or self.metadata is None
         assert isinstance(self.document, pd.Series)
 
         fields_to_check = [self.text, self.keywords, self.document]
-
-        if not self.custom_id is None:
-            fields_to_check.append(self.custom_id)
 
         if not self.metadata is None:
             fields_to_check.append(self.metadata)
@@ -88,29 +81,14 @@ class NewChunkBatch:
     def __len__(self):
         return len(self.text)
 
-    def __getitem__(self, i: int):
-        return NewChunk(
-            custom_id=self.custom_id[i] if self.custom_id is not None else None,
-            text=self.text[i],
-            keywords=self.keywords[i],
-            metadata=(
-                self.metadata.iloc[i].to_dict() if self.metadata is not None else None
-            ),
-            document=self.document[i],
-        )
-
     def to_df(self):
-        columns = {
-            "text": self.text,
-            "keywords": self.keywords,
-            "document": self.document,
-        }
-        if self.custom_id is not None:
-            columns["custom_id"] = self.custom_id
-        else:
-            columns["custom_id"] = pd.Series(np.full(len(self.text), None))
-
-        return pd.DataFrame(columns)
+        return pd.DataFrame(
+            {
+                "text": self.text,
+                "keywords": self.keywords,
+                "document": self.document,
+            }
+        )
 
 
 @dataclass
@@ -134,50 +112,17 @@ class ChunkBatch:
         if len(self.text) == 0:
             raise ValueError("Cannot create empty ChunkBatch.")
 
+    def __len__(self):
+        return len(self.text)
+
     def to_df(self):
         return pd.DataFrame(self.__dict__)
-
-
-@dataclass
-class CustomIdSupervisedSample:
-    query: str
-    custom_id: Union[List[str], List[int]]
 
 
 @dataclass
 class SupervisedSample:
     query: str
     chunk_id: List[ChunkId]
-
-
-@dataclass
-class CustomIdSupervisedBatch:
-    query: pt.Series[str]
-    custom_id: Union[pt.Series[List[str]], pt.Series[List[int]]]
-
-    def __post_init__(self):
-        assert isinstance(self.custom_id, pd.Series)
-        assert isinstance(self.query, pd.Series)
-
-        self.query = self.query.reset_index(drop=True)
-        self.custom_id = self.custom_id.reset_index(drop=True)
-
-        if len(self.query) != len(self.custom_id):
-            raise ValueError(
-                "Must have fields of the same length in CustomIdSupervisedBatch."
-            )
-
-        if len(self.query) == 0:
-            raise ValueError("Cannot create empty CustomIdSupervisedBatch.")
-
-    def __getitem__(self, i: int):
-        return CustomIdSupervisedSample(
-            query=self.query[i],
-            custom_id=self.custom_id[i],
-        )
-
-    def to_df(self):
-        return pd.DataFrame(self.__dict__)
 
 
 @dataclass
@@ -206,3 +151,10 @@ class SupervisedBatch:
 
     def to_df(self):
         return pd.DataFrame(self.__dict__)
+
+
+@dataclass
+class InsertedDocMetadata:
+    doc_id: str
+    doc_version: int
+    chunk_ids: List[ChunkId]

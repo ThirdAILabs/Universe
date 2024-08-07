@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, Optional
 
 import pandas as pd
 
@@ -14,9 +14,9 @@ class InMemoryText(Document):
         text=[],
         chunk_metadata=None,
         doc_metadata=None,
-        custom_id=None,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.document_name = document_name
         self.text = pd.Series(text)
@@ -24,7 +24,6 @@ class InMemoryText(Document):
             pd.DataFrame.from_records(chunk_metadata) if chunk_metadata else None
         )
         self.doc_metadata = doc_metadata
-        self.custom_id = custom_id
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         metadata = join_metadata(
@@ -35,10 +34,18 @@ class InMemoryText(Document):
 
         return [
             NewChunkBatch(
-                custom_id=pd.Series(self.custom_id) if self.custom_id else None,
                 text=self.text,
                 keywords=series_from_value("", len(self.text)),
                 metadata=metadata,
                 document=series_from_value(self.document_name, len(self.text)),
             )
         ]
+
+
+class PrebatchedDoc(Document):
+    def __init__(self, chunks: Iterable[NewChunkBatch], doc_id: Optional[str] = None):
+        super().__init__(doc_id=doc_id)
+        self._chunks = chunks
+
+    def chunks(self) -> Iterable[NewChunkBatch]:
+        return self._chunks

@@ -40,9 +40,7 @@ def bolt_pretrained():
     )
     model = bolt.nn.Model(inputs=inputs, outputs=[embeddings], losses=[loss])
 
-    ner_model = bolt.UniversalDeepTransformer.NER(
-        bolt.NerBoltModel(model, "old_source", "old_target", TAG_MAP)
-    )
+    ner_model = bolt.NER(bolt.NerBoltModel(model, "old_source", "old_target", TAG_MAP))
     pretrained_path = "ner_bolt_pretrained"
     ner_model.save(pretrained_path)
 
@@ -60,9 +58,7 @@ def udt_pretrained():
         embeddings, labels=bolt.nn.Input(dim=embeddings.dim())
     )
     model = bolt.nn.Model(inputs=inputs, outputs=[embeddings], losses=[loss])
-    ner_model = bolt.UniversalDeepTransformer.NER(
-        bolt.NerUDTModel(model, "old_source", "old_target", TAG_MAP)
-    )
+    ner_model = bolt.NER(bolt.NerUDTModel(model, "old_source", "old_target", TAG_MAP))
     pretrained_path = "ner_udt_pretrained"
     ner_model.save(pretrained_path)
 
@@ -71,7 +67,7 @@ def udt_pretrained():
 
 @pytest.mark.unit
 def test_udt_ner_backend(sample_training_data):
-    udt_ner_model = bolt.UniversalDeepTransformer.NER("source", "target", TAG_MAP)
+    udt_ner_model = bolt.NER("source", "target", TAG_MAP)
     train_file = sample_training_data
 
     udt_ner_model.train(
@@ -94,7 +90,7 @@ def test_udt_ner_backend(sample_training_data):
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     udt_ner_model.save("ner_model")
-    udt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")
+    udt_ner_model = bolt.NER.load("ner_model")
 
     results_after_load = udt_ner_model.predict_batch(texts)
 
@@ -117,7 +113,7 @@ def test_udt_ner_backend(sample_training_data):
 @pytest.mark.unit
 def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
     pretrained_path = bolt_pretrained
-    bolt_ner_model = bolt.UniversalDeepTransformer.NER.from_pretrained(
+    bolt_ner_model = bolt.NER.from_pretrained(
         pretrained_path,
         "source",
         "target",
@@ -144,7 +140,7 @@ def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     bolt_ner_model.save("ner_model")
-    bolt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")
+    bolt_ner_model = bolt.NER.load("ner_model")
 
     results_after_load = bolt_ner_model.predict_batch(texts)
 
@@ -171,7 +167,7 @@ def test_pretrained_ner_bolt_backend(sample_training_data, bolt_pretrained):
 @pytest.mark.unit
 def test_pretrained_ner_udt_backend(sample_training_data, udt_pretrained):
     pretrained_path = udt_pretrained
-    udt_ner_model = bolt.UniversalDeepTransformer.NER.from_pretrained(
+    udt_ner_model = bolt.NER.from_pretrained(
         pretrained_path,
         "source",
         "target",
@@ -197,7 +193,7 @@ def test_pretrained_ner_udt_backend(sample_training_data, udt_pretrained):
     assert all([len(text) == len(result) for text, result in zip(texts, results)])
 
     udt_ner_model.save("ner_model")
-    udt_ner_model = bolt.UniversalDeepTransformer.NER.load("ner_model")
+    udt_ner_model = bolt.NER.load("ner_model")
 
     results_after_load = udt_ner_model.predict_batch(texts)
 

@@ -104,8 +104,8 @@ class MachMixture(Model):
 
     def save_meta(self, directory: Path):
         if self.ensembles is not None:
-            for ensemble in self.ensembles:
-                ensemble.save_meta(directory)
+            for i, ensemble in enumerate(self.ensembles):
+                ensemble.save_meta(directory / str(i))
 
         pickle_to(
             [self.label_to_segment_map, self.seed_for_sharding],
@@ -114,8 +114,8 @@ class MachMixture(Model):
 
     def load_meta(self, directory: Path):
         if self.ensembles is not None:
-            for ensemble in self.ensembles:
-                ensemble.load_meta(directory)
+            for i, ensemble in enumerate(self.ensembles):
+                ensemble.load_meta(directory / str(i))
         self.label_to_segment_map, self.seed_for_sharding = unpickle_from(
             directory / "segment_map_and_seed.pkl"
         )
