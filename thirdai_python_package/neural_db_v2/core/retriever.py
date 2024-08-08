@@ -13,7 +13,7 @@ class Retriever(ABC):
 
     @abstractmethod
     def rank(
-        self, queries: List[str], choices: List[Set[ChunkId]], **kwargs
+        self, queries: List[str], choices: List[Set[ChunkId]], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         """For constrained search.
         Note on method signature:
