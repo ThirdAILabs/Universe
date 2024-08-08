@@ -594,8 +594,14 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")) {
-  for (const auto& learned_tags : archive.get("label_to_tag")->list()) {
-    _label_to_tag.push_back(data::ner::NerTag::fromArchive(*learned_tags));
+  if (archive.get("label_to_tag")->is<ar::VecStr>()) {
+    for (const auto& tag : archive.getAs<ar::VecStr>("label_to_tag")) {
+      _label_to_tag.push_back(data::ner::getLearnedTagFromString(tag));
+    }
+  } else {
+    for (const auto& learned_tags : archive.get("label_to_tag")->list()) {
+      _label_to_tag.push_back(data::ner::NerTag::fromArchive(*learned_tags));
+    }
   }
 
   if (archive.contains("use_rules_for")) {
