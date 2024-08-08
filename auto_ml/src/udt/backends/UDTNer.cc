@@ -594,6 +594,8 @@ UDTNer::UDTNer(const ar::Archive& archive)
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
       _tags_column(archive.str("tags_column")) {
+  // This was changed from a list of strings to a list of NerTag objects.
+  // This is to ensure backward compatability when loading old models.
   if (archive.get("label_to_tag")->is<ar::VecStr>()) {
     for (const auto& tag : archive.getAs<ar::VecStr>("label_to_tag")) {
       _label_to_tag.push_back(data::ner::getLearnedTagFromString(tag));
