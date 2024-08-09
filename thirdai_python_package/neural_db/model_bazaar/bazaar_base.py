@@ -201,31 +201,40 @@ class Bazaar:
     def create_team(self, name):
         response = http_post_with_error(
             urljoin(self._base_url, "team/create-team"),
-            json={"name": name},
+            params={"name": name},
+            headers=auth_header(self._login_instance.access_token),
+        )
+        response_content = json.loads(response.content)
+        return response_content["data"]["team_id"]
+
+    def remove_user_from_team(self, user_email, team_id):
+        response = http_post_with_error(
+            urljoin(self._base_url, "team/remove-user-from-team"),
+            params={"email": user_email, "team_id": team_id},
             headers=auth_header(self._login_instance.access_token),
         )
         return response
-
-    def add_user_to_team(self, user_email, team_name):
+    
+    def add_user_to_team(self, user_email, team_id):
         response = http_post_with_error(
             urljoin(self._base_url, "team/add-user-to-team"),
-            json={"user_email": user_email, "team_name": team_name},
+            params={"email": user_email, "team_id": team_id},
             headers=auth_header(self._login_instance.access_token),
         )
         return response
 
-    def assign_team_admin(self, user_email, team_name):
+    def assign_team_admin(self, user_email, team_id):
         response = http_post_with_error(
             urljoin(self._base_url, "team/assign-team-admin"),
-            json={"user_email": user_email, "team_name": team_name},
+            params={"email": user_email, "team_id": team_id},
             headers=auth_header(self._login_instance.access_token),
         )
         return response
 
-    def delete_team(self, team_name):
+    def delete_team(self, team_id):
         response = http_delete_with_error(
             urljoin(self._base_url, "team/delete-team"),
-            json={"team_name": team_name},
+            params={"team_id": team_id},
             headers=auth_header(self._login_instance.access_token),
         )
         return response
