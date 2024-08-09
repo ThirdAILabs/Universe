@@ -32,6 +32,8 @@ class Retriever {
       const std::vector<std::string>& queries, uint32_t k) const {
     std::vector<std::vector<DocScore>> scores(queries.size());
 
+#pragma omp parallel for default(none) \
+    shared(queries, scores, k) if (queries.size() > 1)
     for (size_t i = 0; i < queries.size(); i++) {
       scores[i] = query(queries[i], k, /*parallelize=*/false);
     }
