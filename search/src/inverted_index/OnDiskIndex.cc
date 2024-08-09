@@ -72,6 +72,10 @@ inline bool isPruned(const rocksdb::Slice& value) {
   return status == TokenStatus::Pruned;
 }
 
+inline void appendTokenStatus(std::string& value, TokenStatus status) {
+  value.append(reinterpret_cast<const char*>(&status), sizeof(TokenStatus));
+}
+
 inline size_t docsWithToken(const rocksdb::Slice& value) {
   assert((value.size() - sizeof(TokenStatus)) % sizeof(DocCount) == 0);
   return (value.size() - sizeof(TokenStatus)) / sizeof(DocCount);
@@ -103,18 +107,14 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
     (void)logger;
 
     if (!existing_value) {
-      *new_value = std::string(sizeof(TokenStatus) + value.size(), 0);
-
-      *reinterpret_cast<TokenStatus*>(new_value->data()) = TokenStatus::Default;
-
-      std::copy(value.data(), value.data() + value.size(),
-                new_value->data() + sizeof(TokenStatus));
-
+      *new_value = value.ToString();
       return true;
     }
 
-    if (isPruned(*existing_value)) {
-      *new_value = existing_value->ToString();
+    if (isPruned(*existing_value) || isPruned(value)) {
+      *new_value = std::string();
+      new_value->reserve(sizeof(TokenStatus));
+      appendTokenStatus(*new_value, TokenStatus::Pruned);
       return true;
     }
 
@@ -124,10 +124,12 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
     // to merge the 2 values based on doc_id.
 
     *new_value = std::string();
-    new_value->reserve(existing_value->size() + value.size());
+    new_value->reserve(existing_value->size() + value.size() -
+                       sizeof(TokenStatus));
 
     new_value->append(existing_value->data(), existing_value->size());
-    new_value->append(value.data(), value.size());
+    new_value->append(value.data() + sizeof(TokenStatus),
+                      value.size() - sizeof(TokenStatus));
 
     return true;
   }
@@ -327,12 +329,15 @@ void OnDiskIndex::updateTokenToDocs(
     const char* data_end =
         reinterpret_cast<const char*>(doc_counts.data() + doc_counts.size());
 
-    size_t slice_len = data_end - data_start;
+    const size_t slice_len = data_end - data_start;
     if (slice_len != sizeof(DocCount) * doc_counts.size()) {
       throw std::invalid_argument("Alignment issue");
     }
 
-    rocksdb::Slice value(data_start, slice_len);
+    std::string value;
+    value.reserve(sizeof(TokenStatus) + slice_len);
+    appendTokenStatus(value, TokenStatus::Default);
+    value.append(data_start, slice_len);
 
     // TODO(Nicholas): is it faster to just store the count per doc as a
     // unique key with <token>_<doc> -> cnt and then do prefix scans on
@@ -406,8 +411,7 @@ void OnDiskIndex::incrementDocTokenCounts(
     auto get_status =
         txn->GetForUpdate(rocksdb::ReadOptions(), _token_to_docs, key, &value);
     if (get_status.IsNotFound()) {
-      TokenStatus status = TokenStatus::Default;
-      value.append(reinterpret_cast<const char*>(&status), sizeof(TokenStatus));
+      appendTokenStatus(value, TokenStatus::Default);
     } else if (!get_status.ok()) {
       raiseError(get_status, "txn get");
     }

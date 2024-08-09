@@ -71,7 +71,39 @@ TEST_F(OnDiskIndexTests, SyntheticDataset) {
   OnDiskIndex index(tmpDbName());
   OnDiskIndex incremental_index(tmpDbName());
 
-  testSyntheticDataset(index, incremental_index);
+  size_t vocab_size = 10000;
+  size_t n_docs = 1000;
+  size_t topk = 10;
+
+  auto [ids, docs, queries] = makeDocsAndQueries(vocab_size, n_docs);
+
+  index.index(ids, docs);
+
+  auto results = index.queryBatch(queries, /*k=*/topk);
+
+  for (size_t i = 0; i < queries.size(); i++) {
+    // i-th query goes to i-th doc.
+    ASSERT_EQ(results[i][0].first, i);
+    // Check single query vs batch query consistency.
+    ASSERT_EQ(index.query(queries[i], /*k=*/topk, true), results[i]);
+  }
+
+  // Check that building index incrementally gets the same results.
+  size_t n_chunks = 10;
+  size_t chunksize = n_docs / n_chunks;
+  for (int i = 0; i < n_chunks; i++) {
+    size_t start = i * chunksize;
+    size_t end = start + chunksize;
+    incremental_index.index({ids.begin() + start, ids.begin() + end},
+                            {docs.begin() + start, docs.begin() + end});
+  }
+
+  auto incremental_results = incremental_index.queryBatch(queries, /*k=*/topk);
+
+  ASSERT_EQ(results.size(), incremental_results.size());
+  for (size_t i = 0; i < results.size(); i++) {
+    compareResults(results[i], incremental_results[i]);
+  }
 }
 
 TEST_F(OnDiskIndexTests, SaveLoad) {
