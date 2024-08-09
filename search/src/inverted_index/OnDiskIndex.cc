@@ -128,9 +128,9 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
 
   rocksdb::Status open_status;
   if (!read_only) {
-    open_status = rocksdb::TransactionDB::Open(
-        options, rocksdb::TransactionDBOptions(), save_path, column_families,
-        &handles, &_transaction_db);
+    open_status = rocksdb::OptimisticTransactionDB::Open(
+        options, rocksdb::OptimisticTransactionDBOptions(), save_path,
+        column_families, &handles, &_transaction_db);
     _db = _transaction_db;
   } else {
     open_status = rocksdb::DB::OpenForReadOnly(options, save_path,
@@ -191,10 +191,12 @@ void OnDiskIndex::index(const std::vector<DocId>& ids,
   updateTokenToDocs(coalesced_counts);
 }
 
-std::string storeDocLenAndCheckForExisting(const std::string& value,
+constexpr size_t batch_size = 100000;
+
+std::string storeDocLenAndCheckForExisting(const rocksdb::PinnableSlice& value,
                                            int64_t doc_len) {
   if (!value.empty()) {
-    throw std::runtime_error("Document with id " + value +
+    throw std::runtime_error("Document with id " + value.ToString() +
                              " is already indexed.");
   }
 
@@ -208,22 +210,28 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
                                const std::vector<uint32_t>& doc_lens) {
   int64_t sum_doc_lens = 0;
 
-  for (size_t i = 0; i < ids.size(); i++) {
-    const DocId doc_id = ids[i];
-    const int64_t doc_len = doc_lens[i];
+  for (size_t start = 0; start < ids.size(); start += batch_size) {
+    const size_t end = std::min(start + batch_size, ids.size());
 
-    const std::string key = docIdKey(doc_id);
+    std::vector<std::string> stored_keys(end - start);
+    std::vector<rocksdb::Slice> keys(end - start);
+    std::vector<int64_t> lens(end - start);
 
-    updateKey(_counters, key, doc_len, storeDocLenAndCheckForExisting);
+    for (size_t i = 0; i < (end - start); i++) {
+      stored_keys[i] = docIdKey(ids[start + i]);
+      keys[i] = stored_keys[i];
+      lens[i] = doc_lens[start + i];
+      sum_doc_lens += doc_lens[start + i];
+    }
 
-    sum_doc_lens += doc_len;
+    updateKeys(_counters, keys, lens, storeDocLenAndCheckForExisting);
   }
 
   updateNDocs(ids.size());
   updateSumDocLens(sum_doc_lens);
 }
 
-std::string concatTokenCounts(const std::string& value,
+std::string concatTokenCounts(const rocksdb::PinnableSlice& value,
                               const rocksdb::Slice& delta) {
   if (value.empty()) {
     std::string new_value;
@@ -248,6 +256,8 @@ std::string concatTokenCounts(const std::string& value,
 void OnDiskIndex::updateTokenToDocs(
     const std::unordered_map<HashedToken, std::vector<DocCount>>&
         token_to_new_docs) {
+  std::vector<rocksdb::Slice> keys;
+  std::vector<rocksdb::Slice> values;
   for (const auto& [token, doc_counts] : token_to_new_docs) {
     rocksdb::Slice key(reinterpret_cast<const char*>(&token), sizeof(token));
 
@@ -262,10 +272,17 @@ void OnDiskIndex::updateTokenToDocs(
 
     rocksdb::Slice value(data_start, slice_len);
 
-    // TODO(Nicholas): is it faster to just store the count per doc as a
-    // unique key with <token>_<doc> -> cnt and then do prefix scans on
-    // <token>_ to find the docs it occurs in?
-    updateKey(_token_to_docs, key, value, concatTokenCounts);
+    keys.push_back(key);
+    values.push_back(value);
+
+    if (keys.size() == batch_size) {
+      updateKeys(_token_to_docs, keys, values, concatTokenCounts);
+      keys.clear();
+      values.clear();
+    }
+  }
+  if (!keys.empty()) {
+    updateKeys(_token_to_docs, keys, values, concatTokenCounts);
   }
 }
 

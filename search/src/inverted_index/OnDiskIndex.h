@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rocksdb/db.h>
+#include <rocksdb/utilities/optimistic_transaction_db.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
@@ -134,8 +135,48 @@ class OnDiskIndex final : public Retriever {
     delete txn;
   }
 
+  template <typename T, typename UpdateFn>
+  void updateKeys(rocksdb::ColumnFamilyHandle* column_family,
+                  const std::vector<rocksdb::Slice>& keys,
+                  const std::vector<T>& deltas, UpdateFn update_fn) {
+    static_assert(
+        std::is_convertible<
+            UpdateFn, std::function<std::string(const rocksdb::PinnableSlice&,
+                                                const T&)>>::value,
+        "Should be convertible to UpdateFn");
+
+    auto* txn = _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+
+    std::vector<rocksdb::PinnableSlice> values(keys.size());
+    std::vector<rocksdb::Status> statuses(keys.size());
+
+    _db->MultiGet(rocksdb::ReadOptions(), _token_to_docs, keys.size(),
+                  keys.data(), values.data(), statuses.data());
+
+    for (size_t i = 0; i < keys.size(); i++) {
+      if (!statuses[i].ok() && !statuses[i].IsNotFound()) {
+        throw std::invalid_argument("Transaction get error");
+      }
+
+      std::string new_value = update_fn(values[i], deltas[i]);
+
+      auto put_status = txn->Put(column_family, keys[i], new_value);
+      if (!put_status.ok()) {
+        // TODO(Nicholas): check for busy/timeout for txn conflicts and retry
+        throw std::runtime_error("Transaction put error");
+      }
+    }
+
+    auto commit_status = txn->Commit();
+    if (!commit_status.ok()) {
+      throw std::runtime_error("Transaction commit error");
+    }
+
+    delete txn;
+  }
+
   rocksdb::DB* _db;
-  rocksdb::TransactionDB* _transaction_db;
+  rocksdb::OptimisticTransactionDB* _transaction_db;
 
   rocksdb::ColumnFamilyHandle* _default;
   rocksdb::ColumnFamilyHandle* _counters;
