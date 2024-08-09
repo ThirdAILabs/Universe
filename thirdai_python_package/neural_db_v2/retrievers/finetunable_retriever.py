@@ -1,4 +1,4 @@
-from typing import Iterable, List, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from thirdai import search
 
@@ -7,9 +7,9 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class FinetunableRetriever(Retriever):
-    def __init__(self, **kwargs):
+    def __init__(self, save_path: Optional[str] = None):
         super().__init__()
-        self.retriever = search.FinetunableRetriever()
+        self.retriever = search.FinetunableRetriever(save_path=save_path)
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
@@ -33,11 +33,18 @@ class FinetunableRetriever(Retriever):
             sources=sources, targets=targets, strength=associate_strength
         )
 
-    def insert(self, chunks: Iterable[ChunkBatch], **kwargs):
-        for batch in chunks:
-            texts = batch.keywords + " " + batch.text
-
-            self.retriever.index(ids=batch.chunk_id.to_list(), docs=texts.to_list())
+    def insert(self, chunks: Iterable[ChunkBatch], index_batch_size=100000, **kwargs):
+        for chunk in chunks:
+            # Indexing in batches within a chunk reduces the RAM usage significantly
+            # for large chunks
+            for i in range(0, len(chunk), index_batch_size):
+                ids = chunk.chunk_id[i : i + index_batch_size]
+                texts = (
+                    chunk.keywords[i : i + index_batch_size]
+                    + " "
+                    + chunk.text[i : i + index_batch_size]
+                )
+                self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
         for batch in samples:

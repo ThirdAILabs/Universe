@@ -89,10 +89,9 @@ TEST(InvertedIndexTokenizerTests, WordKGramsSerialization) {
   // Check that the serialization method is able to map the "type" field of the
   // tokenizer to WordKGrams, by making sure it doesn't throw a
   // deserialization error.
-  InvertedIndex index(InvertedIndex::DEFAULT_MAX_DOCS_TO_SCORE,
-                      InvertedIndex::DEFAULT_IDF_CUTOFF_FRAC,
-                      InvertedIndex::DEFAULT_K1, InvertedIndex::DEFAULT_B,
-                      std::make_shared<WordKGrams>());
+  IndexConfig config;
+  config.tokenizer = std::make_shared<WordKGrams>();
+  InvertedIndex index(config);
   auto index_archive = index.toArchive();
   InvertedIndex::fromArchive(*index_archive);
 }

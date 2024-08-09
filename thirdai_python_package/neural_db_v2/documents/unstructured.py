@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 from thirdai.neural_db.parsing_utils.unstructured_parse import (
@@ -19,9 +19,10 @@ class Unstructured(Document):
         path: str,
         parser: UnstructuredParse,
         chunk_metadata_columns: List[str],
-        doc_metadata: dict = None,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
     ):
-        super().__init__()
+        super().__init__(doc_id=doc_id)
 
         self.path = path
         self.parser = parser
@@ -48,7 +49,6 @@ class Unstructured(Document):
 
         return [
             NewChunkBatch(
-                custom_id=None,
                 text=text,
                 keywords=series_from_value("", len(text)),
                 metadata=metadata,
@@ -58,30 +58,48 @@ class Unstructured(Document):
 
 
 class PPTX(Unstructured):
-    def __init__(self, path, doc_metadata):
+    def __init__(
+        self,
+        path: str,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
+    ):
         super().__init__(
             path=path,
             parser=PptxParse,
             chunk_metadata_columns=["filetype", "page"],
             doc_metadata=doc_metadata,
+            doc_id=doc_id,
         )
 
 
 class TextFile(Unstructured):
-    def __init__(self, path, doc_metadata):
+    def __init__(
+        self,
+        path: str,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
+    ):
         super().__init__(
             path=path,
             parser=TxtParse,
             chunk_metadata_columns=["filetype"],
             doc_metadata=doc_metadata,
+            doc_id=doc_id,
         )
 
 
 class Email(Unstructured):
-    def __init__(self, path, doc_metadata):
+    def __init__(
+        self,
+        path: str,
+        doc_metadata: Optional[Dict[str, Any]] = None,
+        doc_id: Optional[str] = None,
+    ):
         super().__init__(
             path=path,
             parser=EmlParse,
             chunk_metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
             doc_metadata=doc_metadata,
+            doc_id=doc_id,
         )

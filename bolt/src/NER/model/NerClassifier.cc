@@ -2,6 +2,7 @@
 #include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <utils/text/Stopwords.h>
 #include <cctype>
 #include <cstdint>
@@ -18,8 +19,9 @@ void applyPunctAndStopWordFilter(const std::string& token,
                                  PerTokenPredictions& predicted_tags,
                                  const std::string& default_tag) {
   // assumes that the highest activation vector is at the end
-  if (isAllPunctuation(token) || text::stop_words.count(data::trimPunctuation(
-                                     thirdai::text::lower(token))) > 0) {
+  if (isAllPunctuation(token) ||
+      text::stop_words.count(
+          data::ner::utils::trimPunctuation(thirdai::text::lower(token))) > 0) {
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
       if (predicted_tags[i].first == default_tag) {
         predicted_tags[i].second = 1;

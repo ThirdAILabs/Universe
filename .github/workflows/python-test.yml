@@ -42,6 +42,8 @@ jobs:
           go-version: 1.19
 
       - name: Run python unit tests
+        env:
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m unit --durations=0
 
   python-release-tests:
@@ -66,6 +68,8 @@ jobs:
           go-version: 1.19
 
       - name: Run python release tests
+        env:
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m release --durations=0
 
   distributed-python-tests:

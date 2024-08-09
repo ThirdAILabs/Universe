@@ -244,6 +244,31 @@ include_directories(deps)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+# Note: for local builds need to use clang++ not g++ because of pointer
+# conversion error in rocksdb
+
+if(NOT WIN32)
+  # These options are prevent rocksdb from linking a second version gtest which
+  # causes a conflict with our gtest library. This does not impact our use for
+  # gtest.
+  option(WITH_TESTS OFF)
+  option(WITH_BENCHMARK_TOOLS OFF)
+  option(WITH_TOOLS OFF)
+
+  # This is just so that we don't need to complile and link with this library.
+  option(WITH_GFLAGS OFF)
+
+  option(ROCKSDB_BUILD_SHARED OFF)
+
+  # This is so we can implement a MergeOperator:
+  # https://github.com/facebook/rocksdb/issues/3811
+  set(USE_RTTI
+      "TRUE"
+      CACHE STRING "")
+  add_subdirectory(deps/rocksdb)
+  include_directories(deps/rocksdb/include)
+endif()
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt
     ON
@@ -341,7 +366,10 @@ set(THIRDAI_SOURCES
     search/src/MaxFlashArray.cc
     search/src/Flash.cc
     search/src/inverted_index/InvertedIndex.cc
+    search/src/inverted_index/ShardedRetriever.cc
+    search/src/inverted_index/IndexConfig.cc
     search/src/inverted_index/FinetunableRetriever.cc
+    search/src/inverted_index/id_map/InMemoryIdMap.cc
     search/src/inverted_index/Tokenizer.cc
     hashing/src/DensifiedMinHash.cc
     hashing/src/DWTA.cc
@@ -416,10 +444,13 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/NerDyadicDataProcessor.cc
+    data/src/transformations/ner/utils/TokenTagCounter.cc
+    data/src/transformations/ner/utils/utils.cc
     data/src/transformations/ner/rules/Rule.cc
     data/src/transformations/ner/rules/Pattern.cc
     data/src/transformations/ner/rules/CommonPatterns.cc
     data/src/transformations/ner/rules/IBANPattern.cc
+    data/src/transformations/ner/learned_tags/LearnedTag.cc
     data/src/ColumnMap.cc
     data/src/columns/ArrayColumns.cc
     data/src/columns/ValueColumns.cc
@@ -465,6 +496,15 @@ set(THIRDAI_SOURCES
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)
 
+if(NOT WIN32)
+  # The OnDiskIndex doesn't work on windows because the bitfields for the
+  # DocCount struct still result in a size of > 8 bytes, so it will not be
+  # compatible with indexes created on mac/linux.
+  set(THIRDAI_SOURCES
+      ${THIRDAI_SOURCES} search/src/inverted_index/OnDiskIndex.cc
+      search/src/inverted_index/id_map/OnDiskIdMap.cc)
+endif()
+
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
 if(${LICENSE_CHECK_FLAG_FOUND})
@@ -485,6 +525,9 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc)
+if(NOT WIN32)
+  target_link_libraries(thirdai PUBLIC rocksdb)
+endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
@@ -498,6 +541,9 @@ target_link_libraries(
   thirdai_core
   PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
          utf8proc nlohmann_json::nlohmann_json)
+if(NOT WIN32)
+  target_link_libraries(thirdai_core PUBLIC rocksdb)
+endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto
