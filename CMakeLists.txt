@@ -40,7 +40,6 @@ message("====================================")
 
 option(THIRDAI_REPORT_BUILD_STEP_TIMES
        "Report time using builtin for make/ninja compile-build steps" OFF)
-option(THIRDAI_BUILD_OPENSSL_FROM_SOURCE "Build OpenSSL from source" OFF)
 
 if(THIRDAI_REPORT_BUILD_STEP_TIMES)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
@@ -65,65 +64,13 @@ if(${LICENSE_BUILD_FLAG_FOUND})
 
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
+  #
+  # If we want to use our package on a FIPS enabled machine we must build with 
+  # OpenSSL version 3 instead of version 1.1.1, since 1.1.1 is not FIPS certified.
+  # However, we allow our wheels to be built with OpenSSL version 1.1.1 here 
+  # since in the majority of use cases OpenSSL 3 is not required.
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
-  if(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
-    # This path is meant to be activated only for M1 cross-compile on MacOS. Any
-    # other paths are potentially untested.
-
-    # Use default compile.
-    set(OPENSSL_MODULES
-        ""
-        CACHE STRING "OpenSSL configure options")
-    set(OPENSSL_BUILD_VERSION 3.0.7)
-    # set up fake targets
-    add_library(ssl_lib STATIC IMPORTED GLOBAL)
-    add_library(crypto_lib STATIC IMPORTED GLOBAL)
-
-    # set up prefix
-    set(OPENSSL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-    set(OPENSSL_LIBSSL_PATH ${OPENSSL_PREFIX}/usr/local/lib/libssl.a)
-    set(OPENSSL_LIBCRYPTO_PATH ${OPENSSL_PREFIX}/usr/local/lib/libcrypto.a)
-
-    # set import locations
-    set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION
-                                             ${OPENSSL_LIBSSL_PATH})
-    set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION
-                                                ${OPENSSL_LIBCRYPTO_PATH})
-
-    # set up openssl target
-    message(
-      STATUS
-        "Setting up OpenSSL at ${OPENSSL_LIBSSL_PATH}, ${OPENSSL_LIBCRYPTO_PATH}"
-    )
-
-    include(BuildOpenSSL)
-
-    # Add dependencies (force openssl to build before)
-    add_dependencies(ssl_lib openssl)
-    add_dependencies(crypto_lib openssl)
-
-    # Create interface library
-    add_library(_ssl INTERFACE)
-    add_library(_crypto INTERFACE)
-
-    target_link_libraries(_ssl INTERFACE ssl_lib)
-    target_link_libraries(_crypto INTERFACE crypto_lib)
-
-    # set include locations
-    target_include_directories(
-      _ssl BEFORE
-      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
-    target_include_directories(
-      _crypto BEFORE
-      INTERFACE $<BUILD_INTERFACE:${OPENSSL_PREFIX}/usr/local/include/>)
-
-    # Use cmake-namespace style aliases from here.
-    add_library(OpenSSL::SSL ALIAS _ssl)
-    add_library(OpenSSL::Crypto ALIAS _crypto)
-
-  else(THIRDAI_BUILD_OPENSSL_FROM_SOURCE)
-    find_package(OpenSSL 1.1.1 REQUIRED)
-  endif()
+  find_package(OpenSSL 1.1.1 REQUIRED)
 
 endif()
 

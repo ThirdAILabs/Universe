@@ -38,17 +38,16 @@ jobs:
         uses: pypa/cibuildwheel@v2.9.0
         env:
 
-          # We need this to get Openssl1.1 working on Manylinux (which has a 
-          # CentOS base image). See
-          # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/bin/openssl;/usr/local/ssl"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
             OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
          
           # TODO: Upgrade distro to supported version.
-          # CentOS 7 is deprecated, and the following commmands are a workaround to still use that version.
+          # CentOS 7 is deprecated, and the sed commmands are a workaround to still use that version.
           # https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve
+          #
+          # We install OpenSSL 3 since OpenSSL 1.1.1 is not FIPS certified. 
           CIBW_BEFORE_BUILD_LINUX: |
             sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
             sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
@@ -65,7 +64,6 @@ jobs:
             ldconfig
             mv /usr/bin/openssl /usr/bin/openssl_backup
             ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
-            openssl version -a
             yum install -y libxslt-devel libxml2-devel
 
           # Online compile cpython wheels (pytorch does this too), no big 
