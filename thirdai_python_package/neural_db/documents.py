@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dask.dataframe as dd
+import nltk
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -1236,6 +1237,7 @@ class Unstructured(Extracted):
         else:
             raise Exception(f"File type is not yet supported")
 
+        nltk.download("averaged_perceptron_tagger_eng")
         elements, success = self.parser.process_elements()
 
         if not success:

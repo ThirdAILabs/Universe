@@ -6,7 +6,7 @@ import nltk
 import numpy as np
 import pandas as pd
 
-nltk.download("punkt")
+nltk.download("punkt_tab")
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 MIN_WORDS_PER_CHUNK = 50
