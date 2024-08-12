@@ -160,7 +160,7 @@ neural_db_deps = [
     "trafilatura",
     "python-docx",
     "url-normalize",
-    "nltk>=3.8.2", # 3.8.1 downloads punkt instead of punkt_tab
+    "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
     "dask[complete]",
     "unidecode",
     "pydantic",
@@ -259,7 +259,7 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
-            "nltk>=3.8.2", # 3.8.1 downloads punkt instead of punkt_tab
+            "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
             "ray[default]",
             "torch",
             "unstructured[all-docs]<=0.10.20",
