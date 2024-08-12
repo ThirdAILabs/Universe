@@ -93,11 +93,42 @@ inline DocCount* docCountPtr(std::string& value) {
 class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
   /**
    * This merge operator appends a list of serialized DocCounts to another
-   * existing list. At the begining a TokenStatus is stored, this is to act as a
-   * tombstone in case the token is pruned. Without the token status we would
-   * have to worry about a token being pruned, then added back in a future doc,
-   * having the status allows us to distinguish between tokens that were pruned,
-   * and tokens that were not yet seen by the index.
+   * existing list. Inputs are an existing_value and value are a serialized
+   * array DocCounts preceded by a TokenStatus indicating if the token has been
+   * pruned. The existing_value arg is the current value associated with the
+   * key, whereas the value arg indicates the new DocCounts that are being
+   * appended. The output is a new value in the same format as the inputs, only
+   * with the DocCounts from each the input values.
+   *
+   * Since this operator needs to be associative, every value and addition is
+   * preceded by a TokenStatus to ensure that the inputs and outputs of the
+   * operator are in the same format, so that the order in which they are
+   * executed does not matter.
+   *
+   * The TokenStatus exists to act as a tombstone in case the token is pruned.
+   * Without the TokenStatus we would have to worry about a token being pruned,
+   * then added back in a future doc, having the status allows us to distinguish
+   * between tokens that were pruned, and tokens that were not yet seen by the
+   * index.
+   *
+   *
+   * Example:
+   *
+   * During indexing a batch of docs token T occurs in docs 0 and 1 with counts
+   * of 10 and 11 respectively. Essentially this will result in a merge like
+   * this:
+   *   Merge(
+   *      existing=[],
+   *      update=[Status=Unpruned, (doc=1, cnt=10), (doc=2, cnt=11)]
+   *   ) -> [Status=Unpruned, (doc=0, cnt=10), (doc=1, cnt=11)]
+   *
+   * Later, indexing more docs with token T occuring in doc 2 with count 12 will
+   * result in a merge like this:
+   *   Merge(
+   *      existing=[Status=Unpruned, (doc=1, cnt=10), (doc=2, cnt=11)],
+   *      update=[Status=Unpruned, (doc=2, cnt=12)]
+   *   ) -> [Status=Unpruned, (doc=0, cnt=10), (doc=1, cnt=11), (doc=2, cnt=12)]
+   *
    */
  public:
   bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
@@ -123,6 +154,10 @@ class AppendDocCounts : public rocksdb::AssociativeMergeOperator {
     // indexing. If we add support for updates, then this needs to be modified
     // to merge the 2 values based on doc_id.
 
+    // The +/- sizeof(TokenStatus) is because we are discarding the TokenStatus
+    // from the second value because we only want 1 TokenStatus at the begining,
+    // and we know that the value is the same in both TokenStatus's at this
+    // point since neither is Pruned.
     *new_value = std::string();
     new_value->reserve(existing_value->size() + value.size() -
                        sizeof(TokenStatus));
