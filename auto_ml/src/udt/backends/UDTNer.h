@@ -55,7 +55,7 @@ class UDTNer final : public UDTBackend {
                           std::optional<uint32_t> top_k,
                           const py::kwargs& kwargs) final;
 
-  void addNewEntityToModel(
+  void addNerEntityToModel(
       const std::variant<std::string, data::ner::NerLearnedTag>& entity) final {
     data::ner::NerTagPtr tag;
     if (std::holds_alternative<std::string>(entity)) {
