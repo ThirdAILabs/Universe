@@ -74,9 +74,12 @@ class NeuralDB:
 
         chunk_results = []
         for query_results in results:
-            chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
-            chunks = self.chunk_store.get_chunks(chunk_ids)
-            chunk_results.append(list(zip(chunks, scores)))
+            if not query_results:
+                chunk_results.append([])
+            else:
+                chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
+                chunks = self.chunk_store.get_chunks(chunk_ids)
+                chunk_results.append(list(zip(chunks, scores)))
 
         return chunk_results
 
