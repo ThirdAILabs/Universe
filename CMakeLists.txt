@@ -65,10 +65,10 @@ if(${LICENSE_BUILD_FLAG_FOUND})
   # For now only require openssl if we are building with licensing, since we
   # only communicate with the internet (keygen) in that case
   #
-  # If we want to use our package on a FIPS enabled machine we must build with 
-  # OpenSSL version 3 instead of version 1.1.1, since 1.1.1 is not FIPS certified.
-  # However, we allow our wheels to be built with OpenSSL version 1.1.1 here 
-  # since in the majority of use cases OpenSSL 3 is not required.
+  # If we want to use our package on a FIPS enabled machine we must build with
+  # OpenSSL version 3 instead of version 1.1.1, since 1.1.1 is not FIPS
+  # certified. However, we allow our wheels to be built with OpenSSL version
+  # 1.1.1 here since in the majority of use cases OpenSSL 3 is not required.
   add_subdirectory(deps/cpp-httplib EXCLUDE_FROM_ALL)
   find_package(OpenSSL 1.1.1 REQUIRED)
 
