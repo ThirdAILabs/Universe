@@ -175,9 +175,9 @@ neural_db_deps = [
     # "TypeError: 'type' object is not subscriptable"
     # https://github.com/jsvine/pdfplumber/blob/v0.11.3/pdfplumber/table.py#L392
     "pdfplumber!=0.11.3",
-    # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
+    # lxml is a dependency of trafilatura. We install lxml_html_clean to fix
     # this error https://github.com/adbar/trafilatura/issues/532
-    "lxml[html_clean]",
+    "lxml_html_clean",
     # Before openai 1.0.0 "from openai import OpenAI" fails.
     "openai>=1.0.0",
     "tqdm",
