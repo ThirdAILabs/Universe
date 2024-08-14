@@ -53,6 +53,8 @@ jobs:
           # We install OpenSSL 3 since OpenSSL 1.1.1 is not FIPS certified. This
           # allows us to run on FIPS enabled machines. 
           # https://github.com/openssl/openssl/issues/20465
+          # To make sure that we use the new version we update the system links:
+          # https://webhostinggeeks.com/howto/install-update-openssl-centos/
           CIBW_BEFORE_BUILD_LINUX: |
             sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
             sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
