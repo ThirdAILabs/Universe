@@ -63,6 +63,18 @@ class NerTokenizerUnigram final : public Transformation {
     _token_tag_counter = std::move(token_tag_counter);
   }
 
+  void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
+    if (_tag_to_label) {
+      _tag_to_label.value()[tag] = label;
+    }
+
+    if (_token_tag_counter) {
+      _token_tag_counter->addTagLabel(tag, label);
+    }
+  }
+
+  void setTargetDim(uint32_t target_dim) { _target_dim = target_dim; }
+
  private:
   void updateTokenTagCounter(
       const ArrayColumnBasePtr<std::string>& tokens,

@@ -20,6 +20,24 @@ class TokenTagCounter {
 
   ar::ConstArchivePtr toArchive() const;
 
+  void addTagLabel(const std::string& tag, uint32_t label) {
+    _tag_to_label[tag] = label;
+
+    bool requires_new_counter = false;
+    for (auto& [token, counts] : _token_tag_counts) {
+      if (counts.size() < label) {
+        counts.push_back(0);
+        requires_new_counter = true;
+      } else {
+        break;
+      }
+    }
+
+    if (requires_new_counter) {
+      _num_unique_counters++;
+    }
+  }
+
  private:
   uint32_t _number_bins;
   std::unordered_map<std::string, uint32_t> _tag_to_label;
