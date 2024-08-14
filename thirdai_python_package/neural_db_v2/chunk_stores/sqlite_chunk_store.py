@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
+    Boolean,
     Column,
     Engine,
     Float,
@@ -59,6 +60,8 @@ def get_sql_type(name, dtype):
         return Integer
     elif dtype == float:
         return Float
+    elif dtype == bool:
+        return Boolean
     elif dtype == object:
         return String
     else:
