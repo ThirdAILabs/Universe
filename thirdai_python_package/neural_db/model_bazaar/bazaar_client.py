@@ -1252,13 +1252,13 @@ class WorkflowClient:
         response_content = json.loads(response.content)
         return response_content["data"]["workflow_id"]
 
-    def add_models(self, workflow_id: str, model_identifiers: List[str], components: List[str]):
+    def add_models(self, workflow_id: str, model_ids: List[str], components: List[str]):
         url = urljoin(self.bazaar._base_url, "workflow/add-models")
         response = http_post_with_error(
             url,
             json={
                 "workflow_id": workflow_id,
-                "model_identifiers": model_identifiers,
+                "model_ids": model_ids,
                 "components": components,
             },
             headers=auth_header(self.bazaar._access_token),
@@ -1266,13 +1266,13 @@ class WorkflowClient:
         response_content = json.loads(response.content)
         return response_content["data"]["models"]
 
-    def delete_models(self, workflow_id: str, model_identifiers: List[str], components: List[str] ):
+    def delete_models(self, workflow_id: str, model_ids: List[str], components: List[str] ):
         url = urljoin(self.bazaar._base_url, "workflow/delete-models")
         response = http_post_with_error(
             url,
             params={
                 "workflow_id": workflow_id,
-                "model_identifiers": model_identifiers,
+                "model_ids": model_ids,
                 "components": components,
             },
             headers=auth_header(self.bazaar._access_token),
