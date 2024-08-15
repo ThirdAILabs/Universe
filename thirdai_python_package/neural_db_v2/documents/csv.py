@@ -60,10 +60,9 @@ class CSV(Document):
             text = concat_str_columns(df, self.text_columns)
             keywords = concat_str_columns(df, self.keyword_columns)
 
-            chunk_metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)
             metadata = join_metadata(
                 n_rows=len(text),
-                chunk_metadata=chunk_metadata,
+                chunk_metadata=df,
                 doc_metadata=self.doc_metadata,
             )
 
