@@ -35,5 +35,5 @@ class ChunkStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def sources(self) -> List[dict]:
+    def documents(self) -> List[dict]:
         raise NotImplementedError

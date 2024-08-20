@@ -159,7 +159,7 @@ class PandasChunkStore(ChunkStore):
     def max_version_for_doc(self, doc_id: str) -> int:
         return self.doc_versions.get(doc_id, 0)
 
-    def sources(self) -> List[dict]:
+    def documents(self) -> List[dict]:
         return (
             self.chunk_df[["doc_id", "doc_version", "document"]]
             .drop_duplicates()

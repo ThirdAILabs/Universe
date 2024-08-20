@@ -111,6 +111,9 @@ class NeuralDB:
 
         self.retriever.supervised_train(iterable, **kwargs)
 
+    def documents(self) -> List[dict]:
+        return self.chunk_store.documents()
+
     @staticmethod
     def chunk_store_path(directory: str) -> str:
         return os.path.join(directory, "chunk_store")

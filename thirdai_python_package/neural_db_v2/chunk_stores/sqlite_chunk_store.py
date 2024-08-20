@@ -404,7 +404,7 @@ class SQLiteChunkStore(ChunkStore):
             result = conn.execute(stmt)
             return result.scalar() or 0
 
-    def sources(self) -> List[dict]:
+    def documents(self) -> List[dict]:
         stmt = select(
             self.chunk_table.c.doc_id,
             self.chunk_table.c.doc_version,

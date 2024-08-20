@@ -606,7 +606,7 @@ def test_encryption():
 
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
-def test_list_sources(chunk_store):
+def test_list_documents(chunk_store):
     store = chunk_store()
 
     store.insert(
@@ -620,7 +620,7 @@ def test_list_sources(chunk_store):
         ]
     )
 
-    expected_sources = [
+    expected_docs = [
         {"doc_id": "a1", "doc_version": 1, "document": "a.txt"},
         {"doc_id": "a1", "doc_version": 2, "document": "a.txt"},
         {"doc_id": "b1", "doc_version": 1, "document": "b.txt"},
@@ -632,8 +632,8 @@ def test_list_sources(chunk_store):
     def map_to_tuples(sources):
         return [(x["doc_id"], x["doc_version"], x["document"]) for x in sources]
 
-    sources = map_to_tuples(store.sources())
-    expected_sources = map_to_tuples(expected_sources)
+    docs = map_to_tuples(store.documents())
+    expected_docs = map_to_tuples(expected_docs)
 
-    assert len(sources) == len(expected_sources)
-    assert set(sources) == set(expected_sources)
+    assert len(docs) == len(expected_docs)
+    assert set(docs) == set(expected_docs)
