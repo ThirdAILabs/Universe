@@ -206,13 +206,6 @@ class SQLiteChunkStore(ChunkStore):
             for column in metadata_columns:
                 if column.name not in self.metadata_table.columns:
                     self._add_metadata_column(column=column)
-                else:
-                    if str(column.type) != str(
-                        self.metadata_table.columns[column.name].type
-                    ):
-                        raise ValueError(
-                            f"Existing metadata for column {column.name} has type {str(self.metadata_table.columns[column.name].type)} but new metadata has type {str(column.type)}."
-                        )
         metadata["chunk_id"] = chunk_ids
         self._write_to_table(df=metadata, table=self.metadata_table)
 
