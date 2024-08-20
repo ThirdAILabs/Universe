@@ -21,6 +21,7 @@ class PDF(Document):
         emphasize_section_titles: bool = False,
         table_parsing: bool = False,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
 
@@ -35,6 +36,7 @@ class PDF(Document):
         self.doc_keywords = doc_keywords
         self.emphasize_section_titles = emphasize_section_titles
         self.table_parsing = table_parsing
+        self.display_path = display_path
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         parsed_chunks = pdf_parse.make_df(
@@ -63,6 +65,6 @@ class PDF(Document):
                 text=text,
                 keywords=keywords,
                 metadata=metadata,
-                document=series_from_value(self.path, len(text)),
+                document=series_from_value(self.display_path or self.path, len(text)),
             )
         ]

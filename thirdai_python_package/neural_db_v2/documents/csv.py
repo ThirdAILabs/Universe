@@ -39,6 +39,7 @@ class CSV(Document):
         doc_metadata=None,
         max_rows=10_000_000,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
 
@@ -47,6 +48,7 @@ class CSV(Document):
         self.keyword_columns = keyword_columns
         self.doc_metadata = doc_metadata
         self.max_rows = max_rows
+        self.display_path = display_path
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         data_iter = pd.read_csv(self.path, chunksize=self.max_rows)
@@ -70,5 +72,5 @@ class CSV(Document):
                 text=text,
                 keywords=keywords,
                 metadata=metadata,
-                document=series_from_value(self.path, n=len(text)),
+                document=series_from_value(self.display_path or self.path, n=len(text)),
             )
