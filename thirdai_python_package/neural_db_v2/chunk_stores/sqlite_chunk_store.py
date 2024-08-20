@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
+    Blob,
     Boolean,
     Column,
     Engine,
@@ -72,7 +73,7 @@ def get_sql_type(name, dtype):
 
 
 def get_sql_columns(df: pd.DataFrame):
-    return [Column(col, get_sql_type(col, df[col].dtype)) for col in df.columns]
+    return [Column(col, Blob) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -225,9 +226,7 @@ class SQLiteChunkStore(ChunkStore):
                 Column("chunk_id", Integer, index=True, primary_key=True),
                 Column(
                     metadata_col.name,
-                    get_sql_type(
-                        metadata_col.name, flattened_metadata[metadata_col.name].dtype
-                    ),
+                    Blob,
                     primary_key=True,
                 ),
             )
