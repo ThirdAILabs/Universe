@@ -73,7 +73,7 @@ def get_sql_type(name, dtype):
 
 
 def get_sql_columns(df: pd.DataFrame):
-    return [Column(col, LargeBinary) for col in df.columns]
+    return [Column(col) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -219,7 +219,6 @@ class SQLiteChunkStore(ChunkStore):
                 Column("chunk_id", Integer, index=True, primary_key=True),
                 Column(
                     metadata_col.name,
-                    LargeBinary,
                     primary_key=True,
                 ),
             )
