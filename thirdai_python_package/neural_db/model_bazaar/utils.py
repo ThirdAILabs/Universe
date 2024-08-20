@@ -158,8 +158,9 @@ def get_file_size(file_path, unit="B"):
 
 def restore_postgres_db_from_file(db_uri, dump_file_path):
     import subprocess
-    import psycopg2
     from urllib.parse import urlparse
+
+    import psycopg2
 
     def create_database_if_not_exists(db_uri):
         parsed_uri = urlparse(db_uri)

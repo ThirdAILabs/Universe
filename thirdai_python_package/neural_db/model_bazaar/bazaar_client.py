@@ -164,7 +164,7 @@ class NeuralDBClient:
         ndb_params = {"constraints": constraints}
 
         response = http_post_with_error(
-            urljoin(self.base_url, "predict"),
+            urljoin(self.base_url, "read/predict"),
             json={"base_params": base_params, "ndb_params": ndb_params},
             headers=auth_header(self.bazaar._access_token),
         )
@@ -267,7 +267,7 @@ class NeuralDBClient:
         files.append(("input_mode", (None, input_mode)))
 
         response = http_post_with_error(
-            urljoin(self.base_url, "insert"),
+            urljoin(self.base_url, "write/insert"),
             files=files,
             headers=auth_header(self.bazaar._access_token),
         )
@@ -335,7 +335,7 @@ class NeuralDBClient:
             files (List[str]): A list of source ids to delete from the ndb model.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "delete"),
+            urljoin(self.base_url, "write/delete"),
             json={"source_ids": source_ids},
             headers=auth_header(self.bazaar._access_token),
         )
@@ -349,7 +349,7 @@ class NeuralDBClient:
             text_pairs (List[Dict[str, str]]): List of dictionaries where each dictionary has 'source' and 'target' keys.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "associate"),
+            urljoin(self.base_url, "write/associate"),
             json={"text_pairs": text_pairs},
             headers=auth_header(self.bazaar._access_token),
         )
@@ -358,7 +358,7 @@ class NeuralDBClient:
     def save_model(self, override: bool = True, model_name: Optional[str] = None):
 
         response = http_post_with_error(
-            urljoin(self.base_url, "save"),
+            urljoin(self.base_url, "write/save"),
             json={"override": override, "model_name": model_name},
             headers=auth_header(self.bazaar._access_token),
         )
@@ -386,7 +386,7 @@ class NeuralDBClient:
             text_id_pairs: (List[Dict[str, Union[str, int]]]): List of dictionaries where each dictionary has 'query_text' and 'reference_id' keys.
         """
         response = http_post_with_error(
-            urljoin(self.base_url, "upvote"),
+            urljoin(self.base_url, "write/upvote"),
             json={"text_id_pairs": text_id_pairs},
             headers=auth_header(self.bazaar._access_token),
         )
@@ -449,7 +449,7 @@ class NeuralDBClient:
 
         """
         response = http_get_with_error(
-            urljoin(self.base_url, "sources"),
+            urljoin(self.base_url, "read/sources"),
             headers=auth_header(self.bazaar._access_token),
         )
 
@@ -1266,7 +1266,9 @@ class WorkflowClient:
         response_content = json.loads(response.content)
         return response_content["data"]["models"]
 
-    def delete_models(self, workflow_id: str, model_ids: List[str], components: List[str] ):
+    def delete_models(
+        self, workflow_id: str, model_ids: List[str], components: List[str]
+    ):
         url = urljoin(self.bazaar._base_url, "workflow/delete-models")
         response = http_post_with_error(
             url,
@@ -1303,7 +1305,7 @@ class WorkflowClient:
             params={"workflow_id": workflow_id},
             headers=auth_header(self.bazaar._access_token),
         )
-    
+
     def delete_workflow(self, workflow_id: str):
         url = urljoin(self.bazaar._base_url, "workflow/delete")
         response = http_post_with_error(

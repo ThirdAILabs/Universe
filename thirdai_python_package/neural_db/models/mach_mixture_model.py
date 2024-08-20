@@ -102,7 +102,7 @@ class MachMixture(Model):
     def set_model(self, ensembles):
         self.ensembles = ensembles
 
-    def save_meta(self, directory: Path):
+    def save_meta(self, directory: Path, **kwargs):
         if self.ensembles is not None:
             for i, ensemble in enumerate(self.ensembles):
                 ensemble.save_meta(directory / str(i))
@@ -112,7 +112,7 @@ class MachMixture(Model):
             directory / "segment_map_and_seed.pkl",
         )
 
-    def load_meta(self, directory: Path):
+    def load_meta(self, directory: Path, **kwargs):
         if self.ensembles is not None:
             for i, ensemble in enumerate(self.ensembles):
                 ensemble.load_meta(directory / str(i))
