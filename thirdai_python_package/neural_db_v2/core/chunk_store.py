@@ -33,3 +33,7 @@ class ChunkStore(ABC):
     @abstractmethod
     def max_version_for_doc(self, doc_id: str) -> int:
         raise NotImplementedError
+
+    @abstractmethod
+    def sources(self) -> List[dict]:
+        raise NotImplementedError

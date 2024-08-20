@@ -17,6 +17,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    distinct,
     func,
     join,
     select,
@@ -402,6 +403,23 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
             return result.scalar() or 0
+
+    def sources(self) -> List[dict]:
+        stmt = select(
+            self.chunk_table.c.doc_id,
+            self.chunk_table.c.doc_version,
+            self.chunk_table.c.document,
+        ).distinct()
+
+        with self.engine.connect() as conn:
+            return [
+                {
+                    "doc_id": row.doc_id,
+                    "doc_version": row.doc_version,
+                    "document": row.document,
+                }
+                for row in conn.execute(stmt)
+            ]
 
     def save(self, path: str):
         shutil.copyfile(self.db_name, path)
