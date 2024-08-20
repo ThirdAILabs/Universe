@@ -2,23 +2,28 @@
 
 #include <rocksdb/db.h>
 #include <rocksdb/utilities/transaction_db.h>
-#include <search/src/inverted_index/DbAdapter.h>
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace thirdai::search {
+
+struct DocCount {
+  DocCount(DocId doc_id, uint32_t count) : doc_id(doc_id), count(count) {}
+
+  DocId doc_id : 40;
+  uint32_t count : 24;
+};
 
 using HashedToken = uint32_t;
 
 class OnDiskIndex final : public Retriever {
  public:
   explicit OnDiskIndex(const std::string& save_path,
-                       const IndexConfig& config = IndexConfig());
-
-  OnDiskIndex(const std::string& save_path, std::unique_ptr<DbAdapter> db,
-              const IndexConfig& config);
+                       const IndexConfig& config = IndexConfig(),
+                       bool read_only = false);
 
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs) final;
@@ -33,9 +38,9 @@ class OnDiskIndex final : public Retriever {
                              const std::unordered_set<DocId>& candidates,
                              uint32_t k, bool parallelize) const final;
 
-  void remove(const std::vector<DocId>& ids) final;
+  void remove(const std::vector<DocId>& id_list) final;
 
-  size_t size() const final { return _db->getNDocs(); }
+  size_t size() const final { return getNDocs(); }
 
   void save(const std::string& new_save_path) const final;
 
@@ -48,6 +53,8 @@ class OnDiskIndex final : public Retriever {
 
   void prune() final;
 
+  ~OnDiskIndex() final;
+
  private:
   std::pair<std::vector<uint32_t>,
             std::vector<std::unordered_map<HashedToken, uint32_t>>>
@@ -58,7 +65,44 @@ class OnDiskIndex final : public Retriever {
 
   std::vector<HashedToken> tokenize(const std::string& text) const;
 
-  std::unique_ptr<DbAdapter> _db;
+  rocksdb::Transaction* startTransaction() {
+    if (!_transaction_db) {
+      throw std::invalid_argument(
+          "This operation is not supported in read only mode");
+    }
+    return _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+  }
+
+  void storeDocLens(const std::vector<DocId>& ids,
+                    const std::vector<uint32_t>& doc_lens);
+
+  void updateTokenToDocs(
+      const std::unordered_map<HashedToken, std::vector<DocCount>>&
+          token_to_new_docs);
+
+  void incrementDocLens(const std::vector<DocId>& ids,
+                        const std::vector<uint32_t>& doc_len_increments);
+
+  void incrementDocTokenCounts(
+      const std::unordered_map<HashedToken, std::vector<DocCount>>&
+          token_to_doc_updates);
+
+  int64_t getDocLen(DocId doc_id) const;
+
+  int64_t getNDocs() const;
+
+  int64_t getSumDocLens() const;
+
+  void updateNDocs(int64_t n_new_docs);
+
+  void updateSumDocLens(int64_t sum_new_doc_lens);
+
+  rocksdb::DB* _db;
+  rocksdb::TransactionDB* _transaction_db;
+
+  rocksdb::ColumnFamilyHandle* _default;
+  rocksdb::ColumnFamilyHandle* _counters;
+  rocksdb::ColumnFamilyHandle* _token_to_docs;
 
   std::string _save_path;
 

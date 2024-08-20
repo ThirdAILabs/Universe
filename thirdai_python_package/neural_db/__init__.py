@@ -4,7 +4,7 @@ from nltk.data import find
 try:
     find("tokenizers/punkt")
 except LookupError:
-    nltk.download("punkt")
+    nltk.download("punkt_tab")
 
 from . import parsing_utils
 from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan

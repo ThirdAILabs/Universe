@@ -160,7 +160,7 @@ neural_db_deps = [
     "trafilatura",
     "python-docx",
     "url-normalize",
-    "nltk",
+    "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
     "dask[complete]",
     "unidecode",
     "pydantic",
@@ -170,11 +170,16 @@ neural_db_deps = [
     "Office365-REST-Python-Client==2.5.1",
     "simple-salesforce==1.12.5",
     "ipython",
-    "pdfplumber",
-    # lxml is a dependency of trafilatura. We install lxml[html_clean] to fix
+    # There is an issue with 0.11.3 of pdfplumber in which the annotations use
+    # type[CellGroup] which leads to the following error:
+    # "TypeError: 'type' object is not subscriptable"
+    # https://github.com/jsvine/pdfplumber/blob/v0.11.3/pdfplumber/table.py#L392
+    "pdfplumber!=0.11.3",
+    # lxml is a dependency of trafilatura. We install lxml_html_clean to fix
     # this error https://github.com/adbar/trafilatura/issues/532
-    "lxml[html_clean]",
-    "openai",
+    "lxml_html_clean",
+    # Before openai 1.0.0 "from openai import OpenAI" fails.
+    "openai>=1.0.0",
     "tqdm",
 ]
 
@@ -254,7 +259,7 @@ setup(
             "boto3",
             "s3fs",
             "gcsfs",
-            "nltk",
+            "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
             "ray[default]",
             "torch",
             "unstructured[all-docs]<=0.10.20",

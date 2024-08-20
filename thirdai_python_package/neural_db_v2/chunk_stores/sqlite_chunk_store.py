@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
+    Boolean,
     Column,
     Engine,
     Float,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    distinct,
     func,
     join,
     select,
@@ -59,6 +61,8 @@ def get_sql_type(name, dtype):
         return Integer
     elif dtype == float:
         return Float
+    elif dtype == bool:
+        return Boolean
     elif dtype == object:
         return String
     else:
@@ -399,6 +403,23 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
             return result.scalar() or 0
+
+    def documents(self) -> List[dict]:
+        stmt = select(
+            self.chunk_table.c.doc_id,
+            self.chunk_table.c.doc_version,
+            self.chunk_table.c.document,
+        ).distinct()
+
+        with self.engine.connect() as conn:
+            return [
+                {
+                    "doc_id": row.doc_id,
+                    "doc_version": row.doc_version,
+                    "document": row.document,
+                }
+                for row in conn.execute(stmt)
+            ]
 
     def save(self, path: str):
         shutil.copyfile(self.db_name, path)

@@ -56,7 +56,7 @@ class NeuralDB:
         return doc_metadata
 
     def search(
-        self, query: str, top_k: int, constraints: dict = None, **kwargs
+        self, query: str, top_k: int = 5, constraints: dict = None, **kwargs
     ) -> List[Tuple[Chunk, Score]]:
         return self.search_batch([query], top_k, constraints, **kwargs)[0]
 
@@ -68,13 +68,18 @@ class NeuralDB:
         else:
             choices = self.chunk_store.filter_chunk_ids(constraints, **kwargs)
             # TODO is there a better way that duplicating the constraints here
-            results = self.retriever.rank(queries, [choices for _ in queries], **kwargs)
+            results = self.retriever.rank(
+                queries, [choices for _ in queries], top_k, **kwargs
+            )
 
         chunk_results = []
         for query_results in results:
-            chunk_ids, scores = [list(tup) for tup in zip(*query_results)]
-            chunks = self.chunk_store.get_chunks(chunk_ids)
-            chunk_results.append(list(zip(chunks, scores)))
+            if not query_results:
+                chunk_results.append([])
+            else:
+                chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
+                chunks = self.chunk_store.get_chunks(chunk_ids)
+                chunk_results.append(list(zip(chunks, scores)))
 
         return chunk_results
 
@@ -105,6 +110,9 @@ class NeuralDB:
         iterable = supervised.samples()
 
         self.retriever.supervised_train(iterable, **kwargs)
+
+    def documents(self) -> List[dict]:
+        return self.chunk_store.documents()
 
     @staticmethod
     def chunk_store_path(directory: str) -> str:

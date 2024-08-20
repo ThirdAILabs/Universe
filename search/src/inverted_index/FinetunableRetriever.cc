@@ -6,7 +6,6 @@
 #if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/id_map/OnDiskIdMap.h>
-#include <search/src/inverted_index/id_map/OnDiskIdMapReadOnly.h>
 #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
@@ -290,10 +289,7 @@ std::unique_ptr<IdMap> loadIdMap(const std::string& type,
   }
 #if !_WIN32
   if (type == OnDiskIdMap::typeName()) {
-    if (read_only) {
-      return OnDiskIdMapReadOnly::load(path);
-    }
-    return OnDiskIdMap::load(path);
+    return OnDiskIdMap::load(path, read_only);
   }
 #else
   (void)read_only;
