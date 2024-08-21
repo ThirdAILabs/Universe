@@ -79,8 +79,6 @@ class Substring(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         column = table.c[column_name]
-        if not isinstance(column.type, (String, Text)):
-            return False
         return column.like(f"%{self.value}%")
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
