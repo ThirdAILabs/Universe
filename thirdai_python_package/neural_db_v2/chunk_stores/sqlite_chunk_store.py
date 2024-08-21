@@ -453,6 +453,9 @@ class SQLiteChunkStore(ChunkStore):
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+            for column in obj.metadata_table.columns:
+                if isinstance(column.type, TEXT):
+                    column.type = SerializedString()
         else:
             obj.metadata_table = None
 
