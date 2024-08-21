@@ -206,6 +206,9 @@ class SQLiteChunkStore(ChunkStore):
         self.metadata_table = Table(
             self.metadata_table.name, self.metadata, autoload_with=self.engine
         )
+        for column in self.metadata_table.columns:
+            if isinstance(column.type, TEXT):
+                column.type = SerializedString()
 
     def _store_singlevalue_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
         metadata_columns = get_sql_columns(metadata)
