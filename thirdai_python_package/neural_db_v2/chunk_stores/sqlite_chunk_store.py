@@ -1,3 +1,4 @@
+import json
 import operator
 import shutil
 import uuid
@@ -7,7 +8,6 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
-    LargeBinary,
     Boolean,
     Column,
     Engine,
@@ -24,6 +24,7 @@ from sqlalchemy import (
     select,
     text,
 )
+from sqlalchemy.types import TEXT, TypeDecorator
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
@@ -31,6 +32,20 @@ from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
 from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 from .constraints import Constraint
+
+
+class SerializedString(TypeDecorator):
+    impl = TEXT
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return None
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return json.loads(value)
+        return None
 
 
 def separate_multivalue_columns(
@@ -73,7 +88,7 @@ def get_sql_type(name, dtype):
 
 
 def get_sql_columns(df: pd.DataFrame):
-    return [Column(col) for col in df.columns]
+    return [Column(col, SerializedString) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -219,6 +234,7 @@ class SQLiteChunkStore(ChunkStore):
                 Column("chunk_id", Integer, index=True, primary_key=True),
                 Column(
                     metadata_col.name,
+                    SerializedString,
                     primary_key=True,
                 ),
             )
