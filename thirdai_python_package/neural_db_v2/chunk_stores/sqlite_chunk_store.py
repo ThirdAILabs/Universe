@@ -211,6 +211,7 @@ class SQLiteChunkStore(ChunkStore):
                 column.type = SerializedString()
 
     def _store_singlevalue_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
+        metadata.columns = metadata.columns.str.lower()
         metadata_columns = get_sql_columns(metadata)
         if self.metadata_table is None:
             self.metadata_table = Table(
@@ -221,6 +222,8 @@ class SQLiteChunkStore(ChunkStore):
             )
             self.metadata.create_all(self.engine)
         else:
+            # Weird behavior where before the for loop, column types are custom, but
+            # in the for loop, the columns are converted to base types.
             for column in metadata_columns:
                 if column.name not in self.metadata_table.columns:
                     self._add_metadata_column(column=column)
@@ -228,6 +231,7 @@ class SQLiteChunkStore(ChunkStore):
         self._write_to_table(df=metadata, table=self.metadata_table)
 
     def _store_multivalue_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
+        metadata_col.name = metadata_col.name.lower()
         flattened_metadata = flatten_multivalue_column(metadata_col, chunk_ids)
 
         if metadata_col.name not in self.multivalue_metadata_tables:
@@ -373,7 +377,7 @@ class SQLiteChunkStore(ChunkStore):
             if column in self.multivalue_metadata_tables:
                 table = self.multivalue_metadata_tables[column]
                 conditions.append(
-                    constraint.sql_condition(column_name=column, table=table)
+                    constraint.sql_condition(column_name=column.lower(), table=table)
                 )
                 select_from = join(
                     select_from,
@@ -383,7 +387,7 @@ class SQLiteChunkStore(ChunkStore):
             else:
                 conditions.append(
                     constraint.sql_condition(
-                        column_name=column, table=self.metadata_table
+                        column_name=column.lower(), table=self.metadata_table
                     )
                 )
 
