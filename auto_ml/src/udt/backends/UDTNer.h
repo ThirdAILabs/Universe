@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
 #include <bolt/src/nn/ops/Embedding.h>
 #include <bolt/src/nn/ops/FullyConnected.h>
@@ -70,10 +71,8 @@ class UDTNer final : public UDTBackend {
 
     for (const auto& existing_entities : _label_to_tag) {
       if (existing_entities->tag() == tag->tag()) {
-        throw std::logic_error(
-            "Entity already a part of the model. Cannot make a new model with "
-            "the entity " +
-            tag->tag());
+        throw std::logic_error("Cannot add entity " + tag->tag() +
+                               "to the model. Entity already exists");
       }
     }
 
@@ -85,29 +84,22 @@ class UDTNer final : public UDTBackend {
     auto input = bolt::Input::make(embedding_layer->inputDim());
     auto hidden = embedding_layer->apply(input);
     auto output_layer = bolt::FullyConnected::make(
-        _label_to_tag.size() + 1, hidden->dim(), 1, "softmax", nullptr, true);
+        _label_to_tag.size() + 1, hidden->dim(), fc_layer->getSparsity(),
+        bolt::activationFunctionToStr(
+            fc_layer->kernel()->getActivationFunction()),
+        nullptr, fc_layer->kernel()->useBias());
 
     {
-      const float* weight_start = output_layer->weightsPtr();
-      int weight_size = output_layer->dim() * output_layer->inputDim();
-      std::vector<float> new_weights(weight_start, weight_start + weight_size);
+      // copy the weights and biases to the new model
+      auto& new_weights = output_layer->kernel()->weights();
+      const auto& old_weights = fc_layer->kernel()->weights();
+      std::copy(old_weights.begin(), old_weights.end(), new_weights.begin());
 
-      const float* biases_start = output_layer->weightsPtr();
-      int biases_size = output_layer->dim() * output_layer->inputDim();
-      std::vector<float> new_biases(biases_start, biases_start + biases_size);
-
-      const float* old_weights = fc_layer->weightsPtr();
-      const float* old_biases = fc_layer->biasesPtr();
-      for (size_t i = 0; i < fc_layer->dim() * fc_layer->inputDim(); i++) {
-        new_weights[i] = old_weights[i];
-      }
-      for (size_t i = 0; i < fc_layer->dim(); ++i) {
-        new_biases[i] = old_biases[i];
-      }
-
-      output_layer->setWeights(new_weights.data());
-      output_layer->setBiases(new_biases.data());
+      auto& new_bias = output_layer->kernel()->biases();
+      const auto& old_bias = fc_layer->kernel()->biases();
+      std::copy(old_bias.begin(), old_bias.end(), new_bias.begin());
     }
+
     auto output = output_layer->apply(hidden);
     auto labels = bolt::Input::make(output->dim());
     auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
@@ -116,8 +108,6 @@ class UDTNer final : public UDTBackend {
     _label_to_tag.push_back(tag);
     supervised_unigram_transform->addNewTagLabelEntry(tag->tag(),
                                                       _label_to_tag.size() - 1);
-
-    supervised_unigram_transform->setTargetDim(_label_to_tag.size());
   }
 
   ModelPtr model() const final { return _model; }

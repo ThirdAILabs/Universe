@@ -65,15 +65,23 @@ class NerTokenizerUnigram final : public Transformation {
 
   void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
     if (_tag_to_label) {
-      _tag_to_label.value()[tag] = label;
+      bool label_already_exists = false;
+      for (const auto& [t, l] : _tag_to_label.value()) {
+        if (l == label) {
+          label_already_exists = true;
+        }
+      }
+
+      // if label doesn't exist -> increase the target dim by 1
+      if (_target_dim.has_value() && !label_already_exists) {
+        _target_dim = _target_dim.value() + 1;
+      }
     }
 
     if (_token_tag_counter) {
       _token_tag_counter->addTagLabel(tag, label);
     }
   }
-
-  void setTargetDim(uint32_t target_dim) { _target_dim = target_dim; }
 
  private:
   void updateTokenTagCounter(
