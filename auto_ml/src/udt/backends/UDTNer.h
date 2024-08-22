@@ -56,25 +56,39 @@ class UDTNer final : public UDTBackend {
                           std::optional<uint32_t> top_k,
                           const py::kwargs& kwargs) final;
 
-  void addNerEntityToModel(
-      const std::variant<std::string, data::ner::NerLearnedTag>& entity) final {
-    data::ner::NerTagPtr tag;
-    if (std::holds_alternative<std::string>(entity)) {
-      tag = data::ner::getLearnedTagFromString(std::get<std::string>(entity));
-    } else {
-      tag = std::make_shared<data::ner::NerLearnedTag>(
-          std::get<data::ner::NerLearnedTag>(entity));
+  void addNerEntitiesToModel(
+      const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
+          entities) final {
+    std::vector<data::ner::NerTagPtr> tags;
+
+    {
+      // initialize the tags vector.
+      for (const auto& entity : entities) {
+        if (std::holds_alternative<std::string>(entity)) {
+          tags.emplace_back(data::ner::getLearnedTagFromString(
+              std::get<std::string>(entity)));
+        } else {
+          tags.emplace_back(std::make_shared<data::ner::NerLearnedTag>(
+              std::get<data::ner::NerLearnedTag>(entity)));
+        }
+      }
+
+      // check that none of the entities provided already exists
+      std::unordered_set<std::string> existing_entities;
+      for (const auto& entity : _label_to_tag) {
+        existing_entities.insert(entity->tag());
+      }
+
+      for (const auto& tag : tags) {
+        if (existing_entities.count(tag->tag())) {
+          throw std::logic_error("Cannot add entity " + tag->tag() +
+                                 "to the model. Entity already exists");
+        }
+      }
     }
 
     auto supervised_unigram_transform =
         extractNerTokenizerTransform(_supervised_transform, false);
-
-    for (const auto& existing_entities : _label_to_tag) {
-      if (existing_entities->tag() == tag->tag()) {
-        throw std::logic_error("Cannot add entity " + tag->tag() +
-                               "to the model. Entity already exists");
-      }
-    }
 
     auto fc_layer =
         bolt::FullyConnected::cast(_model->opExecutionOrder().at(1));
@@ -84,7 +98,8 @@ class UDTNer final : public UDTBackend {
     auto input = bolt::Input::make(embedding_layer->inputDim());
     auto hidden = embedding_layer->apply(input);
     auto output_layer = bolt::FullyConnected::make(
-        _label_to_tag.size() + 1, hidden->dim(), fc_layer->getSparsity(),
+        _label_to_tag.size() + tags.size(), hidden->dim(),
+        fc_layer->getSparsity(),
         bolt::activationFunctionToStr(
             fc_layer->kernel()->getActivationFunction()),
         nullptr, fc_layer->kernel()->useBias());
@@ -105,9 +120,12 @@ class UDTNer final : public UDTBackend {
     auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
 
     _model = bolt::Model::make({input}, {output}, {loss});
-    _label_to_tag.push_back(tag);
-    supervised_unigram_transform->addNewTagLabelEntry(tag->tag(),
-                                                      _label_to_tag.size() - 1);
+
+    for (const auto& tag : tags) {
+      _label_to_tag.push_back(tag);
+      supervised_unigram_transform->addNewTagLabelEntry(
+          tag->tag(), _label_to_tag.size() - 1);
+    }
   }
 
   ModelPtr model() const final { return _model; }

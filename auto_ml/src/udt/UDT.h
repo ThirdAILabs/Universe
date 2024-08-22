@@ -511,9 +511,10 @@ class UDT {
   static size_t estimateHashTableSize(size_t output_dim,
                                       std::optional<float> sparsity);
 
-  void addNerEntityToModel(
-      const std::variant<std::string, data::ner::NerLearnedTag>& entity) {
-    _backend->addNewEntityToModel(entity);
+  void addNerEntitiesToModel(
+      const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
+          entities) {
+    _backend->addNerEntitiesToModel(entities);
   }
 
  private:
