@@ -72,6 +72,8 @@ class NerTokenizerUnigram final : public Transformation {
         }
       }
 
+      _tag_to_label.value()[tag] = label;
+
       // if label doesn't exist -> increase the target dim by 1
       if (_target_dim.has_value() && !label_already_exists) {
         _target_dim = _target_dim.value() + 1;
