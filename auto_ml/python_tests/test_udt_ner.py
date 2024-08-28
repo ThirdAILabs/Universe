@@ -161,7 +161,7 @@ def evaluate_with_offsets(model, test):
 
         for entity in predicted_entities:
             start = entity["BeginOffset"]
-            end = entity["EndOffset"] + 1
+            end = entity["EndOffset"]
             predicted_tag = entity["Type"]
 
             for i, token in enumerate(tokens):

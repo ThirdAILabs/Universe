@@ -40,13 +40,13 @@ class StringSplitOnWhiteSpace final : public Transformation {
         word_start = i;
       } else if (last_is_word && !is_word) {
         words.push_back(text.substr(word_start, i - word_start));
-        offsets.emplace_back(word_start, i - 1);
+        offsets.emplace_back(word_start, i);
       }
       last_is_word = is_word;
     }
     if (last_is_word) {
       words.push_back(text.substr(word_start));
-      offsets.emplace_back(word_start, text.size() - 1);
+      offsets.emplace_back(word_start, text.size());
     }
 
     return {words, offsets};
