@@ -23,6 +23,9 @@ class StringSplitOnWhiteSpace final : public Transformation {
   static std::string type() { return "string_split_whitespace"; }
 
  private:
+  // Note: This function is created separately instead of modifying the existing
+  // split function Wrote this extra function, since this function would almost
+  // double the memory usage, which can be a bottleneck for Inverted Index
   static std::pair<std::vector<std::string>,
                    std::vector<std::pair<size_t, size_t>>>
   splitOnWhiteSpaceWithOffsets(const std::string& text) {
