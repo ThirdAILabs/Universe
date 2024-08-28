@@ -388,6 +388,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/DyadicInterval.cc
     data/src/transformations/NextWordPrediction.cc
     data/src/transformations/SpladeAugmentation.cc
+    data/src/transformations/StringSplitOnWhiteSpace.cc
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/NerDyadicDataProcessor.cc

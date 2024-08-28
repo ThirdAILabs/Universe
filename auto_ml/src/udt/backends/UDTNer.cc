@@ -20,6 +20,7 @@
 #include <data/src/columns/Column.h>
 #include <data/src/transformations/Pipeline.h>
 #include <data/src/transformations/StringCast.h>
+#include <data/src/transformations/StringSplitOnWhiteSpace.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
@@ -449,8 +450,12 @@ std::vector<SentenceTags> UDTNer::predictTags(
       data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
   auto data = data::ColumnMap({{_tokens_column, sentence_column}});
 
-  auto split_sentence_transform = data::StringToStringArray(
-      _tokens_column, _tokens_column, ' ', std::nullopt);
+  auto split_sentence_transform = data::StringSplitOnWhiteSpace(
+    _tokens_column, _tokens_column
+  );
+
+  // auto split_sentence_transform = data::StringToStringArray(
+  //     _tokens_column, _tokens_column, ' ', std::nullopt);
   auto tokenized_sentences = split_sentence_transform.applyStateless(data);
 
   data::ArrayColumnBasePtr<std::string> tokens_columns =
