@@ -144,7 +144,7 @@ constexpr uint32_t NER_DYADIC_INTERVALS = 3;
 constexpr uint32_t NER_EMB_DIM = 2000;
 
 const std::vector<std::string> NER_RULE_BASED_ENTITIES = {
-    "EMAIL", "PHONENUMBER", "CREDITCARDNUMBER", "CREDITCARDCVV", "IBAN"};
+    "EMAIL", "PASSPORT", "DRIVER_LICENSE"};
 
 constexpr float NER_O_THRESHOLD = 0.75;
 

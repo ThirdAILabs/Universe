@@ -265,7 +265,7 @@ RulePtr cvvPattern() {
 RulePtr usDriversLicensePattern() {
   // https://ntsi.com/drivers-license-format/
   return Pattern::make(
-      /*entity=*/"USDRIVERSLICENSE",
+      /*entity=*/"DRIVER_LICENSE",
       /*pattern=*/
       R"(\b([a-zA-Z][0-9]{3,6}|[a-zA-Z][0-9]{5,9}|[a-zA-Z][0-9]{6,8}|[a-zA-Z][0-9]{4,8}|[a-zA-Z][0-9]{9,11}|[a-zA-Z]{1,2}[0-9]{5,6}|H[0-9]{8}|V[0-9]{6}|X[0-9]{8}|a-zA-Z]{2}[0-9]{2,5}|[a-zA-Z]{2}[0-9]{3,7}|[0-9]{2}[a-zA-Z]{3}[0-9]{5,6}|[a-zA-Z][0-9]{13,14}|[a-zA-Z][0-9]{18}|[a-zA-Z][0-9]{6}R|[a-zA-Z][0-9]{9}|[a-zA-Z][0-9]{1,12}|[0-9]{9}[a-zA-Z]|[a-zA-Z]{2}[0-9]{6}[a-zA-Z]|[0-9]{8}[a-zA-Z]{2}|[0-9]{3}[a-zA-Z]{2}[0-9]{4}|[a-zA-Z][0-9][a-zA-Z][0-9][a-zA-Z]|[0-9]{7,8}[a-zA-Z])\b)",
       /*pattern_score=*/0.1,
@@ -282,7 +282,7 @@ RulePtr usDriversLicensePattern() {
 
 RulePtr usPassportPattern() {
   return Pattern::make(
-      /*entity=*/"USPASSPORT",
+      /*entity=*/"PASSPORT",
       /*pattern=*/R"(\b([A-Za-z][0-9]{8}|[0-9]{9})\b)",
       /*pattern_score*/ 0.1,
       /*context_keywords=*/
@@ -336,10 +336,10 @@ RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDCVV") {
     return cvvPattern();
   }
-  if (entity == "USDRIVERSLICENSE") {
+  if (entity == "DRIVER_LICENSE") {
     return usDriversLicensePattern();
   }
-  if (entity == "USPASSPORT") {
+  if (entity == "PASSPORT") {
     return usPassportPattern();
   }
   if (entity == "IPADDRESS") {
