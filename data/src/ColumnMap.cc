@@ -67,6 +67,8 @@ ArrayColumnBasePtr<T> ColumnMap::getArrayColumn(const std::string& name) const {
 
 template ArrayColumnBasePtr<uint32_t> ColumnMap::getArrayColumn(
     const std::string&) const;
+template ArrayColumnBasePtr<std::pair<size_t, size_t>>
+ColumnMap::getArrayColumn(const std::string&) const;
 template ArrayColumnBasePtr<float> ColumnMap::getArrayColumn(
     const std::string&) const;
 template ArrayColumnBasePtr<std::string> ColumnMap::getArrayColumn(

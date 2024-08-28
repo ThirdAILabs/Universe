@@ -408,8 +408,26 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
   float o_threshold =
       floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
 
-  auto tags = predictTags({sample.at(_tokens_column)}, sparse_inference,
-                          top_k.value_or(1), o_threshold);
+  auto [tags, offsets] =
+      predictTags({sample.at(_tokens_column)}, sparse_inference,
+                  top_k.value_or(1), o_threshold);
+
+  if (kwargs.contains("return_offsets") &&
+      py::cast<bool>(kwargs["return_offsets"])) {
+    std::vector<std::map<std::string, py::object>> results;
+    for (size_t i = 0; i < tags[0].size(); ++i) {
+      if (!tags[0][i].empty() && tags[0][i][0].first != "O") {
+        auto [start, end] = offsets[0][i];
+        std::map<std::string, py::object> entity;
+        entity["Score"] = py::cast(tags[0][i][0].second);
+        entity["Type"] = py::cast(tags[0][i][0].first);
+        entity["BeginOffset"] = py::cast(start);
+        entity["EndOffset"] = py::cast(end);
+        results.push_back(std::move(entity));
+      }
+    }
+    return py::cast(results);
+  }
 
   return py::cast(tags[0]);
 }
@@ -435,31 +453,70 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
   float o_threshold =
       floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
 
-  auto tags =
+  auto [tags, offsets] =
       predictTags(sentences, sparse_inference, top_k.value_or(1), o_threshold);
+
+  if (kwargs.contains("return_offsets") &&
+      py::cast<bool>(kwargs["return_offsets"])) {
+    std::vector<std::vector<std::map<std::string, py::object>>> results_batch;
+    for (size_t sentence_index = 0; sentence_index < tags.size();
+         ++sentence_index) {
+      std::vector<std::map<std::string, py::object>> results;
+      for (size_t i = 0; i < tags[sentence_index].size(); ++i) {
+        if (!tags[sentence_index][i].empty() &&
+            tags[sentence_index][i][0].first != "O") {
+          auto [start, end] = offsets[sentence_index][i];
+          std::map<std::string, py::object> entity;
+          entity["Score"] = py::cast(tags[sentence_index][i][0].second);
+          entity["Type"] = py::cast(tags[sentence_index][i][0].first);
+          entity["BeginOffset"] = py::cast(start);
+          entity["EndOffset"] = py::cast(end);
+          results.push_back(std::move(entity));
+        }
+      }
+      results_batch.push_back(std::move(results));
+    }
+    return py::cast(results_batch);
+  }
 
   return py::cast(tags);
 }
 
-std::vector<SentenceTags> UDTNer::predictTags(
-    const std::vector<std::string>& sentences, bool sparse_inference,
-    uint32_t top_k, float o_threshold) {
+std::pair<std::vector<SentenceTags>,
+          std::vector<std::vector<std::pair<size_t, size_t>>>>
+UDTNer::predictTags(const std::vector<std::string>& sentences,
+                    bool sparse_inference, uint32_t top_k, float o_threshold) {
   std::vector<std::vector<std::string>> tokens;
+  std::vector<SentenceTags> output_tags(sentences.size());
 
   auto sentence_column =
       data::ValueColumn<std::string>::make(std::vector<std::string>{sentences});
   auto data = data::ColumnMap({{_tokens_column, sentence_column}});
 
-  auto split_sentence_transform = data::StringSplitOnWhiteSpace(
-    _tokens_column, _tokens_column
-  );
+  auto split_sentence_transform =
+      data::StringSplitOnWhiteSpace(_tokens_column, _tokens_column);
 
-  // auto split_sentence_transform = data::StringToStringArray(
-  //     _tokens_column, _tokens_column, ' ', std::nullopt);
   auto tokenized_sentences = split_sentence_transform.applyStateless(data);
 
   data::ArrayColumnBasePtr<std::string> tokens_columns =
       tokenized_sentences.getArrayColumn<std::string>(_tokens_column);
+
+  const data::ArrayColumnBasePtr<std::pair<size_t, size_t>> offsets =
+      tokenized_sentences.getArrayColumn<std::pair<size_t, size_t>>(
+          _tokens_column + "_offsets");
+
+  // Get and stores offsets from transformation
+  std::vector<std::vector<std::pair<size_t, size_t>>> token_offsets(
+      tokenized_sentences.numRows());
+
+  for (uint32_t i = 0; i < tokenized_sentences.numRows(); i++) {
+    auto offset_row = offsets->row(i);
+    token_offsets[i].reserve(offset_row.size());
+    for (const auto& offset : offset_row) {
+      token_offsets[i].emplace_back(offset);
+    }
+  }
+
   auto token_ptr =
       std::dynamic_pointer_cast<data::ArrayColumn<std::string>>(tokens_columns);
   if (token_ptr) {
@@ -479,7 +536,6 @@ std::vector<SentenceTags> UDTNer::predictTags(
   if (_rule) {
     rule_results = _rule->applyBatch(tokens);
   }
-  std::vector<SentenceTags> output_tags(sentences.size());
 
   for (const auto& batch : tensors) {
     auto scores = _model->forward(batch, sparse_inference).at(0);
@@ -510,7 +566,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
         // if the number of labels in the model is 1, we do not have to
         // reverse
         if (tags.size() > 1) {
-          // If the default tag is the the top prediction but has a score <
+          // If the default tag is the top prediction but has a score <
           // 0.9 then using the next top prediction improves accuracy.
           float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
@@ -541,7 +597,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
     }
   }
 
-  return output_tags;
+  return {output_tags, token_offsets};
 }
 
 data::LoaderPtr UDTNer::getDataLoader(const dataset::DataSourcePtr& data,

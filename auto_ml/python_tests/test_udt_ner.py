@@ -17,6 +17,33 @@ TAGS = "tags"
 fake = Faker(seed=0)
 
 
+ner_whitespace_formatting_sample = """Subject: Catching up!
+
+Hey John Brown,
+
+It's been a while since we've chatted! How are things going with you?
+
+I'm finally starting to feel settled in my new place at 646 Dunberry Road. It took a while to unpack everything (I swear I have more boxes than Albert Schweitzer has in their entire house!). I've been thinking about taking a drive over to your place sometime soon, just to catch up properly. I could swing by on my birthday: 05/04/2024, after my afternoon shift at work. What do you think? Maybe we could grab a bite to eat at Los Pollos Hermanos or something.
+
+Oh, and have you had a chance to check out my new website, www.sophiaseamstress.com? It's still under construction but I'm slowly getting the hang of it. It'd be great to hear what you think!
+
+By the way, remember that Peruvian restaurant that you suggested I try near your place at 78 Seville Street? I went there the other day with Jane Docent and it was absolutely delicious! I can't wait to tell you all about it when I see you!
+
+Speaking of things that I need to tell you about, I actually had this really weird experience the other day. I was at the DMV trying to renew my driver's license, and you wouldn't believe the mix-up! They were trying to tell me my license number was A8734433, but I knew it was actually D8453436. It was so frustrating, it took ages to get sorted out. Can you believe that?!
+
+I should probably head out for a quick run now. My gym membership, at Space Jam Gym, hasn't really paid off yet, but I'm determined to reach my fitness goals. Hopefully I can beat your record this time, Mr John Brown the marathon winner!
+
+Let me know when you're free.
+
+Talk soon!
+
+Sophia Alexander
+
+408 374 5722
+sophia@goodmail.com
+"""
+
+
 def random_credit_card():
     number_str = fake.credit_card_number(card_type="visa")
     return number_str
@@ -118,11 +145,49 @@ def evaluate_predict_batch(model, test):
     return correct / total
 
 
+def evaluate_with_offsets(model, test):
+    correct = 0
+    total = 0
+
+    samples, labels = load_eval_samples(test)
+
+    all_predictions_with_offsets = model.predict_batch(samples, return_offsets=True)
+
+    for sample, predicted_entities, expected_tags in zip(
+        samples, all_predictions_with_offsets, labels
+    ):
+        tokens = sample[TOKENS].split()
+        predicted_tags = ["O"] * len(tokens)
+
+        for entity in predicted_entities:
+            start = entity["BeginOffset"]
+            end = entity["EndOffset"] + 1
+            predicted_tag = entity["Type"]
+
+            for i, token in enumerate(tokens):
+                token_start = sum(len(t) + 1 for t in tokens[:i])
+                token_end = token_start + len(token)
+                if token_start >= start and token_end <= end:
+                    predicted_tags[i] = predicted_tag
+
+        assert len(predicted_tags) == len(expected_tags)
+        for predicted_tag, expected_tag in zip(predicted_tags, expected_tags):
+            if expected_tag != "O":
+                if predicted_tag == expected_tag:
+                    correct += 1
+                total += 1
+
+    return correct / total if total > 0 else 0.0
+
+
 def evaluate(model, test):
     predict_acc = evaluate_predict(model, test)
     predict_batch_acc = evaluate_predict_batch(model, test)
+    predict_offset_acc = evaluate_with_offsets(model, test)
 
     assert predict_acc == predict_batch_acc
+
+    assert predict_acc == predict_offset_acc
 
     return predict_acc
 
@@ -172,6 +237,10 @@ def test_udt_ner_model(ner_dataset, use_rules, ignore_rule_tags):
     acc_after_finetune = evaluate(model, test)
     print(f"{acc_after_finetune=}")
     assert acc_after_finetune > 0.9
+
+    # check splitting on whitespaces
+    predicted_tags = model.predict({"tokens": ner_whitespace_formatting_sample})
+    assert len(predicted_tags) == len(ner_whitespace_formatting_sample.split())
 
 
 def test_udt_ner_from_pretrained(ner_dataset):
