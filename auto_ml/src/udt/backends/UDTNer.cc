@@ -394,6 +394,26 @@ py::object UDTNer::evaluate(const dataset::DataSourcePtr& data,
   return py::cast(history);
 }
 
+std::vector<std::map<std::string, py::object>> formatResultsWithOffsets(
+    const SentenceTags& tags,
+    const std::vector<std::pair<size_t, size_t>>& offsets) {
+  std::vector<std::map<std::string, py::object>> results;
+
+  for (size_t i = 0; i < tags.size(); ++i) {
+    if (!tags[i].empty() && tags[i][0].first != "O") {
+      auto [start, end] = offsets[i];
+      std::map<std::string, py::object> entity;
+      entity["Score"] = py::cast(tags[i][0].second);
+      entity["Type"] = py::cast(tags[i][0].first);
+      entity["BeginOffset"] = py::cast(start);
+      entity["EndOffset"] = py::cast(end);
+      results.push_back(std::move(entity));
+    }
+  }
+
+  return results;
+}
+
 py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
                            bool return_predicted_class,
                            std::optional<uint32_t> top_k,
@@ -414,18 +434,7 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
 
   if (kwargs.contains("return_offsets") &&
       py::cast<bool>(kwargs["return_offsets"])) {
-    std::vector<std::map<std::string, py::object>> results;
-    for (size_t i = 0; i < tags[0].size(); ++i) {
-      if (!tags[0][i].empty() && tags[0][i][0].first != "O") {
-        auto [start, end] = offsets[0][i];
-        std::map<std::string, py::object> entity;
-        entity["Score"] = py::cast(tags[0][i][0].second);
-        entity["Type"] = py::cast(tags[0][i][0].first);
-        entity["BeginOffset"] = py::cast(start);
-        entity["EndOffset"] = py::cast(end);
-        results.push_back(std::move(entity));
-      }
-    }
+    auto results = formatResultsWithOffsets(tags[0], offsets[0]);
     return py::cast(results);
   }
 
@@ -461,19 +470,8 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
     std::vector<std::vector<std::map<std::string, py::object>>> results_batch;
     for (size_t sentence_index = 0; sentence_index < tags.size();
          ++sentence_index) {
-      std::vector<std::map<std::string, py::object>> results;
-      for (size_t i = 0; i < tags[sentence_index].size(); ++i) {
-        if (!tags[sentence_index][i].empty() &&
-            tags[sentence_index][i][0].first != "O") {
-          auto [start, end] = offsets[sentence_index][i];
-          std::map<std::string, py::object> entity;
-          entity["Score"] = py::cast(tags[sentence_index][i][0].second);
-          entity["Type"] = py::cast(tags[sentence_index][i][0].first);
-          entity["BeginOffset"] = py::cast(start);
-          entity["EndOffset"] = py::cast(end);
-          results.push_back(std::move(entity));
-        }
-      }
+      auto results = formatResultsWithOffsets(tags[sentence_index],
+                                              offsets[sentence_index]);
       results_batch.push_back(std::move(results));
     }
     return py::cast(results_batch);
