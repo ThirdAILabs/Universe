@@ -161,7 +161,13 @@ class NeuralDB:
             json.dump(metadata, f)
 
     def save(self, path: str):
-        os.makedirs(path)
+        if os.path.exists(path):
+            if not os.path.isdir(path):
+                raise ValueError(
+                    f"Cannot save NeuralDB to {path} since it is not a directory"
+                )
+        else:
+            os.makedirs(path)
 
         self.chunk_store.save(self.chunk_store_path(path))
         self.retriever.save(self.retriever_path(path))
