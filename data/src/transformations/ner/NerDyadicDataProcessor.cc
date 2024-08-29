@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <optional>
 #include <regex>
+#include <string>
 
 namespace thirdai::data {
 
@@ -263,16 +264,28 @@ std::string NerDyadicDataProcessor::generateDyadicWindows(
 
     for (size_t lower_index = interval_size > index ? 0 : index - interval_size;
          lower_index < index; lower_index++) {
-      prev_window.push_back(_dyadic_previous_prefix +
-                            std::to_string(interval_id) + "_" +
-                            tokens[lower_index]);
+      for (const auto& context_tokenizer : _context_tokenizers) {
+        auto toks = context_tokenizer->toStrings(tokens[lower_index]);
+        prev_window.reserve(prev_window.size() + toks.size());
+        for (const auto& tok : toks) {
+          prev_window.push_back(_dyadic_previous_prefix +
+                                std::to_string(interval_id) + "_" + tok);
+        }
+      }
     }
 
     for (size_t upper_index = std::min(
              index + interval_size, static_cast<uint32_t>(tokens.size() - 1));
          upper_index > index; upper_index--) {
-      next_window.push_back(_dyadic_next_prefix + std::to_string(interval_id) +
-                            "_" + tokens[upper_index]);
+
+      for (const auto& context_tokenizer : _context_tokenizers) {
+        auto toks = context_tokenizer->toStrings(tokens[upper_index]);
+        prev_window.reserve(prev_window.size() + toks.size());
+        for (const auto& tok : toks) {
+          prev_window.push_back(_dyadic_previous_prefix +
+                                std::to_string(interval_id) + "_" + tok);
+        }
+      }
     }
 
     dyadic_windows.push_back(prev_window);
