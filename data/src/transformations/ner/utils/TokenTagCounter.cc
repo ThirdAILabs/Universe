@@ -13,13 +13,9 @@ namespace thirdai::data::ner {
 
 constexpr float DEFAULT_RARE_RATIO = 1e-6;
 
-TokenTagCounter::TokenTagCounter(
-    uint32_t number_bins,
-    utils::TagTrackerPtr tag_tracker)
-    : _number_bins(number_bins),
-      _tag_tracker(std::move(tag_tracker)){
-  
-}
+TokenTagCounter::TokenTagCounter(uint32_t number_bins,
+                                 utils::TagTrackerPtr tag_tracker)
+    : _number_bins(number_bins), _tag_tracker(std::move(tag_tracker)) {}
 
 void TokenTagCounter::addTokenTag(const std::string& token,
                                   const std::string& tag) {
@@ -35,7 +31,8 @@ void TokenTagCounter::addTokenTag(const std::string& token,
   _total_tokens++;
 
   if (!_token_tag_counts.count(token)) {
-    _token_tag_counts[token] = std::vector<uint32_t>(_tag_tracker->numLabels(), 0);
+    _token_tag_counts[token] =
+        std::vector<uint32_t>(_tag_tracker->numLabels(), 0);
   }
 
   _token_tag_counts[token][_tag_tracker->tag_to_label(tag)]++;

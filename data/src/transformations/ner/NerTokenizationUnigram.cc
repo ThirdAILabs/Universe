@@ -140,7 +140,6 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
       _target_dim(archive.getOpt<ar::U64>("target_dim")),
-      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {
-}
+      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {}
 
 }  // namespace thirdai::data
