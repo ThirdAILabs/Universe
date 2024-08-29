@@ -41,6 +41,15 @@ class NerTag {
   static std::shared_ptr<NerTag> fromArchive(const ar::Archive& archive);
 
   virtual ~NerTag() = default;
+
+  virtual bool operator==(const NerTag& other) const {
+    return this->tag() == other.tag();  // Example: comparing based on tag
+  }
+
+  virtual std::size_t hashValue() const {
+    // Compute hash based on internal state, example using tag()
+    return std::hash<std::string>{}(this->tag());
+  }
 };
 
 class NerLearnedTag : public NerTag {
