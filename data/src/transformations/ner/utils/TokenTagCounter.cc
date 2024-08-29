@@ -15,15 +15,10 @@ constexpr float DEFAULT_RARE_RATIO = 1e-6;
 
 TokenTagCounter::TokenTagCounter(
     uint32_t number_bins,
-    std::unordered_map<std::string, uint32_t> tag_to_label)
+    utils::TagTrackerPtr tag_tracker)
     : _number_bins(number_bins),
-      _tag_to_label(std::move(tag_to_label)),
-      _total_tokens(0) {
-  uint32_t max_label = 0;
-  for (const auto& [tag, label] : _tag_to_label) {
-    max_label = std::max(max_label, label);
-  }
-  _num_unique_counters = max_label + 1;
+      _tag_tracker(std::move(tag_tracker)){
+  
 }
 
 void TokenTagCounter::addTokenTag(const std::string& token,
@@ -31,7 +26,7 @@ void TokenTagCounter::addTokenTag(const std::string& token,
   if (utils::isNumberWithPunct(token, {})) {
     return;
   }
-  if (!_tag_to_label.count(tag)) {
+  if (!_tag_tracker->tagExists(tag)) {
     throw std::invalid_argument("The tag " + tag +
                                 " is not present in the tag to label map.");
   }
@@ -40,10 +35,10 @@ void TokenTagCounter::addTokenTag(const std::string& token,
   _total_tokens++;
 
   if (!_token_tag_counts.count(token)) {
-    _token_tag_counts[token] = std::vector<uint32_t>(_num_unique_counters, 0);
+    _token_tag_counts[token] = std::vector<uint32_t>(_tag_tracker->numLabels(), 0);
   }
 
-  _token_tag_counts[token][_tag_to_label[tag]]++;
+  _token_tag_counts[token][_tag_tracker->tag_to_label(tag)]++;
 }
 
 std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
@@ -55,7 +50,7 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
 
   std::string encoding;
   uint32_t total_token_count = _token_counts.at(token);
-  for (uint32_t i = 0; i < _num_unique_counters; i++) {
+  for (uint32_t i = 0; i < _tag_tracker->numLabels(); i++) {
     float ratio =
         static_cast<float>(_token_tag_counts.at(token)[i]) / total_token_count;
     uint32_t bin_id = ratio * _number_bins;
@@ -68,9 +63,6 @@ std::string TokenTagCounter::getTokenEncoding(const std::string& token) const {
 ar::ConstArchivePtr TokenTagCounter::toArchive() const {
   auto map = ar::Map::make();
   map->set("number_bins", ar::u64(_number_bins));
-  map->set("tag_to_label",
-           ar::mapStrU64({_tag_to_label.begin(), _tag_to_label.end()}));
-  map->set("num_unique_counters", ar::u64(_num_unique_counters));
 
   ar::MapStrVecU64 token_tag_counts;
   for (const auto& [token, counts] : _token_tag_counts) {
@@ -88,17 +80,12 @@ ar::ConstArchivePtr TokenTagCounter::toArchive() const {
 
 TokenTagCounter::TokenTagCounter(const ar::Archive& archive) {
   _number_bins = archive.u64("number_bins");
-  const auto& tag_to_label = archive.getAs<ar::MapStrU64>("tag_to_label");
-  _tag_to_label = {tag_to_label.begin(), tag_to_label.end()};
-
-  _num_unique_counters = archive.u64("num_unique_counters");
 
   const auto& token_tag_counts =
       archive.getAs<ar::MapStrVecU64>("token_tag_counts");
 
   for (const auto& [token, counts] : token_tag_counts) {
     std::vector<uint32_t> single_token_tag_counts;
-    single_token_tag_counts.reserve(_num_unique_counters);
     for (const auto& count : counts) {
       single_token_tag_counts.push_back(count);
     }

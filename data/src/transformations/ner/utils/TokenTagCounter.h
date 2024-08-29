@@ -1,6 +1,7 @@
 #pragma once
 #include <archive/src/Archive.h>
 #include <data/src/transformations/Tabular.h>
+#include <data/src/transformations/ner/utils/TagTracker.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -9,8 +10,7 @@
 namespace thirdai::data::ner {
 class TokenTagCounter {
  public:
-  TokenTagCounter(uint32_t number_bins,
-                  std::unordered_map<std::string, uint32_t> tag_to_label);
+  TokenTagCounter(uint32_t number_bins, utils::TagTrackerPtr tag_tracker);
 
   void addTokenTag(const std::string& token, const std::string& tag);
 
@@ -20,32 +20,25 @@ class TokenTagCounter {
 
   ar::ConstArchivePtr toArchive() const;
 
-  void addTagLabel(const std::string& tag, uint32_t label) {
-    _tag_to_label[tag] = label;
-
-    bool requires_new_counter = false;
+  void addNewCounter() {
     for (auto& [token, counts] : _token_tag_counts) {
-      if (counts.size() < label) {
-        counts.push_back(0);
-        requires_new_counter = true;
-      } else {
-        break;
-      }
-    }
-
-    if (requires_new_counter) {
-      _num_unique_counters++;
+      counts.push_back(0);
     }
   }
 
+  void setTagTracker(utils::TagTrackerPtr tag_tracker) {
+    _tag_tracker = std::move(tag_tracker);
+  }
+
  private:
+  //  number of bins to divide the interval [0,1] to discretize the float ratio
   uint32_t _number_bins;
-  std::unordered_map<std::string, uint32_t> _tag_to_label;
+
+  utils::TagTrackerPtr _tag_tracker;
   /*
    * multiple tags can be mapped to the same label in the model, we use only one
    * counter for each label
    */
-  uint32_t _num_unique_counters;
   std::unordered_map<std::string, std::vector<uint32_t>> _token_tag_counts;
 
   std::unordered_map<std::string, uint32_t> _token_counts;

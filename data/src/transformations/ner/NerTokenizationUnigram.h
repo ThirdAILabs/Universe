@@ -9,11 +9,13 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/utils/TagTracker.h>
 #include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace thirdai::data {
 
@@ -25,8 +27,7 @@ class NerTokenizerUnigram final : public Transformation {
       std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-      std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
-          std::nullopt,
+      ner::utils::TagTrackerPtr tag_tracker = nullptr,
       ner::TokenTagCounterPtr token_tag_counter = nullptr);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
@@ -44,17 +45,10 @@ class NerTokenizerUnigram final : public Transformation {
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
-    if (!_tag_to_label.has_value()) {
+    if (_tag_tracker == nullptr) {
       throw std::logic_error("Tag to Label is None");
     }
-
-    auto tag_map = _tag_to_label.value();
-    if (tag_map.count(tag)) {
-      return tag_map.at(tag);
-    }
-
-    throw std::out_of_range("String '" + tag +
-                            "' not found in the specified tags list.");
+    return _tag_tracker->tag_to_label(tag);
   }
 
   const auto& processor() const { return _processor; }
@@ -63,26 +57,8 @@ class NerTokenizerUnigram final : public Transformation {
     _token_tag_counter = std::move(token_tag_counter);
   }
 
-  void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
-    if (_tag_to_label) {
-      bool label_already_exists = false;
-      for (const auto& [t, l] : _tag_to_label.value()) {
-        if (l == label) {
-          label_already_exists = true;
-        }
-      }
-
-      _tag_to_label.value()[tag] = label;
-
-      // if label doesn't exist -> increase the target dim by 1
-      if (_target_dim.has_value() && !label_already_exists) {
-        _target_dim = _target_dim.value() + 1;
-      }
-    }
-
-    if (_token_tag_counter) {
-      _token_tag_counter->addTagLabel(tag, label);
-    }
+  void setTagTracker(ner::utils::TagTrackerPtr tag_tracker) {
+    _tag_tracker = std::move(tag_tracker);
   }
 
  private:
@@ -115,8 +91,7 @@ class NerTokenizerUnigram final : public Transformation {
 
   NerDyadicDataProcessor _processor;
 
-  std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
-
+  ner::utils::TagTrackerPtr _tag_tracker;
   ner::TokenTagCounterPtr _token_tag_counter;
 };
 
