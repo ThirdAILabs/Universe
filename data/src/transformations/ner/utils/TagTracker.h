@@ -5,7 +5,6 @@
 #include <archive/src/Map.h>
 #include <data/src/transformations/ner/learned_tags/CommonLearnedTags.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
-#include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <cstdint>
 #include <memory>
 #include <sstream>

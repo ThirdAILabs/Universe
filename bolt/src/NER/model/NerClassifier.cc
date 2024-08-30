@@ -1,5 +1,4 @@
 #include "NerClassifier.h"
-#include <bolt/src/NER/Defaults.h>
 #include <data/src/columns/ArrayColumns.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/utils/utils.h>
