@@ -10,7 +10,6 @@
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/utils/TagTracker.h>
-#include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
@@ -27,8 +26,7 @@ class NerTokenizerUnigram final : public Transformation {
       std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-      ner::utils::TagTrackerPtr tag_tracker = nullptr,
-      ner::TokenTagCounterPtr token_tag_counter = nullptr);
+      ner::utils::TagTrackerPtr tag_tracker = nullptr);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
 
@@ -48,14 +46,10 @@ class NerTokenizerUnigram final : public Transformation {
     if (_tag_tracker == nullptr) {
       throw std::logic_error("Tag to Label is None");
     }
-    return _tag_tracker->tag_to_label(tag);
+    return _tag_tracker->tagToLabel(tag);
   }
 
   const auto& processor() const { return _processor; }
-
-  void setTokenTagCounter(ner::TokenTagCounterPtr token_tag_counter) {
-    _token_tag_counter = std::move(token_tag_counter);
-  }
 
   void setTagTracker(ner::utils::TagTrackerPtr tag_tracker) {
     _tag_tracker = std::move(tag_tracker);
@@ -65,7 +59,7 @@ class NerTokenizerUnigram final : public Transformation {
   void updateTokenTagCounter(
       const ArrayColumnBasePtr<std::string>& tokens,
       const ArrayColumnBasePtr<std::string>& tags) const {
-    if (_token_tag_counter != nullptr && _target_column.has_value()) {
+    if (_tag_tracker->hasTokenTagCounter() && _target_column.has_value()) {
       for (size_t i = 0; i < tokens->numRows(); ++i) {
         std::vector<std::string> row_token_vectors = tokens->row(i).toVector();
         auto lower_cased_tokens =
@@ -73,8 +67,8 @@ class NerTokenizerUnigram final : public Transformation {
 
         for (size_t token_index = 0; token_index < row_token_vectors.size();
              ++token_index) {
-          _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
-                                          tags->row(i)[token_index]);
+          _tag_tracker->addTokenTag(lower_cased_tokens[token_index],
+                                    tags->row(i)[token_index]);
         }
       }
     }
@@ -92,7 +86,6 @@ class NerTokenizerUnigram final : public Transformation {
   NerDyadicDataProcessor _processor;
 
   ner::utils::TagTrackerPtr _tag_tracker;
-  ner::TokenTagCounterPtr _token_tag_counter;
 };
 
 }  // namespace thirdai::data

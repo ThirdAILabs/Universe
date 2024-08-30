@@ -36,8 +36,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-    ner::utils::TagTrackerPtr tag_tracker,
-    ner::TokenTagCounterPtr token_tag_counter)
+    ner::utils::TagTrackerPtr tag_tracker)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
@@ -45,8 +44,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  std::move(feature_enhancement_config),
                  !_target_column.has_value()),
-      _tag_tracker(std::move(tag_tracker)),
-      _token_tag_counter(std::move(token_tag_counter)) {}
+      _tag_tracker(std::move(tag_tracker)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -84,9 +82,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
-        if (_token_tag_counter != nullptr) {
+        if (_tag_tracker->hasTokenTagCounter()) {
           featurized_sentences[featurized_sentence_offset] +=
-              _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
+              _tag_tracker->getTokenEncoding(lower_cased_tokens[target]);
         }
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {

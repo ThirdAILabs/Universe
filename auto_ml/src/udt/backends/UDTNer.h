@@ -14,7 +14,7 @@
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/TagTracker.h>
-#include <data/src/transformations/ner/utils/TokenTagCounter.h>
+#include <data/src/transformations/ner/utils/TokenLabelCounter.h>
 #include <memory>
 #include <string>
 #include <variant>
@@ -119,7 +119,6 @@ class UDTNer final : public UDTBackend {
 
     for (const auto& tag : tags) {
       _tag_tracker->addTag(tag, /*add_new_label=*/true);
-      _token_tag_counter->addNewCounter();
     }
   }
 
@@ -166,8 +165,6 @@ class UDTNer final : public UDTBackend {
   std::string _tags_column;
 
   data::ner::utils::TagTrackerPtr _tag_tracker;
-
-  thirdai::data::ner::TokenTagCounterPtr _token_tag_counter;
 };
 
 }  // namespace thirdai::automl::udt

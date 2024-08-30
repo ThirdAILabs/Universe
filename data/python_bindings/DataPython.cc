@@ -30,6 +30,7 @@
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/utils/TagTracker.h>
+#include <data/src/transformations/ner/utils/TokenLabelCounter.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -46,6 +47,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::data::python {
 
@@ -536,24 +538,28 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
                     std::optional<FeatureEnhancementConfig>,
-                    ner::utils::TagTrackerPtr,
-                    ner::TokenTagCounterPtr>(),
+                    ner::utils::TagTrackerPtr>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
            py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
            py::arg("feature_enhancement_config") = std::nullopt,
-           py::arg("tag_tracker") = nullptr,
-           py::arg("token_tag_counter") = nullptr)
+           py::arg("tag_tracker") = nullptr)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
 
-  py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
-      transformations_submodule, "NerTokenTagCounter")
-      .def(py::init<uint32_t, ner::utils::TagTrackerPtr>(),
-           py::arg("number_bins"), py::arg("tag_tracker"))
-      .def("add_token_tag", &ner::TokenTagCounter::addTokenTag,
-           py::arg("token"), py::arg("tag"))
-      .def("encode", &ner::TokenTagCounter::getTokenEncoding, py::arg("token"));
+  py::class_<ner::utils::TagTracker, ner::utils::TagTrackerPtr>(
+      transformations_submodule, "NerTagTracker")
+      .def(py::init<const std::vector<data::ner::NerTagPtr>&,
+                    std::unordered_set<std::string>, std::optional<uint32_t>>(),
+           py::arg("tags"), py::arg("ignored_tags"),
+           py::arg("num_frequency_bins") = std::nullopt)
+      .def("add_token_tag", &ner::utils::TagTracker::addTokenTag,
+           py::arg("token"), py::arg("label"))
+      .def("encode", &ner::utils::TagTracker::getTokenEncoding,
+           py::arg("token"))
+      .def("label_to_tag", &ner::utils::TagTracker::labelToTag,
+           py::arg("label"))
+      .def("tag_to_label", &ner::utils::TagTracker::tagToLabel, py::arg("tag"));
 #endif
 
   py::class_<FeatureEnhancementConfig,
