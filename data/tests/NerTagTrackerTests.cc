@@ -31,7 +31,7 @@ void verifyTags(const TagTracker& tracker,
                 const std::unordered_set<std::string>& ignored_tags) {
   for (uint32_t i = 0; i < model_tags.size(); ++i) {
     ASSERT_EQ(tracker.tagToLabel(model_tags[i]->tag()), i);
-    ASSERT_EQ(tracker.labelToTag(i), model_tags[i]->tag());
+    ASSERT_EQ(tracker.labelToTag(i)->tag(), model_tags[i]->tag());
   }
 
   for (const auto& tag : ignored_tags) {
@@ -46,6 +46,14 @@ TEST(NerTagTrackerTests, CheckLabels) {
 
   verifyTags(tracker, model_tags, ignored_tags);
 
+  std::cout << "this is working" << std::endl;
+
+  for (const auto& tag : tracker.modelTags()) {
+    std::cout << tag->tag() << " ";
+  }
+
+  std::cout << std::endl;
+
   // verify tags after adding new entities to the tracker
   std::vector<NerTagPtr> new_model_tags;
   for (const auto& tag : {"GENDER", "AGE"}) {
@@ -55,7 +63,7 @@ TEST(NerTagTrackerTests, CheckLabels) {
   }
 
   std::vector<NerTagPtr> new_ignored_tags;
-  for (const auto& tag : {"GENDER", "AGE"}) {
+  for (const auto& tag : {"ACCOUNTNUMBER", "CREDITCARDCVV"}) {
     auto new_tag = getLearnedTagFromString(tag);
     tracker.addTag(new_tag, false);
     ignored_tags.insert(tag);
