@@ -83,7 +83,7 @@ class TagTracker {
 
     else {
       // if tag does not have an output dedicated to it in the model, we give it
-      // the label 0. All other entities are intact.
+      // the label 0. All other entities remain the same.
       _tag_to_label[tag_string] = 0;
     }
   }
