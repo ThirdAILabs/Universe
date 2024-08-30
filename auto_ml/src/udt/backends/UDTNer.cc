@@ -307,7 +307,7 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
       tag_to_label[tag] = 0;
     }
     _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
-        args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
+        args.get<uint32_t>("token_counter_bins", "uint32_t", 10), _tag_tracker);
   }
 
   _model = buildModel(options.input_dim, options.emb_dim,

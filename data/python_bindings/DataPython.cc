@@ -29,6 +29,7 @@
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
 #include <data/src/transformations/ner/NerTokenizationUnigram.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
+#include <data/src/transformations/ner/utils/TagTracker.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/TokenEncoding.h>
@@ -535,21 +536,21 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
                     std::optional<uint32_t>, uint32_t,
                     std::vector<dataset::TextTokenizerPtr>,
                     std::optional<FeatureEnhancementConfig>,
-                    std::optional<std::unordered_map<std::string, uint32_t>>,
+                    ner::utils::TagTrackerPtr,
                     ner::TokenTagCounterPtr>(),
            py::arg("tokens_column"), py::arg("featurized_sentence_column"),
            py::arg("target_column"), py::arg("target_dim"),
            py::arg("dyadic_num_intervals"), py::arg("target_word_tokenizers"),
            py::arg("feature_enhancement_config") = std::nullopt,
-           py::arg("tag_to_label") = std::nullopt,
+           py::arg("tag_tracker") = nullptr,
            py::arg("token_tag_counter") = nullptr)
       .def("process_token", &NerTokenizerUnigram::processToken,
            py::arg("tokens"), py::arg("index"));
 
   py::class_<ner::TokenTagCounter, ner::TokenTagCounterPtr>(
       transformations_submodule, "NerTokenTagCounter")
-      .def(py::init<uint32_t, std::unordered_map<std::string, uint32_t>>(),
-           py::arg("number_bins"), py::arg("tag_to_label"))
+      .def(py::init<uint32_t, ner::utils::TagTrackerPtr>(),
+           py::arg("number_bins"), py::arg("tag_tracker"))
       .def("add_token_tag", &ner::TokenTagCounter::addTokenTag,
            py::arg("token"), py::arg("tag"))
       .def("encode", &ner::TokenTagCounter::getTokenEncoding, py::arg("token"));
