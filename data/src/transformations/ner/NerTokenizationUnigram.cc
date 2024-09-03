@@ -67,7 +67,7 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
 #pragma omp parallel for default(none)                                       \
     shared(text_tokens, sample_offsets, featurized_sentences, targets, tags, \
-               error) if (text_tokens->numRows() > 1)
+           error) if (text_tokens->numRows() > 1)
   for (size_t i = 0; i < text_tokens->numRows(); i += 1) {
     try {
       size_t sample_offset = sample_offsets[i];
