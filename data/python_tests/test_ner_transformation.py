@@ -12,12 +12,12 @@ TAGS = [
     data.transformations.NERLearnedTag("EMAIL"),
 ]
 
-TAG_TRACKER = data.transformations.NerTagTracker(tags=TAGS, ignored_tags=set())
-
 target_tokenizer = thirdai.dataset.NaiveSplitTokenizer(" ")
 
 
 def test_inequal_number_of_tokens_and_tags():
+    TAG_TRACKER = data.transformations.NerTagTracker(tags=TAGS, ignored_tags=set())
+
     ner_transformation = data.transformations.NerTokenizerUnigram(
         "source",
         "featurized_sentence",
@@ -46,6 +46,8 @@ def test_inequal_number_of_tokens_and_tags():
 
 
 def test_label_not_in_tag_map():
+    TAG_TRACKER = data.transformations.NerTagTracker(tags=TAGS, ignored_tags=set())
+
     ner_transformation = data.transformations.NerTokenizerUnigram(
         "source",
         "featurized_sentence",
