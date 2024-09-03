@@ -1,8 +1,10 @@
 #include "NER.h"
 #include <bolt/src/NER/model/NerBoltModel.h>
+#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt_vector/src/BoltVector.h>
 #include <archive/src/Archive.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -44,6 +46,11 @@ std::shared_ptr<NER> NER::fromArchive(const ar::Archive& archive) {
   if (type == "bolt_ner") {
     std::shared_ptr<NerModelInterface> ner_backend_model =
         NerBoltModel::fromArchive(*archive.get("ner_backend_model"));
+    return std::make_shared<NER>(NER(ner_backend_model));
+  }
+  if (type == "udt_ner") {
+    std::shared_ptr<NerModelInterface> ner_backend_model =
+        NerUDTModel::fromArchive(*archive.get("ner_backend_model"));
     return std::make_shared<NER>(NER(ner_backend_model));
   }
   throw std::invalid_argument("Cannot load a NER backend of type: " + type);

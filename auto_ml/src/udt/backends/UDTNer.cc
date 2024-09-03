@@ -25,7 +25,7 @@
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
-#include <data/src/transformations/ner/utils/TagTracker.h>
+#include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <pybind11/stl.h>
@@ -76,15 +76,25 @@ bolt::ModelPtr buildModel(uint32_t input_dim, uint32_t emb_dim,
 data::TransformationPtr makeTransformation(
     bool inference, const std::string& tags_column,
     const std::string& tokens_column,
-    const data::ner::utils::TagTrackerPtr& tag_tracker, size_t input_dim,
+    const std::vector<data::ner::NerTagPtr>& tags,
+    const std::unordered_set<std::string>& ignored_tags, size_t input_dim,
     uint32_t dyadic_num_intervals,
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
-    const std::optional<data::FeatureEnhancementConfig>& feature_config) {
+    const std::optional<data::FeatureEnhancementConfig>& feature_config,
+    const data::ner::TokenTagCounterPtr& token_tag_counter) {
   std::optional<std::string> target_column = tags_column;
-  std::optional<size_t> target_dim = tag_tracker->numLabels();
+  std::optional<size_t> target_dim = tags.size();
   if (inference) {
     target_column = std::nullopt;
     target_dim = std::nullopt;
+  }
+
+  std::unordered_map<std::string, uint32_t> tag_to_label;
+  for (size_t i = 0; i < tags.size(); i++) {
+    tag_to_label[tags[i]->tag()] = i;
+  }
+  for (const auto& tag : ignored_tags) {
+    tag_to_label[tag] = 0;
   }
 
   auto transform = data::Pipeline::make();
@@ -104,7 +114,8 @@ data::TransformationPtr makeTransformation(
                       /*dyadic_num_intervals=*/dyadic_num_intervals,
                       /*target_word_tokenizers=*/target_word_tokenizers,
                       /*feature_enhancement_config=*/feature_config,
-                      /*tag_tracker=*/tag_tracker))
+                      /*tag_to_label=*/tag_to_label,
+                      /*token_tag_counter=*/token_tag_counter))
                   ->then(std::make_shared<data::TextTokenizer>(
                       /*input_column=*/NER_FEATURIZED_SENTENCE,
                       /*output_indices=*/NER_FEATURIZED_SENTENCE,
@@ -287,38 +298,43 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
   }
 
-  std::vector<data::ner::NerTagPtr> model_tags;
   std::unordered_set<std::string> ignored_tags;
 
-  std::tie(model_tags, ignored_tags) = mapTagsToLabels(
+  std::tie(_label_to_tag, ignored_tags) = mapTagsToLabels(
       target->default_tag, target->tags, _rule, ignore_rule_tags);
 
   if (args.get<bool>("use_token_tag_counter", "bool", false)) {
-    _tag_tracker = data::ner::utils::TagTracker::make(
-        model_tags, ignored_tags,
-        args.get<uint32_t>("token_counter_bins", "uint32_t", 10));
-  } else {
-    _tag_tracker = data::ner::utils::TagTracker::make(model_tags, ignored_tags);
+    std::unordered_map<std::string, uint32_t> tag_to_label;
+    for (size_t i = 0; i < _label_to_tag.size(); i++) {
+      tag_to_label[_label_to_tag[i]->tag()] = i;
+    }
+    for (const auto& tag : ignored_tags) {
+      tag_to_label[tag] = 0;
+    }
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        args.get<uint32_t>("token_counter_bins", "uint32_t", 10), tag_to_label);
   }
 
-  _model = buildModel(options.input_dim, options.emb_dim,
-                      _tag_tracker->numLabels(), options.pretrained_emb);
+  _model = buildModel(options.input_dim, options.emb_dim, _label_to_tag.size(),
+                      options.pretrained_emb);
 
   _supervised_transform = makeTransformation(
       /*inference=*/false, /*tags_column=*/_tags_column,
-      /*tokens_column=*/_tokens_column, _tag_tracker,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config);
+      /*feature_config=*/options.feature_config, _token_tag_counter);
 
   _inference_transform = makeTransformation(
       /*inference=*/true, /*tags_column=*/_tags_column,
-      /*tokens_column=*/_tokens_column, _tag_tracker,
+      /*tokens_column=*/_tokens_column, _label_to_tag,
+      /*ignored_tags=*/ignored_tags,
       /*input_dim=*/options.input_dim,
       /*dyadic_num_intervals=*/options.dyadic_num_intervals,
       /*target_word_tokenizers=*/options.target_tokenizers,
-      /*feature_config=*/options.feature_config);
+      /*feature_config=*/options.feature_config, _token_tag_counter);
 
   std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
             << std::endl;
@@ -478,14 +494,13 @@ std::vector<SentenceTags> UDTNer::predictTags(
         while (!top_labels.empty()) {
           float score = top_labels.top().first;
 
-          auto tag = _tag_tracker->labelToTag(top_labels.top().second);
+          auto tag = _label_to_tag.at(top_labels.top().second)->tag();
           top_labels.pop();
-          tags.emplace_back(tag->tag(), score);
+          tags.emplace_back(tag, score);
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
-            tokens[sentence_index][token_index], tags,
-            _tag_tracker->labelToTag(0)->tag());
+            tokens[sentence_index][token_index], tags, _label_to_tag[0]->tag());
 
         // if the number of labels in the model is 1, we do not have to
         // reverse
@@ -494,7 +509,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
           // 0.9 then using the next top prediction improves accuracy.
           float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
 
-          if (tags.back().first == _tag_tracker->labelToTag(0)->tag() &&
+          if (tags.back().first == _label_to_tag[0]->tag() &&
               tags.back().second < o_threshold &&
               second_highest_tag_act > 0.05) {
             tags.pop_back();
@@ -516,7 +531,7 @@ std::vector<SentenceTags> UDTNer::predictTags(
        ++sentence_index) {
     auto cleaned_tokens =
         data::ner::utils::cleanAndLowerCase(tokens[sentence_index]);
-    for (const auto& learned_tag : _tag_tracker->modelTags()) {
+    for (const auto& learned_tag : _label_to_tag) {
       learned_tag->processTags(output_tags[sentence_index], cleaned_tokens);
     }
   }
@@ -549,10 +564,18 @@ ar::ConstArchivePtr UDTNer::toArchive(bool with_optimizer) const {
   map->set("tokens_column", ar::str(_tokens_column));
   map->set("tags_column", ar::str(_tags_column));
 
-  map->set("tag_tracker", _tag_tracker->toArchive());
+  auto tag_list = ar::List::make();
+  for (const auto& tags : _label_to_tag) {
+    tag_list->append(tags->toArchive());
+  }
+  map->set("label_to_tag", tag_list);
 
   if (_rule) {
     map->set("use_rules_for", ar::vecStr(_rule->entities()));
+  }
+
+  if (_token_tag_counter != nullptr) {
+    map->set("token_tag_counter", _token_tag_counter->toArchive());
   }
 
   return map;
@@ -570,28 +593,35 @@ UDTNer::UDTNer(const ar::Archive& archive)
           *archive.get("inference_transform"))),
       _bolt_inputs(data::outputColumnsFromArchive(*archive.get("bolt_inputs"))),
       _tokens_column(archive.str("tokens_column")),
-      _tags_column(archive.str("tags_column")),
-      _tag_tracker(std::make_unique<data::ner::utils::TagTracker>(
-          *archive.get("tag_tracker"))) {
+      _tags_column(archive.str("tags_column")) {
+  for (const auto& learned_tags : archive.get("label_to_tag")->list()) {
+    _label_to_tag.push_back(data::ner::NerTag::fromArchive(*learned_tags));
+  }
+
   if (archive.contains("use_rules_for")) {
     _rule = data::ner::getRuleForEntities(
         archive.getAs<ar::VecStr>("use_rules_for"));
   }
 
-  auto ner_transformation_supervised = extractNerTokenizerTransform(
-      _supervised_transform, /*is_inference=*/false);
-  if (ner_transformation_supervised) {
-    ner_transformation_supervised->setTagTracker(_tag_tracker);
-  } else {
-    throw std::logic_error("could not extract the supervised transform");
-  }
+  if (archive.contains("token_tag_counter")) {
+    _token_tag_counter = std::make_shared<data::ner::TokenTagCounter>(
+        data::ner::TokenTagCounter(*archive.get("token_tag_counter")));
 
-  auto ner_transformation_inference =
-      extractNerTokenizerTransform(_inference_transform, /*is_inference=*/true);
-  if (ner_transformation_inference) {
-    ner_transformation_inference->setTagTracker(_tag_tracker);
-  } else {
-    throw std::logic_error("could not extract the inference transform");
+    auto ner_transformation_supervised = extractNerTokenizerTransform(
+        _supervised_transform, /*is_inference=*/false);
+    if (ner_transformation_supervised) {
+      ner_transformation_supervised->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the supervised transform");
+    }
+
+    auto ner_transformation_inference = extractNerTokenizerTransform(
+        _inference_transform, /*is_inference=*/true);
+    if (ner_transformation_inference) {
+      ner_transformation_inference->setTokenTagCounter(_token_tag_counter);
+    } else {
+      throw std::logic_error("could not extract the inference transform");
+    }
   }
 }
 

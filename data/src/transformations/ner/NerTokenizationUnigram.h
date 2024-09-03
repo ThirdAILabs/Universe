@@ -9,12 +9,11 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/Transformation.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
-#include <data/src/transformations/ner/utils/TagTracker.h>
+#include <data/src/transformations/ner/utils/TokenTagCounter.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace thirdai::data {
 
@@ -26,7 +25,9 @@ class NerTokenizerUnigram final : public Transformation {
       std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-      ner::utils::TagTrackerPtr tag_tracker = nullptr);
+      std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label =
+          std::nullopt,
+      ner::TokenTagCounterPtr token_tag_counter = nullptr);
 
   explicit NerTokenizerUnigram(const ar::Archive& archive);
 
@@ -43,23 +44,52 @@ class NerTokenizerUnigram final : public Transformation {
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
-    if (_tag_tracker == nullptr) {
+    if (!_tag_to_label.has_value()) {
       throw std::logic_error("Tag to Label is None");
     }
-    return _tag_tracker->tagToLabel(tag);
+
+    auto tag_map = _tag_to_label.value();
+    if (tag_map.count(tag)) {
+      return tag_map.at(tag);
+    }
+
+    throw std::out_of_range("String '" + tag +
+                            "' not found in the specified tags list.");
   }
 
   const auto& processor() const { return _processor; }
 
-  void setTagTracker(ner::utils::TagTrackerPtr tag_tracker) {
-    _tag_tracker = std::move(tag_tracker);
+  void setTokenTagCounter(ner::TokenTagCounterPtr token_tag_counter) {
+    _token_tag_counter = std::move(token_tag_counter);
+  }
+
+  void addNewTagLabelEntry(const std::string& tag, uint32_t label) {
+    if (_tag_to_label) {
+      bool label_already_exists = false;
+      for (const auto& [t, l] : _tag_to_label.value()) {
+        if (l == label) {
+          label_already_exists = true;
+        }
+      }
+
+      _tag_to_label.value()[tag] = label;
+
+      // if label doesn't exist -> increase the target dim by 1
+      if (_target_dim.has_value() && !label_already_exists) {
+        _target_dim = _target_dim.value() + 1;
+      }
+    }
+
+    if (_token_tag_counter) {
+      _token_tag_counter->addTagLabel(tag, label);
+    }
   }
 
  private:
   void updateTokenTagCounter(
       const ArrayColumnBasePtr<std::string>& tokens,
       const ArrayColumnBasePtr<std::string>& tags) const {
-    if (_tag_tracker->hasTokenTagCounter() && _target_column.has_value()) {
+    if (_token_tag_counter != nullptr && _target_column.has_value()) {
       for (size_t i = 0; i < tokens->numRows(); ++i) {
         std::vector<std::string> row_token_vectors = tokens->row(i).toVector();
         auto lower_cased_tokens =
@@ -67,8 +97,8 @@ class NerTokenizerUnigram final : public Transformation {
 
         for (size_t token_index = 0; token_index < row_token_vectors.size();
              ++token_index) {
-          _tag_tracker->addTokenTag(lower_cased_tokens[token_index],
-                                    tags->row(i)[token_index]);
+          _token_tag_counter->addTokenTag(lower_cased_tokens[token_index],
+                                          tags->row(i)[token_index]);
         }
       }
     }
@@ -85,7 +115,9 @@ class NerTokenizerUnigram final : public Transformation {
 
   NerDyadicDataProcessor _processor;
 
-  ner::utils::TagTrackerPtr _tag_tracker;
+  std::optional<std::unordered_map<std::string, uint32_t>> _tag_to_label;
+
+  ner::TokenTagCounterPtr _token_tag_counter;
 };
 
 }  // namespace thirdai::data
