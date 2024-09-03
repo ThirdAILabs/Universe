@@ -2,6 +2,7 @@
 
 #include <bolt/src/NER/model/NerBackend.h>
 #include <bolt/src/NER/model/NerBoltModel.h>
+#include <bolt/src/NER/model/NerUDTModel.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/nn/tensor/Tensor.h>
 #include <bolt/src/train/trainer/Trainer.h>
@@ -11,8 +12,7 @@
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <memory>
-#include <sstream>
-#include <stdexcept>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -23,9 +23,25 @@ class NER : public std::enable_shared_from_this<NER> {
   explicit NER(std::shared_ptr<NerModelInterface> model)
       : _ner_backend_model(std::move(model)) {}
 
+  explicit NER(std::string tokens_column, std::string tags_column,
+               std::unordered_map<std::string, uint32_t> tag_to_label,
+               std::vector<dataset::TextTokenizerPtr> target_word_tokenizers =
+                   std::vector<dataset::TextTokenizerPtr>(
+                       {std::make_shared<dataset::NaiveSplitTokenizer>(),
+                        std::make_shared<dataset::CharKGramTokenizer>(4)}),
+               const std::optional<data::FeatureEnhancementConfig>&
+                   feature_enhancement_config = std::nullopt) {
+    _ner_backend_model = std::make_shared<NerUDTModel>(
+        std::move(tokens_column), std::move(tags_column),
+        std::move(tag_to_label), std::move(target_word_tokenizers),
+        feature_enhancement_config);
+  }
+
   NER(const std::string& model_path, std::string tokens_column,
       std::string tags_column,
-      std::unordered_map<std::string, uint32_t> tag_to_label) {
+      std::unordered_map<std::string, uint32_t> tag_to_label,
+      const std::optional<data::FeatureEnhancementConfig>&
+          feature_enhancement_config = std::nullopt) {
     auto ner_model = load(model_path);
     auto ner_backend = ner_model->getBackend();
     if (ner_backend->type() == "bolt_ner") {
@@ -35,10 +51,10 @@ class NER : public std::enable_shared_from_this<NER> {
           ner_pretrained_model, std::move(tokens_column),
           std::move(tags_column), std::move(tag_to_label));
     } else {
-      std::stringstream error;
-      error << "The backend type: " << ner_backend->type()
-            << " is not a supported type.";
-      throw std::logic_error(error.str());
+      auto ner_udt_model = std::dynamic_pointer_cast<NerUDTModel>(ner_backend);
+      _ner_backend_model = std::make_shared<NerUDTModel>(
+          ner_udt_model, std::move(tokens_column), std::move(tags_column),
+          std::move(tag_to_label), feature_enhancement_config);
     }
   }
 
