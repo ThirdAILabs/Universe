@@ -1,8 +1,7 @@
 #pragma once
 
-#include <bolt/src/NER/Defaults.h>
 #include <bolt/src/NER/model/NerBackend.h>
-#include <bolt/src/NER/model/NerUDTModel.h>
+#include <bolt/src/NER/model/NerClassifier.h>
 #include <bolt/src/nn/model/Model.h>
 #include <bolt/src/text_generation/GenerativeModel.h>
 #include <bolt/src/train/trainer/Trainer.h>
