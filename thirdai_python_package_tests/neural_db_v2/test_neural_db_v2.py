@@ -176,5 +176,5 @@ def test_neural_db_v2_reranker():
 
     assert len(regular) > 0
     assert len(reranked) > 0
-
+    assert len(regular) == len(reranked)
     assert [x[1] for x in regular] != [x[1] for x in reranked]
