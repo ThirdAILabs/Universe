@@ -46,7 +46,7 @@ class TagTracker {
   data::ner::NerTagPtr labelToTag(uint32_t label) const {
     if (!labelExists(label)) {
       std::stringstream error;
-      error << "label " << label << " not found in the list of labels.";
+      error << "label '" << label << "' not found in the list of labels.";
       throw std::invalid_argument(error.str());
     }
     return _label_to_tag.at(label);
@@ -55,7 +55,7 @@ class TagTracker {
   uint32_t tagToLabel(const std::string& tag) const {
     if (!tagExists(tag)) {
       std::stringstream error;
-      error << "tag " << tag << " not found in the list of tags.";
+      error << "tag '" << tag << "' not found in the list of tags.";
       throw std::invalid_argument(error.str());
     }
     return _tag_to_label.at(tag);

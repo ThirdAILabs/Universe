@@ -6,8 +6,6 @@ namespace thirdai::data::ner::utils {
 void TagTracker::addTag(const data::ner::NerTagPtr& tag, bool add_new_label) {
   std::string tag_string = tag->tag();
 
-  std::cout << "new_tag : " << tag_string << std::endl;
-
   if (_tag_to_label.count(tag_string)) {
     std::stringstream ss;
     ss << "Cannot insert the tag: " << tag_string << ". Tag already exists";

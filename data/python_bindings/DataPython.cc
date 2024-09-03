@@ -571,8 +571,12 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("numerical_features"), py::arg("emails"),
            py::arg("phone_numbers"));
 
-  py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
-      transformations_submodule, "NERLearnedTag")
+  py::class_<ner::NerTag, std::shared_ptr<ner::NerTag>>(  // NOLINT
+      transformations_submodule, "NerTag");
+
+  py::class_<ner::NerLearnedTag, ner::NerTag,
+             std::shared_ptr<ner::NerLearnedTag>>(transformations_submodule,
+                                                  "NERLearnedTag")
       .def(
           py::init<std::string, std::string, uint32_t, std::unordered_set<char>,
                    std::unordered_set<uint32_t>, std::optional<std::string>>(),
