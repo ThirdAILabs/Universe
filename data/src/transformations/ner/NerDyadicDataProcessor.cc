@@ -282,7 +282,7 @@ std::string NerDyadicDataProcessor::generateDyadicWindows(
         auto toks = context_tokenizer->toStrings(tokens[upper_index]);
         prev_window.reserve(prev_window.size() + toks.size());
         for (const auto& tok : toks) {
-          prev_window.push_back(_dyadic_previous_prefix +
+          prev_window.push_back(_dyadic_next_prefix +
                                 std::to_string(interval_id) + "_" + tok);
         }
       }
