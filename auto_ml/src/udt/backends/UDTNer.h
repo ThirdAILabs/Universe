@@ -142,9 +142,10 @@ class UDTNer final : public UDTBackend {
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,
                                 size_t batch_size, bool shuffle) const;
 
-  std::vector<SentenceTags> predictTags(
-      const std::vector<std::string>& sentences, bool sparse_inference,
-      uint32_t top_k, float o_threshold);
+  std::pair<std::vector<SentenceTags>,
+            std::vector<std::vector<std::pair<size_t, size_t>>>>
+  predictTags(const std::vector<std::string>& sentences, bool sparse_inference,
+              uint32_t top_k, float o_threshold);
 
   struct NerOptions;
 

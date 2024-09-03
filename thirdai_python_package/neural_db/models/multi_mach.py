@@ -86,13 +86,13 @@ class MultiMach:
         for udt_model, ndb_mach in zip(models, self.models):
             ndb_mach.set_model(udt_model)
 
-    def save_meta(self, directory: Path):
+    def save_meta(self, directory: Path, **kwargs):
         for i, model in enumerate(self.models):
-            model.save_meta(directory / str(i))
+            model.save_meta(directory / str(i), **kwargs)
 
-    def load_meta(self, directory: Path):
+    def load_meta(self, directory: Path, **kwargs):
         for i, model in enumerate(self.models):
-            model.load_meta(directory / str(i))
+            model.load_meta(directory / str(i), **kwargs)
 
     def index_documents_impl(
         self,

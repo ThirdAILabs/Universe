@@ -74,9 +74,12 @@ class NeuralDB:
 
         chunk_results = []
         for query_results in results:
-            chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
-            chunks = self.chunk_store.get_chunks(chunk_ids)
-            chunk_results.append(list(zip(chunks, scores)))
+            if not query_results:
+                chunk_results.append([])
+            else:
+                chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
+                chunks = self.chunk_store.get_chunks(chunk_ids)
+                chunk_results.append(list(zip(chunks, scores)))
 
         return chunk_results
 
@@ -107,6 +110,9 @@ class NeuralDB:
         iterable = supervised.samples()
 
         self.retriever.supervised_train(iterable, **kwargs)
+
+    def documents(self) -> List[dict]:
+        return self.chunk_store.documents()
 
     @staticmethod
     def chunk_store_path(directory: str) -> str:
@@ -155,7 +161,13 @@ class NeuralDB:
             json.dump(metadata, f)
 
     def save(self, path: str):
-        os.makedirs(path)
+        if os.path.exists(path):
+            if not os.path.isdir(path):
+                raise ValueError(
+                    f"Cannot save NeuralDB to {path} since it is not a directory"
+                )
+        else:
+            os.makedirs(path)
 
         self.chunk_store.save(self.chunk_store_path(path))
         self.retriever.save(self.retriever_path(path))

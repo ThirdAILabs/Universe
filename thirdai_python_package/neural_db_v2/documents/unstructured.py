@@ -21,6 +21,7 @@ class Unstructured(Document):
         chunk_metadata_columns: List[str],
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
 
@@ -28,6 +29,7 @@ class Unstructured(Document):
         self.parser = parser
         self.chunk_metadata_columns = chunk_metadata_columns
         self.doc_metadata = doc_metadata
+        self.display_path = display_path
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         parser = self.parser(self.path)
@@ -47,6 +49,9 @@ class Unstructured(Document):
             doc_metadata=self.doc_metadata,
         )
 
+        if self.display_path:
+            contents["filename"] = self.display_path
+
         return [
             NewChunkBatch(
                 text=text,
@@ -63,6 +68,7 @@ class PPTX(Unstructured):
         path: str,
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(
             path=path,
@@ -70,6 +76,7 @@ class PPTX(Unstructured):
             chunk_metadata_columns=["filetype", "page"],
             doc_metadata=doc_metadata,
             doc_id=doc_id,
+            display_path=display_path,
         )
 
 
@@ -79,6 +86,7 @@ class TextFile(Unstructured):
         path: str,
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(
             path=path,
@@ -86,6 +94,7 @@ class TextFile(Unstructured):
             chunk_metadata_columns=["filetype"],
             doc_metadata=doc_metadata,
             doc_id=doc_id,
+            display_path=display_path,
         )
 
 
@@ -95,6 +104,7 @@ class Email(Unstructured):
         path: str,
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(
             path=path,
@@ -102,4 +112,5 @@ class Email(Unstructured):
             chunk_metadata_columns=["filetype", "subject", "sent_from", "sent_to"],
             doc_metadata=doc_metadata,
             doc_id=doc_id,
+            display_path=display_path,
         )

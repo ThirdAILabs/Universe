@@ -84,10 +84,10 @@ class FinetunableRetriever(Model):
         )
         return add_retriever_tag(results, "finetunable_retriever")
 
-    def save_meta(self, directory: Path) -> None:
+    def save_meta(self, directory: Path, **kwargs) -> None:
         self.retriever.save(str(directory))
 
-    def load_meta(self, directory: Path, read_only: bool = False):
+    def load_meta(self, directory: Path, read_only: bool = False, **kwargs):
         if not self.retriever:
             self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
 
