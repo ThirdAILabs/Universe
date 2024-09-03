@@ -13,7 +13,8 @@
 #include <data/src/transformations/ner/learned_tags/CommonLearnedTags.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
 #include <data/src/transformations/ner/rules/Rule.h>
-#include <data/src/transformations/ner/utils/TokenTagCounter.h>
+#include <data/src/transformations/ner/utils/TagTracker.h>
+#include <data/src/transformations/ner/utils/TokenLabelCounter.h>
 #include <memory>
 #include <string>
 #include <variant>
@@ -74,13 +75,8 @@ class UDTNer final : public UDTBackend {
       }
 
       // check that none of the entities provided already exists
-      std::unordered_set<std::string> existing_entities;
-      for (const auto& entity : _label_to_tag) {
-        existing_entities.insert(entity->tag());
-      }
-
       for (const auto& tag : tags) {
-        if (existing_entities.count(tag->tag())) {
+        if (_tag_tracker->tagExists(tag->tag())) {
           throw std::logic_error("Cannot add entity " + tag->tag() +
                                  "to the model. Entity already exists");
         }
@@ -98,7 +94,7 @@ class UDTNer final : public UDTBackend {
     auto input = bolt::Input::make(embedding_layer->inputDim());
     auto hidden = embedding_layer->apply(input);
     auto output_layer = bolt::FullyConnected::make(
-        _label_to_tag.size() + tags.size(), hidden->dim(),
+        _tag_tracker->numLabels() + tags.size(), hidden->dim(),
         fc_layer->getSparsity(),
         bolt::activationFunctionToStr(
             fc_layer->kernel()->getActivationFunction()),
@@ -122,9 +118,7 @@ class UDTNer final : public UDTBackend {
     _model = bolt::Model::make({input}, {output}, {loss});
 
     for (const auto& tag : tags) {
-      _label_to_tag.push_back(tag);
-      supervised_unigram_transform->addNewTagLabelEntry(
-          tag->tag(), _label_to_tag.size() - 1);
+      _tag_tracker->addTag(tag, /*add_new_label=*/true);
     }
   }
 
@@ -170,9 +164,7 @@ class UDTNer final : public UDTBackend {
   std::string _tokens_column;
   std::string _tags_column;
 
-  std::vector<data::ner::NerTagPtr> _label_to_tag;
-
-  thirdai::data::ner::TokenTagCounterPtr _token_tag_counter;
+  data::ner::utils::TagTrackerPtr _tag_tracker;
 };
 
 }  // namespace thirdai::automl::udt

@@ -7,6 +7,7 @@
 #include <data/src/transformations/TextTokenizer.h>
 #include <data/src/transformations/ner/NerDyadicDataProcessor.h>
 #include <data/src/transformations/ner/NerTokenFromStringArray.h>
+#include <data/src/transformations/ner/utils/TagTracker.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextEncoder.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
@@ -35,8 +36,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
     std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<FeatureEnhancementConfig> feature_enhancement_config,
-    std::optional<std::unordered_map<std::string, uint32_t>> tag_to_label,
-    ner::TokenTagCounterPtr token_tag_counter)
+    ner::utils::TagTrackerPtr tag_tracker)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
@@ -44,8 +44,7 @@ NerTokenizerUnigram::NerTokenizerUnigram(
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  std::move(feature_enhancement_config),
                  !_target_column.has_value()),
-      _tag_to_label(std::move(tag_to_label)),
-      _token_tag_counter(std::move(token_tag_counter)) {}
+      _tag_tracker(std::move(tag_tracker)) {}
 
 ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
   (void)state;
@@ -83,9 +82,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
         featurized_sentences[featurized_sentence_offset] =
             _processor.processToken(row_token_vectors, target,
                                     lower_cased_tokens);
-        if (_token_tag_counter != nullptr) {
+        if (_tag_tracker->hasTokenTagCounter()) {
           featurized_sentences[featurized_sentence_offset] +=
-              _token_tag_counter->getTokenEncoding(lower_cased_tokens[target]);
+              _tag_tracker->getTokenEncoding(lower_cased_tokens[target]);
         }
         if (_target_column) {
           if (row_token_vectors.size() != tags->row(i).size()) {
@@ -131,12 +130,6 @@ ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
   }
 
   map->set("processor", _processor.toArchive());
-
-  if (_tag_to_label) {
-    map->set("tag_to_label",
-             ar::mapStrU64({_tag_to_label->begin(), _tag_to_label->end()}));
-  }
-
   return map;
 }
 
@@ -145,11 +138,6 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
       _target_dim(archive.getOpt<ar::U64>("target_dim")),
-      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {
-  if (archive.contains("tag_to_label")) {
-    const auto& tag_to_label = archive.getAs<ar::MapStrU64>("tag_to_label");
-    _tag_to_label = {tag_to_label.begin(), tag_to_label.end()};
-  }
-}
+      _processor(NerDyadicDataProcessor(*archive.get("processor"))) {}
 
 }  // namespace thirdai::data
