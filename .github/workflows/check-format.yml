@@ -55,9 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Prepare cmake format
+      - name: Prepare cmake format and setuptools
         run: |
-          sudo pip3 install cmake-format
+          sudo pip3 install cmake-format setuptools
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
