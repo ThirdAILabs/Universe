@@ -25,7 +25,9 @@ jobs:
       with:           
         submodules: 'recursive'
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-            
+    - name: Prepare setuptools
+        run: |
+          sudo pip3 install setuptools
     - name: Run clang-format
       uses: DoozyX/clang-format-lint-action@v0.16.2
       with:
@@ -55,9 +57,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Prepare cmake format and setuptools
+      - name: Prepare cmake format
         run: |
-          sudo pip3 install cmake-format setuptools
+          sudo pip3 install cmake-format
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
