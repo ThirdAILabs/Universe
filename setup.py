@@ -183,7 +183,7 @@ neural_db_deps = [
     "tqdm",
 ]
 
-neural_db_v2_deps = ["pandas", "pandera", "sqlalchemy_utils"]
+neural_db_v2_deps = ["pandas", "pandera", "sqlalchemy_utils", "unstructured[pptx]"]
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
