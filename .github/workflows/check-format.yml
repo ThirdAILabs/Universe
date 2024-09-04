@@ -25,9 +25,16 @@ jobs:
       with:           
         submodules: 'recursive'
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-    - name: Prepare setuptools
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install setuptools
       run: |
-        sudo pip3 install setuptools
+        pip3 install setuptools
+
     - name: Run clang-format
       uses: DoozyX/clang-format-lint-action@v0.16.2
       with:
