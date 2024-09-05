@@ -25,11 +25,7 @@ jobs:
       with:           
         submodules: 'recursive'
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
-    - name: Install setuptools
-      run: |
-        pip3 install setuptools
-
+            
     - name: Run clang-format
       uses: DoozyX/clang-format-lint-action@v0.16.2
       with:
