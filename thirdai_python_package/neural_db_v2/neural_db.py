@@ -163,7 +163,7 @@ class NeuralDB:
         return chunk_store_name_map[chunk_store_name].load(path, **kwargs)
 
     @staticmethod
-    def load_retriever(path: str, retriever_name: str):
+    def load_retriever(path: str, retriever_name: str, **kwargs):
         retriever_name_map = {
             FinetunableRetriever.__name__: FinetunableRetriever,
             Mach.__name__: Mach,
@@ -173,7 +173,7 @@ class NeuralDB:
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")
 
-        return retriever_name_map[retriever_name].load(path)
+        return retriever_name_map[retriever_name].load(path, **kwargs)
 
     def save_metadata(self, path: str):
         metadata = {
@@ -212,6 +212,7 @@ class NeuralDB:
         retriever = NeuralDB.load_retriever(
             NeuralDB.retriever_path(path),
             retriever_name=metadata["retriever_name"],
+            **kwargs,
         )
 
         return NeuralDB(chunk_store=chunk_store, retriever=retriever)

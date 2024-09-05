@@ -170,5 +170,5 @@ class PandasChunkStore(ChunkStore):
         pickle_to(self, path)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, **kwargs):
         return unpickle_from(path)
