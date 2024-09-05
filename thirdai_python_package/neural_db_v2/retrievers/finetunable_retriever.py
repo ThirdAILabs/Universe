@@ -64,7 +64,7 @@ class FinetunableRetriever(Retriever):
         self.retriever.save(path)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, read_only: bool = False, **kwargs):
         instance = cls()
-        instance.retriever = search.FinetunableRetriever.load(path)
+        instance.retriever = search.FinetunableRetriever.load(path, read_only=read_only)
         return instance

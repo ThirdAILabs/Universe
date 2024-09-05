@@ -56,6 +56,9 @@ class OnDiskIndex final : public Retriever {
   ~OnDiskIndex() final;
 
  private:
+  OnDiskIndex(const std::string& save_path, const IndexConfig& config,
+              bool read_only, bool create_metadata_file);
+
   std::pair<std::vector<uint32_t>,
             std::vector<std::unordered_map<HashedToken, uint32_t>>>
   countTokenOccurences(const std::vector<std::string>& docs) const;

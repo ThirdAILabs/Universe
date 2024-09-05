@@ -27,7 +27,7 @@ jobs:
         token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
             
     - name: Run clang-format
-      uses: DoozyX/clang-format-lint-action@v0.16.2
+      uses: DoozyX/clang-format-lint-action@v0.18.1
       with:
         source: '.'
         exclude: './deps'
