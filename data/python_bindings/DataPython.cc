@@ -562,7 +562,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("names"), py::arg("location_features"),
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
-           py::arg("phone_numbers"));
+           py::arg("phone_numbers"), py::arg("use_char_4_input_featurization"));
 
   py::class_<ner::NerLearnedTag, std::shared_ptr<ner::NerLearnedTag>>(
       transformations_submodule, "NERLearnedTag")

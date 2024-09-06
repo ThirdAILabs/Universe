@@ -21,6 +21,7 @@ struct FeatureEnhancementConfig {
   bool enhance_numerical_features = true;
   bool find_emails = true;
   bool find_phonenumbers = true;
+  bool use_char_4_input_featurization = false;
 
   std::unordered_set<std::string> location_keywords = {
       "lives", "live", "lived", "located", "moved", "near", "adjacent"};
@@ -54,14 +55,16 @@ struct FeatureEnhancementConfig {
                            bool enhance_organization_features,
                            bool enhance_case_features,
                            bool enhance_numerical_features, bool find_emails,
-                           bool find_phonenumbers)
+                           bool find_phonenumbers,
+                           bool use_char_4_input_featurization)
       : enhance_names(enhance_names),
         enhance_location_features(enhance_location_features),
         enhance_organization_features(enhance_organization_features),
         enhance_case_features(enhance_case_features),
         enhance_numerical_features(enhance_numerical_features),
         find_emails(find_emails),
-        find_phonenumbers(find_phonenumbers) {}
+        find_phonenumbers(find_phonenumbers),
+        use_char_4_input_featurization(use_char_4_input_featurization) {}
 
   explicit FeatureEnhancementConfig(const ar::Archive& archive) {
     enhance_names = archive.getOr<bool>("enhance_names", true);
@@ -74,6 +77,8 @@ struct FeatureEnhancementConfig {
         archive.getOr<bool>("enhance_numerical_features", true);
     find_emails = archive.getOr<bool>("find_emails", true);
     find_phonenumbers = archive.getOr<bool>("find_phonenumbers", true);
+    use_char_4_input_featurization =
+        archive.getOr<bool>("use_char_4_input_featurization", false);
   }
 
   ar::ConstArchivePtr toArchive() const {
@@ -88,6 +93,8 @@ struct FeatureEnhancementConfig {
              ar::boolean(enhance_numerical_features));
     map->set("find_emails", ar::boolean(find_emails));
     map->set("find_phonenumbers", ar::boolean(find_phonenumbers));
+    map->set("use_char_4_input_featurization",
+             ar::boolean(use_char_4_input_featurization));
     return map;
   }
 };
