@@ -144,8 +144,8 @@ class NerDyadicDataProcessor
   bool _for_inference;
 
   std::string _target_prefix = "t_";
-  std::string _dyadic_previous_prefix = "p_";
-  std::string _dyadic_next_prefix = "p_";
+  std::string _dyadic_previous_prefix = "pp_";
+  std::string _dyadic_next_prefix = "np_";
 
   std::vector<dataset::TextTokenizerPtr> _context_tokenizers = {
       dataset::CharKGramTokenizer::make(4),
