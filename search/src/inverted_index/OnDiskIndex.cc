@@ -209,6 +209,12 @@ class IncrementCounter : public rocksdb::AssociativeMergeOperator {
 
 OnDiskIndex::OnDiskIndex(const std::string& save_path,
                          const IndexConfig& config, bool read_only)
+    : OnDiskIndex(save_path, config, read_only,
+                  /*create_metadata_file=*/true) {}
+
+OnDiskIndex::OnDiskIndex(const std::string& save_path,
+                         const IndexConfig& config, bool read_only,
+                         bool create_metadata_file)
     : _save_path(save_path),
       _max_docs_to_score(config.max_docs_to_score),
       _max_token_occurrence_frac(config.max_token_occurrence_frac),
@@ -218,11 +224,14 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   licensing::checkLicense();
 
   createDirectory(save_path);
-  auto metadata = ar::Map::make();
-  metadata->set("config", config.toArchive());
 
-  auto metadata_file = dataset::SafeFileIO::ofstream(metadataPath(save_path));
-  ar::serialize(metadata, metadata_file);
+  if (create_metadata_file) {
+    auto metadata = ar::Map::make();
+    metadata->set("config", config.toArchive());
+
+    auto metadata_file = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+    ar::serialize(metadata, metadata_file);
+  }
 
   rocksdb::Options options;
   options.create_if_missing = true;
@@ -815,7 +824,8 @@ std::shared_ptr<OnDiskIndex> OnDiskIndex::load(const std::string& save_path,
 
   auto config = IndexConfig::fromArchive(*metadata->get("config"));
 
-  return std::make_shared<OnDiskIndex>(save_path, config, read_only);
+  return std::shared_ptr<OnDiskIndex>(new OnDiskIndex(
+      save_path, config, read_only, /*create_metadata_file=*/false));
 }
 
 OnDiskIndex::~OnDiskIndex() {

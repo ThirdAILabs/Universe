@@ -219,7 +219,7 @@ class Mach(Retriever):
         self.model.save(path)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, **kwargs):
         instance = cls()
         instance.model = bolt.MachRetriever.load(path)
         return instance
