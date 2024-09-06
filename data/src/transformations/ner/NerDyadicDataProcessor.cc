@@ -262,7 +262,7 @@ std::string NerDyadicDataProcessor::generateDyadicWindows(
     prev_window.reserve(interval_size);
     next_window.reserve(interval_size);
 
-    if (_feature_enhancement_config.use_char_4_input_featurization) {
+    if (_feature_enhancement_config->use_char_4_input_featurization) {
       for (size_t lower_index = interval_size > index ? 0
                                                       : index - interval_size;
            lower_index < index; lower_index++) {
