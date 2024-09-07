@@ -61,7 +61,11 @@ class PDF(Document):
             )
 
         text = parsed_chunks["para"]
-        keywords = parsed_chunks["emphasis"]
+        keywords = (
+            parsed_chunks["emphasis"]
+            if self.version == "v2"
+            else series_from_value("", len(text))
+        )
 
         metadata = join_metadata(
             n_rows=len(text),
