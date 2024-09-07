@@ -180,8 +180,8 @@ def test_docx_doc(metadata):
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 @pytest.mark.parametrize("version", ["v1", "v2"])
-def test_pdf_doc(metadata):
-    doc = PDF(PDF_FILE, doc_metadata=metadata)
+def test_pdf_doc(metadata, version):
+    doc = PDF(PDF_FILE, version=version, doc_metadata=metadata)
 
     doc_property_checks(
         doc=doc,
