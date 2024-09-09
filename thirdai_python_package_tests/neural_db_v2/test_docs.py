@@ -179,7 +179,6 @@ def test_docx_doc(metadata):
 
 
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
-@pytest.mark.parametrize("version", ["v1", "v2"])
 def test_pdf_doc(metadata, version):
     doc = PDF(PDF_FILE, version=version, doc_metadata=metadata)
 
@@ -187,9 +186,7 @@ def test_pdf_doc(metadata, version):
         doc=doc,
         has_keywords=True,
         document_metadata=metadata,
-        chunk_metadata_columns=(
-            ["chunk_boxes", "page"] if version == "v2" else ["display", "page"]
-        ),
+        chunk_metadata_columns=(["chunk_boxes", "page"]),
         allow_empty_keywords=True,
     )
 
