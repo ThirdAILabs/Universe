@@ -67,9 +67,13 @@ class PDF(Document):
             else series_from_value("", len(text))
         )
 
+        metadata_columns = (
+            ["chunk_boxes", "page"] if self.version == "v2" else ["highlight", "page"]
+        )
+
         metadata = join_metadata(
             n_rows=len(text),
-            chunk_metadata=parsed_chunks[["chunk_boxes", "page"]],
+            chunk_metadata=parsed_chunks[metadata_columns],
             doc_metadata=self.doc_metadata,
         )
 

@@ -187,7 +187,9 @@ def test_pdf_doc(metadata, version):
         doc=doc,
         has_keywords=True,
         document_metadata=metadata,
-        chunk_metadata_columns=["chunk_boxes", "page"],
+        chunk_metadata_columns=(
+            ["chunk_boxes", "page"] if version == "v2" else ["display", "page"]
+        ),
         allow_empty_keywords=True,
     )
 
