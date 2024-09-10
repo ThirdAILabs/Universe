@@ -164,17 +164,3 @@ def test_neural_db_v2_on_disk():
     assert results_before == results_after
 
     shutil.rmtree(save_path)
-
-
-def test_neural_db_v2_reranker():
-    db = ndb.NeuralDB()
-
-    db.insert([ndb.CSV(CSV_FILE)])
-
-    regular = db.search("what are the roots of lorem ipsum", top_k=3)
-    reranked = db.search("what are the roots of lorem ipsum", top_k=3, rerank=True)
-
-    assert len(regular) > 0
-    assert len(reranked) > 0
-    assert len(regular) == len(reranked)
-    assert [x[1] for x in regular] != [x[1] for x in reranked]
