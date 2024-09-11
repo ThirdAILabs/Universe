@@ -220,7 +220,7 @@ std::string NerDyadicDataProcessor::processToken(
   // TODO(@shubh3ai) : make the dropout ratio configurable
   if (_for_inference || rand() % 2 == 0) {
     for (const auto& tokenizer : _target_word_tokenizers) {
-      auto tokens = tokenizer->toStrings(target_token);
+      auto tokens = tokenizer->toStrings(lower_cased_tokens[index]);
       tokenized_target_token.reserve(tokenized_target_token.size() +
                                      tokens.size());
       tokenized_target_token.insert(tokenized_target_token.end(),
