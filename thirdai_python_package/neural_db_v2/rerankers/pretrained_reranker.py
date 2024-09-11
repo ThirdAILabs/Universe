@@ -10,8 +10,6 @@ class PretrainedReranker(Reranker):
     def __init__(self):
         super().__init__()
 
-        # Testing code using this reranker causes mac wheel builds to time out.
-
         self.model = AutoModelForSequenceClassification.from_pretrained(
             "jinaai/jina-reranker-v1-tiny-en", num_labels=1, trust_remote_code=True
         )
