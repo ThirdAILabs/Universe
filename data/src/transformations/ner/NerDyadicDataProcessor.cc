@@ -220,7 +220,11 @@ std::string NerDyadicDataProcessor::processToken(
   // TODO(@shubh3ai) : make the dropout ratio configurable
   if (_for_inference || rand() % 2 == 0) {
     for (const auto& tokenizer : _target_word_tokenizers) {
-      auto tokens = tokenizer->toStrings(lower_cased_tokens[index]);
+      // to change the target token tokenization, change the first argument of
+      // toStrings here. example, if you want to remove punct from target token,
+      // call the remove punct func and pass the value here
+      auto tokens =
+          tokenizer->toStrings(ner::utils::trimPunctuation(target_token));
       tokenized_target_token.reserve(tokenized_target_token.size() +
                                      tokens.size());
       tokenized_target_token.insert(tokenized_target_token.end(),
@@ -237,7 +241,9 @@ std::string NerDyadicDataProcessor::processToken(
     repr += _target_prefix + tok + " ";
   }
 
-  repr += generateDyadicWindows(tokens, index);
+  // to use lower cased tokenization for the context or any other modifications,
+  // change the first argument to the function here
+  repr += generateDyadicWindows(lower_cased_tokens, index);
 
   if (_feature_enhancement_config.has_value()) {
     repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
