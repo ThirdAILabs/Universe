@@ -9,9 +9,10 @@ from thirdai import neural_db_v2 as ndb
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 from thirdai.neural_db_v2.retrievers import FinetunableRetriever, Mach, MachEnsemble
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
+@pytest.mark.release
 @pytest.mark.parametrize(
     "chunk_store, retriever",
     [
@@ -50,6 +51,7 @@ def test_neural_db_v2_save_load_integration(chunk_store, retriever):
     shutil.rmtree(save_file)
 
 
+@pytest.mark.release
 @pytest.mark.parametrize(
     "chunk_store, retriever",
     [
@@ -96,6 +98,7 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     clean_up_sql_lite_db(db.chunk_store)
 
 
+@pytest.mark.release
 def test_neural_db_v2_doc_versioning():
     db = ndb.NeuralDB(chunk_store=SQLiteChunkStore(), retriever=FinetunableRetriever())
 
@@ -135,6 +138,7 @@ def test_neural_db_v2_doc_versioning():
     clean_up_sql_lite_db(db.chunk_store)
 
 
+@pytest.mark.release
 def test_neural_db_v2_on_disk():
     save_path = "test_neural_db_v2_on_disk"
 
@@ -166,6 +170,7 @@ def test_neural_db_v2_on_disk():
     shutil.rmtree(save_path)
 
 
+# Test is not marked a release test because it causes mac wheel builds to timeout
 def test_neural_db_v2_reranker():
     db = ndb.NeuralDB()
 
