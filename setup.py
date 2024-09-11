@@ -246,7 +246,6 @@ setup(
             "prometheus_client",
             "gcsfs",
             "s3fs",
-            "aiobotocore<2.15.0",
             "mock",
             "scikit-learn",
             "pyOpenSSL>22.1.0",

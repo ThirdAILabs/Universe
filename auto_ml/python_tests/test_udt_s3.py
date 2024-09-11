@@ -1,4 +1,5 @@
 import os
+import sys
 
 import boto3
 import pytest
@@ -53,6 +54,9 @@ def train_and_evaluate(model_to_test, train_path, test_path, inference_samples):
     assert acc >= ACCURACY_THRESHOLD
 
 
+# Mac wheel builds are failing with the error:
+# AttributeError: 'MockRawResponse' object has no attribute 'raw_headers'
+@pytest.mark.skipif(sys.platform == "darwin")
 @mock_aws
 def test_udt_census_income_s3(download_census_income, s3):
     local_train_file, local_test_file, inference_samples = download_census_income

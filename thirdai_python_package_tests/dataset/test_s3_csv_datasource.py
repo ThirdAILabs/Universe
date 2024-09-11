@@ -1,5 +1,6 @@
 import math
 import os
+import sys
 
 import boto3
 import pytest
@@ -67,6 +68,9 @@ def load_all_lines(storage_path, batch_size):
     return lines
 
 
+# Mac wheel builds are failing with the error:
+# AttributeError: 'MockRawResponse' object has no attribute 'raw_headers'
+@pytest.mark.skipif(sys.platform == "darwin")
 @mock_aws
 def test_s3_data_source_by_batch(s3):
     setup_mock_aws(s3)
@@ -88,6 +92,9 @@ def test_s3_data_source_by_batch(s3):
 
 # This is similar to test_s3_data_source_by_batch, but additionally ensures
 # that the linewise loading is correct
+# Mac wheel builds are failing with the error:
+# AttributeError: 'MockRawResponse' object has no attribute 'raw_headers'
+@pytest.mark.skipif(sys.platform == "darwin")
 @mock_aws
 def test_s3_data_source_by_line(s3):
     setup_mock_aws(s3)
