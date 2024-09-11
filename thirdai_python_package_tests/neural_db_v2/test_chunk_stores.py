@@ -614,3 +614,37 @@ def test_encryption():
     check_queries(store_w_key, check_equal=True)
 
     os.remove(save_path)
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_list_documents(chunk_store):
+    store = chunk_store()
+
+    store.insert(
+        [
+            InMemoryText(document_name="a.txt", text=["a", "aa"], doc_id="a1"),
+            InMemoryText(document_name="b.txt", text=["b", "bb"], doc_id="b1"),
+            InMemoryText(document_name="c.txt", text=["c", "cc"], doc_id="c1"),
+            InMemoryText(document_name="b.txt", text=["b", "bb"], doc_id="b2"),
+            InMemoryText(document_name="a.txt", text=["a", "aa"], doc_id="a1"),
+            InMemoryText(document_name="c.txt", text=["c", "cc"], doc_id="c1"),
+        ]
+    )
+
+    expected_docs = [
+        {"doc_id": "a1", "doc_version": 1, "document": "a.txt"},
+        {"doc_id": "a1", "doc_version": 2, "document": "a.txt"},
+        {"doc_id": "b1", "doc_version": 1, "document": "b.txt"},
+        {"doc_id": "b2", "doc_version": 1, "document": "b.txt"},
+        {"doc_id": "c1", "doc_version": 1, "document": "c.txt"},
+        {"doc_id": "c1", "doc_version": 2, "document": "c.txt"},
+    ]
+
+    def map_to_tuples(sources):
+        return [(x["doc_id"], x["doc_version"], x["document"]) for x in sources]
+
+    docs = map_to_tuples(store.documents())
+    expected_docs = map_to_tuples(expected_docs)
+
+    assert len(docs) == len(expected_docs)
+    assert set(docs) == set(expected_docs)

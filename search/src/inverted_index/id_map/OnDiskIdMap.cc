@@ -4,7 +4,8 @@
 
 namespace thirdai::search {
 
-OnDiskIdMap::OnDiskIdMap(const std::string& save_path) : _save_path(save_path) {
+OnDiskIdMap::OnDiskIdMap(const std::string& save_path, bool read_only)
+    : _save_path(save_path) {
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
@@ -20,11 +21,21 @@ OnDiskIdMap::OnDiskIdMap(const std::string& save_path) : _save_path(save_path) {
 
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
 
-  auto status =
-      rocksdb::TransactionDB::Open(options, rocksdb::TransactionDBOptions(),
-                                   save_path, column_families, &handles, &_db);
-  if (!status.ok()) {
-    throw std::runtime_error(status.ToString() + "open");
+  rocksdb::Status open_status;
+  if (!read_only) {
+    open_status = rocksdb::TransactionDB::Open(
+        options, rocksdb::TransactionDBOptions(), save_path, column_families,
+        &handles, &_transaction_db);
+    _db = _transaction_db;
+
+  } else {
+    open_status = rocksdb::DB::OpenForReadOnly(options, save_path,
+                                               column_families, &handles, &_db);
+    _transaction_db = nullptr;
+  }
+
+  if (!open_status.ok()) {
+    throw std::runtime_error(open_status.ToString() + "open");
   }
 
   if (handles.size() != 2) {
@@ -80,7 +91,7 @@ void OnDiskIdMap::put(uint64_t key, const std::vector<uint64_t>& values) {
 }
 
 std::vector<uint64_t> OnDiskIdMap::deleteValue(uint64_t value) {
-  auto* txn = _db->BeginTransaction(rocksdb::WriteOptions());
+  auto* txn = startTransaction();
 
   std::string serialized_keys;
   auto reverse_status =

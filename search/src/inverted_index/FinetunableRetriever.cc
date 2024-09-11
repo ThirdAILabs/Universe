@@ -6,7 +6,6 @@
 #if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
 #include <search/src/inverted_index/id_map/OnDiskIdMap.h>
-#include <search/src/inverted_index/id_map/OnDiskIdMapReadOnly.h>
 #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
@@ -47,6 +46,10 @@ std::string queryToDocsPath(const std::string& save_path) {
   return (std::filesystem::path(save_path) / "id_map").string();
 }
 
+std::string metadataPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "metadata").string();
+}
+
 }  // namespace
 
 FinetunableRetriever::FinetunableRetriever(
@@ -63,6 +66,9 @@ FinetunableRetriever::FinetunableRetriever(
         std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
 
     _query_to_docs = std::make_unique<OnDiskIdMap>(queryToDocsPath(*save_path));
+
+    auto metadata = dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+    ar::serialize(metadataToArchive(), metadata);
   } else {
     _doc_index = std::make_shared<InvertedIndex>(config);
     _query_index = std::make_shared<InvertedIndex>(config);
@@ -249,14 +255,6 @@ void FinetunableRetriever::metadataFromArchive(const ar::Archive& archive) {
   _top_queries = archive.u64("top_queries");
 }
 
-namespace {
-
-std::string metadataPath(const std::string& save_path) {
-  return (std::filesystem::path(save_path) / "metadata").string();
-}
-
-}  // namespace
-
 void FinetunableRetriever::save(const std::string& save_path) const {
   createDirectory(save_path);
 
@@ -291,10 +289,7 @@ std::unique_ptr<IdMap> loadIdMap(const std::string& type,
   }
 #if !_WIN32
   if (type == OnDiskIdMap::typeName()) {
-    if (read_only) {
-      return OnDiskIdMapReadOnly::load(path);
-    }
-    return OnDiskIdMap::load(path);
+    return OnDiskIdMap::load(path, read_only);
   }
 #else
   (void)read_only;

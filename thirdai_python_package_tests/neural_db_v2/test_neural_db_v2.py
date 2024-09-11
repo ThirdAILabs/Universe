@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -132,3 +133,48 @@ def test_neural_db_v2_doc_versioning():
     check_results(db.search("a b c d e v", top_k=5), "b", [3])
 
     clean_up_sql_lite_db(db.chunk_store)
+
+
+def test_neural_db_v2_on_disk():
+    save_path = "test_neural_db_v2_on_disk"
+
+    db = ndb.NeuralDB(save_path=save_path)
+
+    save_path = Path(save_path)
+    assert os.path.exists(save_path / "chunk_store")
+    assert os.path.exists(save_path / "retriever")
+    assert os.path.exists(save_path / "metadata.json")
+
+    del db
+
+    db = ndb.NeuralDB.load(str(save_path))
+
+    db.insert([ndb.CSV(CSV_FILE), ndb.PDF(PDF_FILE)])
+
+    queries = ["lorem ipsum", "contrary"]
+    results_before = db.search_batch(queries, top_k=10)
+
+    del db
+
+    db = ndb.NeuralDB.load(str(save_path))
+
+    queries = ["lorem ipsum", "contrary"]
+    results_after = db.search_batch(queries, top_k=10)
+
+    assert results_before == results_after
+
+    shutil.rmtree(save_path)
+
+
+def test_neural_db_v2_reranker():
+    db = ndb.NeuralDB()
+
+    db.insert([ndb.CSV(CSV_FILE)])
+
+    regular = db.search("what are the roots of lorem ipsum", top_k=3)
+    reranked = db.search("what are the roots of lorem ipsum", top_k=3, rerank=True)
+
+    assert len(regular) > 0
+    assert len(reranked) > 0
+    assert len(regular) == len(reranked)
+    assert [x[1] for x in regular] != [x[1] for x in reranked]

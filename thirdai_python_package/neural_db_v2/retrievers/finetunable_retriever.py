@@ -1,4 +1,4 @@
-from typing import Iterable, List, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from thirdai import search
 
@@ -7,9 +7,14 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class FinetunableRetriever(Retriever):
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        save_path: Optional[str] = None,
+        config: Optional[search.IndexConfig] = search.IndexConfig(),
+        **kwargs
+    ):
         super().__init__()
-        self.retriever = search.FinetunableRetriever()
+        self.retriever = search.FinetunableRetriever(save_path=save_path, config=config)
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
@@ -59,7 +64,7 @@ class FinetunableRetriever(Retriever):
         self.retriever.save(path)
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, read_only: bool = False, **kwargs):
         instance = cls()
-        instance.retriever = search.FinetunableRetriever.load(path)
+        instance.retriever = search.FinetunableRetriever.load(path, read_only=read_only)
         return instance

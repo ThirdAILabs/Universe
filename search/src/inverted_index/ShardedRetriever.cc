@@ -17,6 +17,13 @@
 
 namespace thirdai::search {
 
+namespace {
+std::string shardName(size_t shard_id) {
+  return "shard_" + std::to_string(shard_id);
+}
+
+}  // namespace
+
 #if !_WIN32
 class OnDiskFactory final : public RetrieverFactory {
  public:
@@ -30,9 +37,7 @@ class OnDiskFactory final : public RetrieverFactory {
           "Cannot create new shards in read only mode.");
     }
     return std::make_shared<OnDiskIndex>(
-        std::filesystem::path(_save_path) /
-            ("shard_" + std::to_string(shard_id)),
-        config);
+        std::filesystem::path(_save_path) / shardName(shard_id), config);
   }
 
   std::shared_ptr<Retriever> load(const std::string& path) const final {
@@ -62,12 +67,26 @@ class InMemoryFactory final : public RetrieverFactory {
   std::string type() const final { return InvertedIndex::typeName(); }
 };
 
+namespace {
+
+std::string metadataPath(const std::string& save_path) {
+  return (std::filesystem::path(save_path) / "metadata").string();
+}
+
+}  // namespace
+
 ShardedRetriever::ShardedRetriever(IndexConfig config,
                                    const std::optional<std::string>& save_path)
     : _config(std::move(config)), _shard_size(config.shard_size) {
 #if !_WIN32
   if (save_path) {
+    createDirectory(*save_path);
+
     _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
+
+    auto metadata_file =
+        dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+    ar::serialize(metadataToArchive(), metadata_file);
   } else {
     _factory = std::make_shared<InMemoryFactory>();
   }
@@ -195,30 +214,30 @@ void ShardedRetriever::prune() {
   }
 }
 
-void ShardedRetriever::save(const std::string& new_save_path) const {
-  std::vector<std::string> saved_shards;
-  for (size_t i = 0; i < _shards.size(); i++) {
-    std::string shard_file = "shard_" + std::to_string(i);
-    _shards[i]->save(
-        (std::filesystem::path(new_save_path) / shard_file).string());
-    saved_shards.push_back(shard_file);
-  }
-
+ar::ConstArchivePtr ShardedRetriever::metadataToArchive() const {
   auto metadata = ar::Map::make();
+
   metadata->set("type", ar::str(_factory->type()));
   metadata->set("config", _config.toArchive());
-  metadata->set("shards", ar::vecStr(saved_shards));
   metadata->set("shard_size", ar::u64(_shard_size));
 
-  auto metadata_file = dataset::SafeFileIO::ofstream(
-      (std::filesystem::path(new_save_path) / "metadata").string());
-  ar::serialize(metadata, metadata_file);
+  return metadata;
+}
+
+void ShardedRetriever::save(const std::string& new_save_path) const {
+  for (size_t shard_id = 0; shard_id < _shards.size(); shard_id++) {
+    _shards[shard_id]->save(
+        (std::filesystem::path(new_save_path) / shardName(shard_id)).string());
+  }
+
+  auto metadata_file =
+      dataset::SafeFileIO::ofstream(metadataPath(new_save_path));
+  ar::serialize(metadataToArchive(), metadata_file);
 }
 
 ShardedRetriever::ShardedRetriever(const std::string& save_path,
                                    bool read_only) {
-  auto metadata_file = dataset::SafeFileIO::ifstream(
-      (std::filesystem::path(save_path) / "metadata").string());
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
   auto metadata = ar::deserialize(metadata_file);
 
   _shard_size = metadata->u64("shard_size");
@@ -239,9 +258,19 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     throw std::invalid_argument("Invalid factory type: '" + type + "'.");
   }
 
-  for (const auto& shard_file : metadata->getAs<ar::VecStr>("shards")) {
-    _shards.push_back(_factory->load(
-        (std::filesystem::path(save_path) / shard_file).string()));
+  for (size_t shard_id = 0;; shard_id++) {
+    std::string filename =
+        (std::filesystem::path(save_path) / shardName(shard_id)).string();
+
+    if (!std::filesystem::exists(filename)) {
+      break;
+    }
+
+    _shards.push_back(_factory->load(filename));
+  }
+
+  if (_shards.empty()) {
+    throw std::invalid_argument("No shards found, db is in invalid state.");
   }
 
 #if _WIN32

@@ -13,11 +13,13 @@ class DOCX(Document):
         path: str,
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
+        display_path: Optional[str] = None,
     ):
         super().__init__(doc_id=doc_id)
 
         self.path = path
         self.doc_metadata = doc_metadata
+        self.display_path = display_path
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         elements, success = doc_parse.get_elements(self.path)
@@ -38,6 +40,6 @@ class DOCX(Document):
                 text=text,
                 keywords=series_from_value("", len(text)),
                 metadata=metadata,
-                document=series_from_value(self.path, len(text)),
+                document=series_from_value(self.display_path or self.path, len(text)),
             )
         ]

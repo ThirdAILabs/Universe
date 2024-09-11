@@ -11,7 +11,7 @@ namespace thirdai::search {
 
 class OnDiskIdMap final : public IdMap {
  public:
-  explicit OnDiskIdMap(const std::string& save_path);
+  explicit OnDiskIdMap(const std::string& save_path, bool read_only = false);
 
   std::vector<uint64_t> get(uint64_t key) const final;
 
@@ -26,8 +26,9 @@ class OnDiskIdMap final : public IdMap {
                           std::filesystem::copy_options::recursive);
   }
 
-  static std::unique_ptr<OnDiskIdMap> load(const std::string& save_path) {
-    return std::make_unique<OnDiskIdMap>(save_path);
+  static std::unique_ptr<OnDiskIdMap> load(const std::string& save_path,
+                                           bool read_only) {
+    return std::make_unique<OnDiskIdMap>(save_path, read_only);
   }
 
   std::string type() const final { return typeName(); }
@@ -42,7 +43,16 @@ class OnDiskIdMap final : public IdMap {
   }
 
  private:
-  rocksdb::TransactionDB* _db;
+  rocksdb::Transaction* startTransaction() {
+    if (!_transaction_db) {
+      throw std::invalid_argument(
+          "This operation is not supported in read only mode");
+    }
+    return _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+  }
+
+  rocksdb::DB* _db;
+  rocksdb::TransactionDB* _transaction_db;
 
   rocksdb::ColumnFamilyHandle* _key_to_values;
   rocksdb::ColumnFamilyHandle* _value_to_keys;

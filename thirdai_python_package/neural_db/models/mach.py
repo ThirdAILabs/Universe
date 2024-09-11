@@ -323,13 +323,17 @@ class Mach(Model):
     def set_model(self, model):
         self.model = model
 
-    def save_meta(self, directory: Path):
+    def save_meta(self, directory: Path, **kwargs):
         if self.finetunable_retriever:
-            self.finetunable_retriever.save_meta(directory / "finetunable_retriever")
+            self.finetunable_retriever.save_meta(
+                directory / "finetunable_retriever", **kwargs
+            )
 
-    def load_meta(self, directory: Path):
+    def load_meta(self, directory: Path, **kwargs):
         if self.finetunable_retriever:
-            self.finetunable_retriever.load_meta(directory / "finetunable_retriever")
+            self.finetunable_retriever.load_meta(
+                directory / "finetunable_retriever", **kwargs
+            )
 
     def set_n_ids(self, n_ids: int):
         self.n_ids = n_ids

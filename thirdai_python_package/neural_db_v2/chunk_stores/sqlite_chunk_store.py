@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
+    Boolean,
     Column,
     Engine,
     Float,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Table,
     create_engine,
     delete,
+    distinct,
     func,
     join,
     select,
@@ -59,6 +61,8 @@ def get_sql_type(name, dtype):
         return Integer
     elif dtype == float:
         return Float
+    elif dtype == bool:
+        return Boolean
     elif dtype == object:
         return String
     else:
@@ -127,10 +131,15 @@ def encrypted_type(key: str):
 
 
 class SQLiteChunkStore(ChunkStore):
-    def __init__(self, encryption_key: Optional[str] = None, **kwargs):
+    def __init__(
+        self,
+        save_path: Optional[str] = None,
+        encryption_key: Optional[str] = None,
+        **kwargs,
+    ):
         super().__init__()
 
-        self.db_name = f"{uuid.uuid4()}.db"
+        self.db_name = save_path or f"{uuid.uuid4()}.db"
         self.engine = create_engine(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
@@ -395,11 +404,28 @@ class SQLiteChunkStore(ChunkStore):
             result = conn.execute(stmt)
             return result.scalar() or 0
 
+    def documents(self) -> List[dict]:
+        stmt = select(
+            self.chunk_table.c.doc_id,
+            self.chunk_table.c.doc_version,
+            self.chunk_table.c.document,
+        ).distinct()
+
+        with self.engine.connect() as conn:
+            return [
+                {
+                    "doc_id": row.doc_id,
+                    "doc_version": row.doc_version,
+                    "document": row.document,
+                }
+                for row in conn.execute(stmt)
+            ]
+
     def save(self, path: str):
         shutil.copyfile(self.db_name, path)
 
     @classmethod
-    def load(cls, path: str, encryption_key: Optional[str] = None):
+    def load(cls, path: str, encryption_key: Optional[str] = None, **kwargs):
         obj = cls.__new__(cls)
 
         obj.db_name = path

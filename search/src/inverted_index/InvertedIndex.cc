@@ -225,7 +225,9 @@ std::unordered_map<DocId, float> InvertedIndex::scoreDocuments(
       // additions then it might make sense to precompute these values.
       if (doc_scores.size() < _max_docs_to_score || doc_scores.count(doc_id)) {
         doc_scores[doc_id] +=
-            bm25(token_idf, cnt_in_doc, doc_len, _avg_doc_length, _k1, _b);
+            bm25(/*idf=*/token_idf, /*cnt_in_doc=*/cnt_in_doc,
+                 /*doc-len=*/doc_len, /*avg_doc_len=*/_avg_doc_length,
+                 /*query_len=*/tokens_and_idfs.size(), /*k1=*/_k1, /*b=*/_b);
       }
     }
   }

@@ -11,7 +11,10 @@ from .model_interface import InferSamples, Model, Predictions, add_retriever_tag
 
 class FinetunableRetriever(Model):
     def __init__(
-        self, retriever: Optional[search.FinetunableRetriever] = None, on_disk=False
+        self,
+        retriever: Optional[search.FinetunableRetriever] = None,
+        on_disk=False,
+        **kwargs,
     ):
         save_path = None
         if on_disk:
@@ -81,10 +84,10 @@ class FinetunableRetriever(Model):
         )
         return add_retriever_tag(results, "finetunable_retriever")
 
-    def save_meta(self, directory: Path) -> None:
+    def save_meta(self, directory: Path, **kwargs) -> None:
         self.retriever.save(str(directory))
 
-    def load_meta(self, directory: Path, read_only: bool = False):
+    def load_meta(self, directory: Path, read_only: bool = False, **kwargs):
         if not self.retriever:
             self.retriever = search.FinetunableRetriever.load(str(directory), read_only)
 

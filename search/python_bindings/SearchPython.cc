@@ -93,6 +93,13 @@ void createSearchSubmodule(py::module_& module) {
       .def("tokenize", &WordKGrams::tokenize, py::arg("input"));
 
   py::class_<IndexConfig>(search_submodule, "IndexConfig")
+      .def(py::init<>())
+      .def(py::init([](TokenizerPtr tokenizer) {
+             IndexConfig config;
+             config.tokenizer = std::move(tokenizer);
+             return config;
+           }),
+           py::arg("tokenizer"))
       .def(py::init([](size_t shard_size, TokenizerPtr tokenizer) {
              IndexConfig config;
              config.shard_size = shard_size;
