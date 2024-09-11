@@ -245,7 +245,6 @@ setup(
             "pyarrow",
             "prometheus_client",
             "gcsfs",
-            "s3fs",
             "mock",
             "scikit-learn",
             "pyOpenSSL>22.1.0",
@@ -263,7 +262,6 @@ setup(
             "mlflow",
             "protobuf",
             "boto3",
-            "s3fs",
             "gcsfs",
             "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
             "ray[default]",
