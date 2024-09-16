@@ -5,10 +5,12 @@ from typing import Iterable, List, Optional, Tuple, Union
 from .chunk_stores import PandasChunkStore, SQLiteChunkStore
 from .core.chunk_store import ChunkStore
 from .core.documents import Document
+from .core.reranker import Reranker
 from .core.retriever import Retriever
 from .core.supervised import SupervisedDataset
 from .core.types import Chunk, ChunkId, InsertedDocMetadata, NewChunkBatch, Score
 from .documents import PrebatchedDoc, document_by_name
+from .rerankers.pretrained_reranker import PretrainedReranker
 from .retrievers import FinetunableRetriever, Mach, MachEnsemble
 
 
@@ -20,6 +22,8 @@ class NeuralDB:
         save_path: Optional[str] = None,
         **kwargs,
     ):
+        self.reranker: Optional[Reranker] = None
+
         if save_path is None:
             self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
             self.retriever = retriever or FinetunableRetriever(**kwargs)
@@ -56,12 +60,22 @@ class NeuralDB:
         return doc_metadata
 
     def search(
-        self, query: str, top_k: int = 5, constraints: dict = None, **kwargs
+        self,
+        query: str,
+        top_k: int = 5,
+        constraints: dict = None,
+        rerank: bool = False,
+        **kwargs,
     ) -> List[Tuple[Chunk, Score]]:
-        return self.search_batch([query], top_k, constraints, **kwargs)[0]
+        return self.search_batch([query], top_k, constraints, rerank, **kwargs)[0]
 
     def search_batch(
-        self, queries: List[str], top_k: int, constraints: dict = None, **kwargs
+        self,
+        queries: List[str],
+        top_k: int,
+        constraints: dict = None,
+        rerank: bool = False,
+        **kwargs,
     ) -> List[List[Tuple[Chunk, Score]]]:
         if not constraints:
             results = self.retriever.search(queries, top_k, **kwargs)
@@ -73,15 +87,25 @@ class NeuralDB:
             )
 
         chunk_results = []
-        for query_results in results:
+        for i, query_results in enumerate(results):
             if not query_results:
                 chunk_results.append([])
             else:
                 chunk_ids, scores = [list(tup)[:top_k] for tup in zip(*query_results)]
                 chunks = self.chunk_store.get_chunks(chunk_ids)
-                chunk_results.append(list(zip(chunks, scores)))
+                query_results = list(zip(chunks, scores))
+                if rerank:
+                    query_results = self.rerank(queries[i], query_results)
+                chunk_results.append(query_results)
 
         return chunk_results
+
+    def rerank(
+        self, query: str, results: List[Tuple[Chunk, Score]]
+    ) -> List[Tuple[Chunk, Score]]:
+        if self.reranker is None:
+            self.reranker = PretrainedReranker()
+        return self.reranker.rerank(query, results)
 
     def delete(self, chunk_ids: List[ChunkId]):
         self.chunk_store.delete(chunk_ids)
@@ -139,7 +163,7 @@ class NeuralDB:
         return chunk_store_name_map[chunk_store_name].load(path, **kwargs)
 
     @staticmethod
-    def load_retriever(path: str, retriever_name: str):
+    def load_retriever(path: str, retriever_name: str, **kwargs):
         retriever_name_map = {
             FinetunableRetriever.__name__: FinetunableRetriever,
             Mach.__name__: Mach,
@@ -149,7 +173,7 @@ class NeuralDB:
         if retriever_name not in retriever_name_map:
             raise ValueError(f"Class name {retriever_name} not found in registry.")
 
-        return retriever_name_map[retriever_name].load(path)
+        return retriever_name_map[retriever_name].load(path, **kwargs)
 
     def save_metadata(self, path: str):
         metadata = {
@@ -161,7 +185,13 @@ class NeuralDB:
             json.dump(metadata, f)
 
     def save(self, path: str):
-        os.makedirs(path)
+        if os.path.exists(path):
+            if not os.path.isdir(path):
+                raise ValueError(
+                    f"Cannot save NeuralDB to {path} since it is not a directory"
+                )
+        else:
+            os.makedirs(path)
 
         self.chunk_store.save(self.chunk_store_path(path))
         self.retriever.save(self.retriever_path(path))
@@ -182,6 +212,7 @@ class NeuralDB:
         retriever = NeuralDB.load_retriever(
             NeuralDB.retriever_path(path),
             retriever_name=metadata["retriever_name"],
+            **kwargs,
         )
 
         return NeuralDB(chunk_store=chunk_store, retriever=retriever)

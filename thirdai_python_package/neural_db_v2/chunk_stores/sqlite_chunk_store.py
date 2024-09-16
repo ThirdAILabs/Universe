@@ -439,7 +439,7 @@ class SQLiteChunkStore(ChunkStore):
         shutil.copyfile(self.db_name, path)
 
     @classmethod
-    def load(cls, path: str, encryption_key: Optional[str] = None):
+    def load(cls, path: str, encryption_key: Optional[str] = None, **kwargs):
         obj = cls.__new__(cls)
 
         obj.db_name = path

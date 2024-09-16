@@ -118,7 +118,7 @@ class MachEnsemble(Retriever):
             retriever.save(os.path.join(path, f"mach_{i}"))
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, **kwargs):
         retrievers = []
         for file in sorted(os.listdir(path)):
             if match := re.match(r"mach_(\d+)", file):

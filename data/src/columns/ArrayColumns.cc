@@ -16,6 +16,7 @@ void ArrayColumn<T>::shuffle(const std::vector<size_t>& permutation) {
 
 template class ArrayColumn<uint32_t>;
 template class ArrayColumn<float>;
+template class ArrayColumn<std::pair<size_t, size_t>>;
 template class ArrayColumn<std::string>;
 
 template <typename T>
@@ -90,6 +91,15 @@ ArrayColumnPtr<uint32_t> ArrayColumn<uint32_t>::make(
 
   return ArrayColumnPtr<uint32_t>(
       new ArrayColumn<uint32_t>(std::move(data), dim));
+}
+
+template <>
+ArrayColumnPtr<std::pair<size_t, size_t>>
+ArrayColumn<std::pair<size_t, size_t>>::make(
+    std::vector<std::vector<std::pair<size_t, size_t>>>&& data,
+    std::optional<size_t> dim) {
+  return ArrayColumnPtr<std::pair<size_t, size_t>>(
+      new ArrayColumn<std::pair<size_t, size_t>>(std::move(data), dim));
 }
 
 template <>
