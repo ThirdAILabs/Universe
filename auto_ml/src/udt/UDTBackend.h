@@ -185,7 +185,7 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual py::object list_ner_tags() const {
+  virtual py::object listNerTags() const {
     throw notSupported("list_ner_tags");
   }
 
