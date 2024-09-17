@@ -6,27 +6,29 @@ from thirdai import data
 
 pytestmark = [pytest.mark.unit]
 
-TAG_MAP = {
-    "O": 0,
-    "NAME": 1,
-    "EMAIL": 2,
-}
+TAGS = [
+    data.transformations.NERLearnedTag("O"),
+    data.transformations.NERLearnedTag("NAME"),
+    data.transformations.NERLearnedTag("EMAIL"),
+]
 
 target_tokenizer = thirdai.dataset.NaiveSplitTokenizer(" ")
 
 
 def test_inequal_number_of_tokens_and_tags():
+    TAG_TRACKER = data.transformations.NerTagTracker(tags=TAGS, ignored_tags=set())
+
     ner_transformation = data.transformations.NerTokenizerUnigram(
         "source",
         "featurized_sentence",
         "target",
-        len(TAG_MAP),
+        len(TAGS),
         dyadic_num_intervals=2,
         target_word_tokenizers=[target_tokenizer],
         feature_enhancement_config=data.transformations.NerFeatureConfig(
             True, True, True, True, True, True, True
         ),
-        tag_to_label=TAG_MAP,
+        tag_tracker=TAG_TRACKER,
     )
 
     columns = data.ColumnMap(
@@ -44,17 +46,19 @@ def test_inequal_number_of_tokens_and_tags():
 
 
 def test_label_not_in_tag_map():
+    TAG_TRACKER = data.transformations.NerTagTracker(tags=TAGS, ignored_tags=set())
+
     ner_transformation = data.transformations.NerTokenizerUnigram(
         "source",
         "featurized_sentence",
         "target",
-        len(TAG_MAP),
+        len(TAGS),
         dyadic_num_intervals=2,
         target_word_tokenizers=[target_tokenizer],
         feature_enhancement_config=data.transformations.NerFeatureConfig(
             True, True, True, True, True, True, True
         ),
-        tag_to_label=TAG_MAP,
+        tag_tracker=TAG_TRACKER,
     )
 
     columns = data.ColumnMap(
@@ -65,7 +69,7 @@ def test_label_not_in_tag_map():
     )
 
     with pytest.raises(
-        IndexError,
-        match=re.escape("String 'RANDOM' not found in the specified tags list."),
+        ValueError,
+        match=re.escape("tag 'RANDOM' not found in the list of tags."),
     ):
         transformed_columns = ner_transformation(columns)

@@ -269,7 +269,9 @@ void defineAutomlInModule(py::module_& module) {
                   py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt)
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
-                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
+                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt)
+      .def("add_ner_entities", &udt::UDT::addNerEntitiesToModel,
+           py::arg("entities"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
