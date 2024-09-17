@@ -46,6 +46,15 @@ class UDTNer final : public UDTBackend {
                           std::optional<uint32_t> top_k,
                           const py::kwargs& kwargs) final;
 
+  py::object list_ner_tags() const final {
+    std::vector<std::string> tags;
+
+    for (size_t i = 0; i < _label_to_tag.size(); i++) {
+      tags.push_back(_label_to_tag[i]->tag());
+    }
+
+    return py::cast(tags);
+  }
   ModelPtr model() const final { return _model; }
 
   void setModel(const ModelPtr& model) final {

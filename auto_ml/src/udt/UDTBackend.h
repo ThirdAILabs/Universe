@@ -185,6 +185,10 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
+  virtual py::object list_ner_tags() const {
+    throw notSupported("list_ner_tags");
+  }
+
   virtual TextDatasetConfig textDatasetConfig() const {
     throw notSupported("text_dataset_config");
   }

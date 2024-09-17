@@ -151,6 +151,8 @@ class UDT {
     return _backend->className(class_id);
   }
 
+  py::object list_ner_tags() const { return _backend->list_ner_tags(); }
+
   void updateTemporalTrackers(const MapInput& sample) {
     if (auto featurizer = _backend->featurizer()) {
       featurizer->updateTemporalTrackers(sample);
