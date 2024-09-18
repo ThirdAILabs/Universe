@@ -151,7 +151,9 @@ class UDT {
     return _backend->className(class_id);
   }
 
-  py::object listNerTags() const { return _backend->listNerTags(); }
+  std::vector<std::string> listNerTags() const {
+    return _backend->listNerTags();
+  }
 
   void updateTemporalTrackers(const MapInput& sample) {
     if (auto featurizer = _backend->featurizer()) {
