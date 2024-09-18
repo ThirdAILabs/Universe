@@ -410,6 +410,13 @@ class UDTBackend {
     throw notSupported("save_cpp_classifier");
   }
 
+  virtual void addNerEntitiesToModel(
+      const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
+          entities) {
+    (void)entities;
+    throw notSupported("add_new_entity_to_model");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:
