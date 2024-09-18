@@ -58,13 +58,7 @@ class UDTNer final : public UDTBackend {
                           const py::kwargs& kwargs) final;
 
   std::vector<std::string> listNerTags() const final {
-    std::vector<std::string> tags;
-
-    for (const auto& tag_ptr : _label_to_tag) {
-      tags.push_back(tag_ptr->tag());
-    }
-
-    return tags;
+    return _tag_tracker->listNerTags();
   }
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
