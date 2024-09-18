@@ -7,7 +7,7 @@ except LookupError:
     nltk.download("punkt_tab")
 
 from . import parsing_utils
-from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan
+from .constraint_matcher import AnyOf, EqualTo, GreaterThan, InRange, LessThan, NoneOf
 from .documents import (
     CSV,
     DOCX,

@@ -38,6 +38,18 @@ class AnyOf(Constraint):
         return df[column_name].isin(self.values)
 
 
+class NoneOf(Constraint):
+    def __init__(self, values):
+        super().__init__()
+        self.values = values
+
+    def sql_condition(self, column_name: str, table: Table):
+        return ~table.c[column_name].in_(self.values) | (table.c[column_name] == None)
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        return ~df[column_name].isin(self.values)
+
+
 class GreaterThan(Constraint):
     def __init__(self, value, inclusive=True):
         super().__init__()
