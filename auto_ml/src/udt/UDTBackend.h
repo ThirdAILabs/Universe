@@ -185,6 +185,10 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
+  virtual std::vector<std::string> listNerTags() const {
+    throw notSupported("list_ner_tags");
+  }
+
   virtual TextDatasetConfig textDatasetConfig() const {
     throw notSupported("text_dataset_config");
   }
@@ -404,6 +408,13 @@ class UDTBackend {
   virtual void saveCppClassifier(const std::string& save_path) const {
     (void)save_path;
     throw notSupported("save_cpp_classifier");
+  }
+
+  virtual void addNerEntitiesToModel(
+      const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
+          entities) {
+    (void)entities;
+    throw notSupported("add_new_entity_to_model");
   }
 
   virtual ~UDTBackend() = default;

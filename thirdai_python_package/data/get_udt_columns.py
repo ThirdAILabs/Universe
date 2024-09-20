@@ -20,7 +20,7 @@ def get_udt_col_types(
         (Dict[str, bolt.types.ColumnType]):
         A map from column name to our best guess for ColumnType.
     """
-    column_types = semantic_type_inference(filename)
+    column_types = semantic_type_inference(filename, nrows=n_rows)
 
     try:
         if filename.endswith(".pqt") or filename.endswith(".parquet"):

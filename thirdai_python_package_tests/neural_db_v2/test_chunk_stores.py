@@ -10,6 +10,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     EqualTo,
     GreaterThan,
     LessThan,
+    NoneOf,
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
 from thirdai.neural_db_v2.documents import InMemoryText, PrebatchedDoc
@@ -253,6 +254,16 @@ def test_chunk_store_constraints_less_than(chunk_store):
 
     chunk_ids = store.filter_chunk_ids({"number": LessThan(4, inclusive=False)})
     assert chunk_ids == set([3])
+
+    clean_up_sql_lite_db(store)
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_constraints_none_of(chunk_store):
+    store = get_simple_chunk_store(chunk_store)
+
+    chunk_ids = store.filter_chunk_ids({"number": NoneOf([4, 9])})
+    assert chunk_ids == set([2, 3, 5, 6])
 
     clean_up_sql_lite_db(store)
 

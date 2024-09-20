@@ -12,7 +12,7 @@ class PDF(Document):
     def __init__(
         self,
         path: str,
-        version: str = "v2",
+        version: str = "v1",
         chunk_size: int = 100,
         stride: int = 40,
         emphasize_first_words: int = 0,
