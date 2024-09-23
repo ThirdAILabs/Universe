@@ -5,6 +5,7 @@
 #include <utils/text/StringManipulation.h>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <vector>
 
 namespace thirdai::search {
@@ -41,6 +42,8 @@ class DefaultTokenizer final : public Tokenizer {
 
  private:
   bool _stem, _lowercase;
+
+  std::regex _punct_word_re = std::regex(R"(\b([a-zA-Z]+)[\-&+]([a-zA-Z]+)\b)");
 };
 
 /**

@@ -96,4 +96,22 @@ TEST(InvertedIndexTokenizerTests, WordKGramsSerialization) {
   InvertedIndex::fromArchive(*index_archive);
 }
 
+TEST(InvertedIndexTokenizerTests, TestPunctuationInWords) {
+  DefaultTokenizer tokenizer;
+
+  const std::string text =
+      "I worked in customer service for AT&T to help customers setup their "
+      "smart-phones.";
+
+  const auto tokens = tokenizer.tokenize(text);
+
+  const std::vector<std::string> expected_tokens = {
+      "i",     "work",  "in",    "custom", "servic",    "for",
+      "at",    "t",     "to",    "help",   "custom",    "setup",
+      "their", "smart", "phone", "att",    "smartphon",
+  };
+
+  ASSERT_EQ(tokens, expected_tokens);
+}
+
 }  // namespace thirdai::search::tests

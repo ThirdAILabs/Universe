@@ -2,6 +2,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <memory>
+#include <regex>
 #include <stdexcept>
 
 namespace thirdai::search {
@@ -26,6 +27,16 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
     if (std::ispunct(c)) {
       c = ' ';
     }
+  }
+
+  auto match_begin =
+      std::sregex_iterator(input.begin(), input.end(), _punct_word_re);
+  auto match_end = std::sregex_iterator();
+
+  for (auto it = match_begin; it != match_end; ++it) {
+    const std::string cleaned = it->str(1) + it->str(2);
+    text.push_back(' ');
+    text.append(cleaned);
   }
 
   Tokens tokens = text::splitOnWhiteSpace(text);
