@@ -64,7 +64,7 @@ class PDF(Document):
         keywords = (
             parsed_chunks["emphasis"]
             if self.version == "v2"
-            else series_from_value("", len(text))
+            else series_from_value(self.doc_keywords, len(text))
         )
 
         metadata_columns = (
