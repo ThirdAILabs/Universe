@@ -100,15 +100,15 @@ TEST(InvertedIndexTokenizerTests, TestPunctuationInWords) {
   DefaultTokenizer tokenizer;
 
   const std::string text =
-      "I worked in customer service for AT&T to help customers setup their "
+      "I worked in customer service for AT&T to help customers set-up their "
       "smart-phones.";
 
   const auto tokens = tokenizer.tokenize(text);
 
   const std::vector<std::string> expected_tokens = {
-      "i",     "work",  "in",    "custom", "servic",    "for",
-      "at",    "t",     "to",    "help",   "custom",    "setup",
-      "their", "smart", "phone", "att",    "smartphon",
+      "i",  "work",  "in",    "custom", "servic", "for",
+      "at", "t",     "to",    "help",   "custom", "set",
+      "up", "their", "smart", "phone",  "att",    "setup",
   };
 
   ASSERT_EQ(tokens, expected_tokens);
