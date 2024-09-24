@@ -29,14 +29,19 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
     }
   }
 
+  // This is to handle tokens like U.S. or at&t in which the regular
+  // tokenization would lead to different tokens/letters that will may be more
+  // common and impact search results.
   auto match_begin =
       std::sregex_iterator(input.begin(), input.end(), _punct_word_re);
   auto match_end = std::sregex_iterator();
 
   for (auto it = match_begin; it != match_end; ++it) {
-    const std::string cleaned = it->str(1) + it->str(2);
-    text.push_back(' ');
-    text.append(cleaned);
+    if (it->length() < 6) {
+      const std::string cleaned = it->str(1) + it->str(2);
+      text.push_back(' ');
+      text.append(cleaned);
+    }
   }
 
   Tokens tokens = text::splitOnWhiteSpace(text);
