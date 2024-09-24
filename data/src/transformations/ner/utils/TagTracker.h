@@ -95,16 +95,6 @@ class TagTracker {
 
   void addTokenTag(const std::string& token, const std::string& tag);
 
-  std::vector<std::string> listNerTags() const {
-    std::vector<std::string> tags;
-
-    for (const auto& tag_ptr : _tag_to_label) {
-      tags.push_back(tag_ptr.first);
-    }
-
-    return tags;
-  }
-
   std::string getTokenEncoding(const std::string& token) const;
 
  private:

@@ -185,10 +185,6 @@ class UDTBackend {
     throw notSupported("class_name");
   }
 
-  virtual std::vector<std::string> listNerTags() const {
-    throw notSupported("list_ner_tags");
-  }
-
   virtual TextDatasetConfig textDatasetConfig() const {
     throw notSupported("text_dataset_config");
   }
