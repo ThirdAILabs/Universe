@@ -18,9 +18,7 @@ set(DATA_TESTS
     StateSerializationTest
     TextCompatTest
     MachMemorySerializationTest
-    NerRuleTests
-    NerTagTests
-    NerTagTrackerTests)
+    NerRuleTests)
 
 foreach(DATA_TEST IN LISTS DATA_TESTS)
   add_executable(${DATA_TEST} ${DATA_TEST}.cc)

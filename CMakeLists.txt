@@ -299,6 +299,7 @@ set(THIRDAI_SOURCES
     bolt/src/layers/LayerConfig.cc
     bolt/src/layers/SamplingConfig.cc
     bolt/src/inference/EmbFcInference.cc
+    bolt/src/NER/model/NerUDTModel.cc
     bolt/src/NER/model/NerBoltModel.cc
     bolt/src/NER/model/NerClassifier.cc
     bolt/src/NER/model/NER.cc
@@ -390,8 +391,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/NerTokenFromStringArray.cc
     data/src/transformations/ner/NerTokenizationUnigram.cc
     data/src/transformations/ner/NerDyadicDataProcessor.cc
-    data/src/transformations/ner/utils/TagTracker.cc
-    data/src/transformations/ner/utils/TokenLabelCounter.cc
+    data/src/transformations/ner/utils/TokenTagCounter.cc
     data/src/transformations/ner/utils/utils.cc
     data/src/transformations/ner/rules/Rule.cc
     data/src/transformations/ner/rules/Pattern.cc
