@@ -63,7 +63,7 @@ TEST(NerLearnedTagTests, NAME) {
 
   std::vector<std::string> expected_tags = {"O", "O", "O", "NAME", "NAME", "O"};
 
-  auto tag = getSSNTag();
+  auto tag = getNameTag();
 
   tag->processTags(sentence_tags, tokens);
 

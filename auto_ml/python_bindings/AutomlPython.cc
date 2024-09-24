@@ -125,6 +125,7 @@ void defineAutomlInModule(py::module_& module) {
            py::arg("samples"), py::arg("sparse_inference") = false)
       .def("score_batch", &udt::UDT::scoreBatch, py::arg("samples"),
            py::arg("classes"), py::arg("top_k") = std::nullopt)
+      .def("list_ner_tags", &udt::UDT::listNerTags)
       .def("cold_start", &udt::UDT::coldstart, py::arg("data"),
            py::arg("strong_column_names"), py::arg("weak_column_names"),
            py::arg("variable_length") = data::VariableLengthConfig(),
@@ -269,7 +270,9 @@ void defineAutomlInModule(py::module_& module) {
                   py::arg("batch"), py::arg("sparse_inference") = false,
                   py::arg("top_k") = std::nullopt)
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
-                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt);
+                  py::arg("output_dim"), py::arg("sparsity") = std::nullopt)
+      .def("add_ner_entities", &udt::UDT::addNerEntitiesToModel,
+           py::arg("entities"));
 }
 
 void createUDTTypesSubmodule(py::module_& module) {
