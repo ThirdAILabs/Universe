@@ -31,8 +31,9 @@ def build_retriever(chunk_df: pd.DataFrame) -> FinetunableRetriever:
     return retriever
 
 
-def subsample_query(text, k=20):
-    return " ".join(random.choices(text.split(), k=k))
+def subsample_query(text, frac=0.7):
+    tokens = text.split()
+    return " ".join(random.choices(tokens, k=int(frac * len(tokens))))
 
 
 def check_basic_query_accuracy(retriever, dataset):
@@ -61,11 +62,12 @@ def test_finetunable_retriever_delete(load_chunks):
     queries = []
     labels = []
 
+    random.seed(74)
     for i in range(0, len(load_chunks), 2):
         query = (
             load_chunks["text"][i]
             + " "
-            + subsample_query(load_chunks["text"][i + 1], k=15)
+            + subsample_query(load_chunks["text"][i + 1], frac=0.5)
         )
         queries.append(query)
         labels.append([load_chunks["id"][i], load_chunks["id"][i + 1]])
