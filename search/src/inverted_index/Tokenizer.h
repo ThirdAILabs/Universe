@@ -43,7 +43,8 @@ class DefaultTokenizer final : public Tokenizer {
  private:
   bool _stem, _lowercase;
 
-  std::regex _punct_word_re = std::regex(R"(\b([a-zA-Z]+)[\.\-&+]([a-zA-Z]+)\b)");
+  std::regex _punct_word_re =
+      std::regex(R"(\b([a-zA-Z]+)[\.\-&+]([a-zA-Z]+)\b)");
 };
 
 /**
