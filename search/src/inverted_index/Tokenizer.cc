@@ -29,6 +29,8 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
     }
   }
 
+  Tokens tokens = text::splitOnWhiteSpace(text);
+
   // This is to handle tokens like U.S. or at&t in which the regular
   // tokenization would lead to different tokens/letters that will may be more
   // common and impact search results. We cap the total match length at 7 so
@@ -42,12 +44,9 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
   for (auto it = match_begin; it != match_end; ++it) {
     if (it->length() < 7) {
       const std::string cleaned = it->str(1) + it->str(2);
-      text.push_back(' ');
-      text.append(cleaned);
+      tokens.push_back(cleaned);
     }
   }
-
-  Tokens tokens = text::splitOnWhiteSpace(text);
 
   if (_stem) {
     return text::porter_stemmer::stem(tokens, _lowercase);
