@@ -67,14 +67,16 @@ ar::ConstArchivePtr DefaultTokenizer::toArchive() const {
   map->set("type", ar::str(type()));
   map->set("stem", ar::boolean(_stem));
   map->set("lowercase", ar::boolean(_lowercase));
+  map->set("ignore_stopwords", ar::boolean(_ignore_stopwords));
 
   return map;
 }
 
 std::shared_ptr<DefaultTokenizer> DefaultTokenizer::fromArchive(
     const ar::Archive& archive) {
-  return std::make_shared<DefaultTokenizer>(archive.boolean("stem"),
-                                            archive.boolean("lowercase"));
+  return std::make_shared<DefaultTokenizer>(
+      archive.boolean("stem"), archive.boolean("lowercase"),
+      archive.getOr<ar::Boolean>("ignore_stopwords", false));
 }
 
 Tokens WordKGrams::tokenize(const std::string& input) const {
