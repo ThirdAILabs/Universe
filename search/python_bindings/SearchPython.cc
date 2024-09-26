@@ -82,8 +82,8 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<DefaultTokenizer, Tokenizer, std::shared_ptr<DefaultTokenizer>>(
       search_submodule, "DefaultTokenizer")
-      .def(py::init<bool, bool>(), py::arg("stem") = true,
-           py::arg("lowercase") = true);
+      .def(py::init<bool, bool, bool>(), py::arg("stem") = true,
+           py::arg("lowercase") = true, py::arg("ignore_stopwords") = false);
 
   py::class_<WordKGrams, Tokenizer, std::shared_ptr<WordKGrams>>(
       search_submodule, "WordKGrams")

@@ -1,6 +1,7 @@
 #include "Tokenizer.h"
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
+#include <utils/text/Stopwords.h>
 #include <memory>
 #include <regex>
 #include <stdexcept>
@@ -45,6 +46,15 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
     if (it->length() < 7) {
       const std::string cleaned = it->str(1) + it->str(2);
       tokens.push_back(cleaned);
+    }
+  }
+
+  if (_ignore_stopwords) {
+    Tokens non_stopwords;
+    for (const auto& token : tokens) {
+      if (!text::stop_words.count(text::lower(token))) {
+        non_stopwords.push_back(token);
+      }
     }
   }
 
