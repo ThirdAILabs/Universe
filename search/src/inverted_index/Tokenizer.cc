@@ -56,6 +56,7 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
         non_stopwords.push_back(token);
       }
     }
+    tokens = std::move(non_stopwords);
   }
 
   if (_stem) {
