@@ -671,6 +671,7 @@ class NeuralDB:
             if not hasattr(self, "reranker_model"):
                 try:
                     from transformers import AutoModelForSequenceClassification
+                    import torch
                 except:
                     raise ValueError(
                         "Semantic reranking requires the 'transformers' package. Please run 'pip3 install transformers'"
@@ -680,6 +681,7 @@ class NeuralDB:
                         "jinaai/jina-reranker-v1-tiny-en",
                         num_labels=1,
                         trust_remote_code=True,
+                        torch_dtype=torch.float16
                     )
                 )
             scores = self.reranker_model.compute_score(
