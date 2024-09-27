@@ -36,8 +36,8 @@ class CSV(Document):
         path,
         text_columns=[],
         keyword_columns=[],
-        doc_metadata=None,
-        max_rows=10_000_000,
+        doc_metadata: Optional[dict[str, Any]] = None,
+        max_rows: int = 10_000_000,
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
     ):

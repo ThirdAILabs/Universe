@@ -55,6 +55,13 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
 
 MULTIVALUE_METADATA_PREFIX = "multivalue_metadata_"
 
+METADATA_TYPES = {
+    "int": Integer, 
+    "str": String, 
+    "bool": Boolean, 
+    "float": Float
+}
+
 
 def get_sql_type(name, dtype):
     if dtype == int:
@@ -156,6 +163,19 @@ class SQLiteChunkStore(ChunkStore):
             Column("doc_id", String, index=True),
             Column("doc_version", Integer),
         )
+
+        self.metadata_version = 2
+        self.metadata_tables = {}
+        for metadata_type, sql_type in METADATA_TYPES.items():
+            metadata_table = Table(
+                f"neural_db_metadata_{metadata_type}",
+                self.metadata,
+                Column("chunk_id", Integer, primary_key=True),
+                Column("key", String, primary_key=True),
+                Column("value", sql_type, primary_key=True)
+            )
+            self.metadata_tables[metadata_type] = metadata_table
+            # TODO(Kartik): add a composite index for key and value
 
         self.metadata.create_all(self.engine)
 
@@ -262,12 +282,16 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_df["doc_version"] = doc_version
 
                 if batch.metadata is not None:
-                    singlevalue_metadata, multivalue_metadata = (
-                        separate_multivalue_columns(batch.metadata)
-                    )
-                    self._store_singlevalue_metadata(singlevalue_metadata, chunk_ids)
-                    for col in multivalue_metadata:
-                        self._store_multivalue_metadata(col, chunk_ids)
+
+                    if self.metadata_version == 1:
+                        singlevalue_metadata, multivalue_metadata = (
+                            separate_multivalue_columns(batch.metadata)
+                        )
+                        self._store_singlevalue_metadata(singlevalue_metadata, chunk_ids)
+                        for col in multivalue_metadata:
+                            self._store_multivalue_metadata(col, chunk_ids)
+                    elif self.metadata_version == 2:
+                        self._store_metadata(chunk_ids)
 
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
 
@@ -446,6 +470,7 @@ class SQLiteChunkStore(ChunkStore):
 
         if "neural_db_metadata" in obj.metadata.tables:
             obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
+            obj.metadata_version = 1
         else:
             obj.metadata_table = None
 
@@ -455,6 +480,7 @@ class SQLiteChunkStore(ChunkStore):
                 obj.multivalue_metadata_tables[
                     name[len(MULTIVALUE_METADATA_PREFIX) :]
                 ] = table
+                obj.metadata_version = 1
 
         with obj.engine.connect() as conn:
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
