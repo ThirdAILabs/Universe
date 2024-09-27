@@ -22,6 +22,7 @@ from sqlalchemy import (
     join,
     select,
     text,
+    Index
 )
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
@@ -172,10 +173,11 @@ class SQLiteChunkStore(ChunkStore):
                 self.metadata,
                 Column("chunk_id", Integer, primary_key=True),
                 Column("key", String, primary_key=True),
-                Column("value", sql_type, primary_key=True)
+                Column("value", sql_type, primary_key=True),
+                Index(f'ix_metadata_key_value_{metadata_type}', 'key', 'value')
             )
             self.metadata_tables[metadata_type] = metadata_table
-            # TODO(Kartik): add a composite index for key and value
+            
 
         self.metadata.create_all(self.engine)
 
