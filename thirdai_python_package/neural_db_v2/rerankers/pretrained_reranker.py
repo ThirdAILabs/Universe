@@ -11,7 +11,10 @@ class PretrainedReranker(Reranker):
         super().__init__()
 
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            "jinaai/jina-reranker-v1-tiny-en", num_labels=1, trust_remote_code=True
+            "jinaai/jina-reranker-v1-tiny-en",
+            num_labels=1,
+            trust_remote_code=True,
+            max_position_embeddings=4096,
         )
 
     def rerank(
