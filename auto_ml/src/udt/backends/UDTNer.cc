@@ -386,7 +386,7 @@ std::vector<std::map<std::string, py::object>> formatResultsWithOffsets(
   std::vector<std::map<std::string, py::object>> results;
 
   for (size_t i = 0; i < tags.size(); ++i) {
-    if (!tags[i].empty() && tags[i][0].first != "O") {
+    if (!tags[i].empty()) {
       auto [start, end] = offsets[i];
       std::map<std::string, py::object> entity;
       entity["Score"] = py::cast(tags[i][0].second);
