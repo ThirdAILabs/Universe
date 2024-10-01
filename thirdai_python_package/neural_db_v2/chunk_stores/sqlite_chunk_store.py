@@ -29,7 +29,7 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
 from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
-from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
+from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata, MetadataType
 from .constraints import Constraint
 
 
@@ -56,11 +56,18 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
 
 MULTIVALUE_METADATA_PREFIX = "multivalue_metadata_"
 
-METADATA_TYPES = {
-    "int": Integer, 
-    "str": String, 
-    "bool": Boolean, 
-    "float": Float
+METADATA_SQL_TYPES = {
+    MetadataType.INTEGER: Integer, 
+    MetadataType.STRING: String, 
+    MetadataType.BOOLEAN: Boolean, 
+    MetadataType.FLOAT: Float
+}
+
+METADATA_PANDAS_TYPES = {
+    MetadataType.INTEGER: [int], 
+    MetadataType.STRING: [str, object], 
+    MetadataType.BOOLEAN: [bool], 
+    MetadataType.FLOAT: [float]
 }
 
 
@@ -163,11 +170,17 @@ class SQLiteChunkStore(ChunkStore):
             Column("document", text_type),
             Column("doc_id", String, index=True),
             Column("doc_version", Integer),
-        )
+        )           
 
-        self.metadata_version = 2
+        self._create_metadata_tables() 
+
+        self.metadata.create_all(self.engine)
+
+        self.next_id = 0
+
+    def _create_metadata_tables(self):
         self.metadata_tables = {}
-        for metadata_type, sql_type in METADATA_TYPES.items():
+        for metadata_type, sql_type in METADATA_SQL_TYPES.items():
             metadata_table = Table(
                 f"neural_db_metadata_{metadata_type}",
                 self.metadata,
@@ -177,15 +190,13 @@ class SQLiteChunkStore(ChunkStore):
                 Index(f'ix_metadata_key_value_{metadata_type}', 'key', 'value')
             )
             self.metadata_tables[metadata_type] = metadata_table
-            
 
-        self.metadata.create_all(self.engine)
-
-        self.metadata_table = None
-
-        self.multivalue_metadata_tables = {}
-
-        self.next_id = 0
+        self.metadata_type_table = Table(
+            "neural_db_metadata_type",
+            self.metadata,
+            Column("key", String, primary_key=True),
+            Column("type", String)
+        )
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
         df.to_sql(
@@ -196,69 +207,42 @@ class SQLiteChunkStore(ChunkStore):
             index=False,
         )
 
-    def _add_metadata_column(self, column: Column):
-        column_name = column.compile(dialect=self.engine.dialect)
-        column_type = column.type.compile(self.engine.dialect)
-        stmt = text(
-            f"ALTER TABLE {self.metadata_table.name} ADD COLUMN {column_name} {column_type}"
-        )
-
-        with self.engine.begin() as conn:
-            conn.execute(stmt)
-
-        # This is so that sqlalchemy recognizes the new column.
-        self.metadata = MetaData()
-        self.metadata.reflect(bind=self.engine)
-        self.metadata_table = Table(
-            self.metadata_table.name, self.metadata, autoload_with=self.engine
-        )
-
-    def _store_singlevalue_metadata(self, metadata: pd.DataFrame, chunk_ids: pd.Series):
-        metadata_columns = get_sql_columns(metadata)
-        if self.metadata_table is None:
-            self.metadata_table = Table(
-                "neural_db_metadata",
-                self.metadata,
-                Column("chunk_id", Integer, primary_key=True),
-                *metadata_columns,
-            )
-            self.metadata.create_all(self.engine)
-        else:
-            for column in metadata_columns:
-                if column.name not in self.metadata_table.columns:
-                    self._add_metadata_column(column=column)
-                else:
-                    if str(column.type) != str(
-                        self.metadata_table.columns[column.name].type
-                    ):
-                        raise ValueError(
-                            f"Existing metadata for column {column.name} has type {str(self.metadata_table.columns[column.name].type)} but new metadata has type {str(column.type)}."
+    def _store_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
+        key = metadata_col.name
+        for metadata_type, pd_type in METADATA_PANDAS_TYPES:
+            if metadata_col.dtype in pd_type:
+                metadata_to_insert = []
+                for idx, value in metadata_col.items():
+                    metadata_to_insert.append({
+                        'chunk_id': chunk_ids.iloc[idx],
+                        'key': key,
+                        'value': value
+                    })
+                
+                with self.engine.begin() as conn:
+                    result = conn.execute(
+                        select([self.metadata_type_table.c.type]).where(
+                            self.metadata_type_table.c.key == key
                         )
-        metadata["chunk_id"] = chunk_ids
-        self._write_to_table(df=metadata, table=self.metadata_table)
-
-    def _store_multivalue_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
-        flattened_metadata = flatten_multivalue_column(metadata_col, chunk_ids)
-
-        if metadata_col.name not in self.multivalue_metadata_tables:
-            table = Table(
-                MULTIVALUE_METADATA_PREFIX + metadata_col.name,
-                self.metadata,
-                Column("chunk_id", Integer, index=True, primary_key=True),
-                Column(
-                    metadata_col.name,
-                    get_sql_type(
-                        metadata_col.name, flattened_metadata[metadata_col.name].dtype
-                    ),
-                    primary_key=True,
-                ),
-            )
-            self.metadata.create_all(self.engine)
-            self.multivalue_metadata_tables[metadata_col.name] = table
-
-        self._write_to_table(
-            flattened_metadata, self.multivalue_metadata_tables[metadata_col.name]
-        )
+                    ).fetchone()
+                    
+                    if result:
+                        existing_type = result['type']
+                        if existing_type != metadata_type:
+                            raise ValueError(
+                                f"Type mismatch for key '{key}': existing type '{existing_type}', new type '{metadata_type}'"
+                            )
+                    else:
+                        conn.execute(
+                            self.metadata_type_table.insert().values(
+                                key=key,
+                                type=metadata_type
+                            )
+                        )
+                    
+                    conn.execute(self.metadata_tables[f"neural_db_metadata_{metadata_type}"].insert(), metadata_to_insert)
+                
+                continue
 
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
@@ -293,7 +277,14 @@ class SQLiteChunkStore(ChunkStore):
                         for col in multivalue_metadata:
                             self._store_multivalue_metadata(col, chunk_ids)
                     elif self.metadata_version == 2:
-                        self._store_metadata(chunk_ids)
+                        singlevalue_metadata, multivalue_metadata = (
+                            separate_multivalue_columns(batch.metadata)
+                        )
+                        for col in singlevalue_metadata:
+                            self._store_metadata(singlevalue_metadata[col], chunk_ids)
+                        for col in multivalue_metadata:
+                            flattened_metadata = flatten_multivalue_column(col, chunk_ids)
+                            self._store_metadata(flattened_metadata, chunk_ids)
 
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
 
@@ -470,27 +461,74 @@ class SQLiteChunkStore(ChunkStore):
             obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
             obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
 
+        # Migrate deprecated metadata format
         if "neural_db_metadata" in obj.metadata.tables:
-            obj.metadata_table = obj.metadata.tables["neural_db_metadata"]
-            obj.metadata_version = 1
-        else:
-            obj.metadata_table = None
+            old_metadata_table = obj.metadata.tables["neural_db_metadata"]
+            metadata_columns = [col for col in old_metadata_table.columns if col.name != 'chunk_id']
 
-        obj.multivalue_metadata_tables = {}
-        for name, table in obj.metadata.tables.items():
-            if name.startswith(MULTIVALUE_METADATA_PREFIX):
-                obj.multivalue_metadata_tables[
-                    name[len(MULTIVALUE_METADATA_PREFIX) :]
-                ] = table
-                obj.metadata_version = 1
+            obj._create_metadata_tables()
+            obj.metadata.create_all(obj.engine)
+
+            columns_by_type = {'string': [], 'int': [], 'float': [], 'bool': []}
+            key_type_pairs = []
+            for col in metadata_columns:
+                if isinstance(col.type, String):
+                    columns_by_type['string'].append(col)
+                    key_type_pairs.append({'key': col.name, 'type': 'string'})
+                elif isinstance(col.type, Integer):
+                    columns_by_type['int'].append(col)
+                    key_type_pairs.append({'key': col.name, 'type': 'int'})
+                elif isinstance(col.type, Float):
+                    columns_by_type['float'].append(col)
+                    key_type_pairs.append({'key': col.name, 'type': 'float'})
+                elif isinstance(col.type, Boolean):
+                    columns_by_type['bool'].append(col)
+                    key_type_pairs.append({'key': col.name, 'type': 'bool'})
+                else:
+                    continue
+                
+            with obj.engine.connect() as conn:
+                for metadata_type, columns in columns_by_type.items():
+                    if not columns:
+                        continue
+                    metadata_table = obj.metadata_tables[metadata_type]
+                    select_statements = []
+                    for col in columns:
+                        stmt = select([
+                            old_metadata_table.c.chunk_id.label('chunk_id'),
+                            text(f"'{col.name}'").label('key'),
+                            col.label('value')
+                        ]).where(col != None)
+                        select_statements.append(stmt)
+                    union_stmt = select_statements[0]
+                    for stmt in select_statements[1:]:
+                        union_stmt = union_stmt.union_all(stmt)
+                    insert_stmt = metadata_table.insert().from_select(
+                        ['chunk_id', 'key', 'value'],
+                        union_stmt
+                    )
+                    conn.execute(insert_stmt)
+                
+                insert_stmt = obj.metadata_type_table.insert()
+                conn.execute(insert_stmt, key_type_pairs)
+        else:
+            for metadata_type in METADATA_SQL_TYPES:
+                metadata_table_name = f"neural_db_metadata_{metadata_type}"
+                if metadata_table_name in obj.metadata.tables:
+                    obj.metadata_tables[metadata_type] = obj.metadata.tables[metadata_table_name]
+                else:
+                    obj._create_metadata_tables()
+                    obj.metadata.create_all(obj.engine)
+            
+            if "neural_db_metadata_type" in obj.metadata.tables:
+                obj.metadata_table = obj.metadata.tables["neural_db_metadata_type"]
+            else:
+                obj._create_metadata_tables()
+                obj.metadata.create_all(obj.engine)
 
         with obj.engine.connect() as conn:
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
             max_id = result.scalar()
             obj.next_id = (max_id or 0) + 1
-
-            chunk_count = conn.execute(
-                select(func.count()).select_from(obj.chunk_table)
-            ).scalar()
 
         return obj

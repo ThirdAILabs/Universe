@@ -17,12 +17,11 @@ class URL(Document):
         doc_metadata: Optional[Dict[str, Any]] = None,
         doc_id: Optional[str] = None,
     ):
-        super().__init__(doc_id=doc_id)
+        super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
         self.url = url
         self.response = response
         self.title_is_strong = title_is_strong
-        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         elements, success = url_parse.process_url(self.url, self.response)

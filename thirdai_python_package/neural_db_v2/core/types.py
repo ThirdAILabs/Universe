@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Optional, Union
 
 import numpy as np
@@ -158,3 +159,17 @@ class InsertedDocMetadata:
     doc_id: str
     doc_version: int
     chunk_ids: List[ChunkId]
+
+
+class MetadataType(Enum):
+    INTEGER = "integer"
+    STRING = "string"
+    FLOAT = "float"
+    BOOLEAN = "boolean"
+
+pandas_type_mapping = {
+    MetadataType.STRING: np.dtype('str'),
+    MetadataType.INTEGER: np.dtype('int64'),
+    MetadataType.FLOAT: np.dtype('float64'),
+    MetadataType.BOOLEAN: np.dtype('bool'),
+}

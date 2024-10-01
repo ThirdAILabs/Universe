@@ -16,14 +16,13 @@ class InMemoryText(Document):
         doc_metadata=None,
         doc_id: Optional[str] = None,
     ):
-        super().__init__(doc_id=doc_id)
+        super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
         self.document_name = document_name
         self.text = pd.Series(text)
         self.chunk_metadata = (
             pd.DataFrame.from_records(chunk_metadata) if chunk_metadata else None
         )
-        self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         metadata = join_metadata(
