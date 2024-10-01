@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 from pandera import typing as pt
+from sqlalchemy import Boolean, Float, Integer, String
 from thirdai import data
 
 # We typedef doc ID to anticipate switching over to string IDs
@@ -173,4 +174,11 @@ pandas_type_mapping = {
     MetadataType.INTEGER: np.dtype("int64"),
     MetadataType.FLOAT: np.dtype("float64"),
     MetadataType.BOOLEAN: np.dtype("bool"),
+}
+
+sql_type_mapping = {
+    MetadataType.STRING: String,
+    MetadataType.INTEGER: Integer,
+    MetadataType.FLOAT: Float,
+    MetadataType.BOOLEAN: Boolean,
 }

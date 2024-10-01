@@ -2,6 +2,7 @@ import operator
 import shutil
 import uuid
 from functools import reduce
+from sqlite3 import Connection as SQLite3Connection
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
@@ -9,7 +10,6 @@ import pandas as pd
 from sqlalchemy import (
     Boolean,
     Column,
-    Engine,
     Float,
     ForeignKey,
     Index,
@@ -21,12 +21,14 @@ from sqlalchemy import (
     create_engine,
     delete,
     distinct,
+    event,
     func,
     join,
     select,
     text,
     union_all,
 )
+from sqlalchemy.engine import Engine
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
@@ -39,8 +41,22 @@ from ..core.types import (
     InsertedDocMetadata,
     MetadataType,
     pandas_type_mapping,
+    sql_type_mapping,
 )
 from .constraints import Constraint
+
+
+def create_engine_with_fk(database_url, **kwargs):
+    engine = create_engine(database_url, **kwargs)
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        if isinstance(dbapi_connection, SQLite3Connection):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON;")
+            cursor.close()
+
+    return engine
 
 
 def separate_multivalue_columns(
@@ -63,8 +79,6 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
         .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
     )
 
-
-MULTIVALUE_METADATA_PREFIX = "multivalue_metadata_"
 
 METADATA_SQL_TYPES = {
     MetadataType.INTEGER: Integer,
@@ -158,7 +172,7 @@ class SQLiteChunkStore(ChunkStore):
         super().__init__()
 
         self.db_name = save_path or f"{uuid.uuid4()}.db"
-        self.engine = create_engine(f"sqlite:///{self.db_name}")
+        self.engine = create_engine_with_fk(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
 
@@ -278,6 +292,8 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_df["doc_id"] = doc_id
                 chunk_df["doc_version"] = doc_version
 
+                self._write_to_table(df=chunk_df, table=self.chunk_table)
+
                 if batch.metadata is not None:
                     singlevalue_metadata, multivalue_metadata = (
                         separate_multivalue_columns(batch.metadata)
@@ -287,8 +303,6 @@ class SQLiteChunkStore(ChunkStore):
                     for col in multivalue_metadata:
                         flattened_metadata = flatten_multivalue_column(col, chunk_ids)
                         self._store_metadata(flattened_metadata, chunk_ids)
-
-                self._write_to_table(df=chunk_df, table=self.chunk_table)
 
             inserted_doc_metadata.append(
                 InsertedDocMetadata(
@@ -314,12 +328,6 @@ class SQLiteChunkStore(ChunkStore):
                 self.chunk_table.c.chunk_id.in_(chunk_ids)
             )
             conn.execute(delete_chunks)
-
-            if self.metadata_table is not None:
-                delete_metadata = delete(self.metadata_table).where(
-                    self.metadata_table.c.chunk_id.in_(chunk_ids)
-                )
-                conn.execute(delete_metadata)
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
@@ -468,7 +476,7 @@ class SQLiteChunkStore(ChunkStore):
         obj = cls.__new__(cls)
 
         obj.db_name = path
-        obj.engine = create_engine(f"sqlite:///{obj.db_name}")
+        obj.engine = create_engine_with_fk(f"sqlite:///{obj.db_name}")
 
         obj.metadata = MetaData()
         obj.metadata.reflect(bind=obj.engine)
@@ -493,23 +501,15 @@ class SQLiteChunkStore(ChunkStore):
             obj._create_metadata_tables()
             obj.metadata.create_all(obj.engine)
 
-            columns_by_type = {"string": [], "int": [], "float": [], "bool": []}
+            columns_by_type = {metadata_type: [] for metadata_type in sql_type_mapping}
             key_type_pairs = []
             for col in metadata_columns:
-                if isinstance(col.type, String):
-                    columns_by_type["string"].append(col)
-                    key_type_pairs.append({"key": col.name, "type": "string"})
-                elif isinstance(col.type, Integer):
-                    columns_by_type["int"].append(col)
-                    key_type_pairs.append({"key": col.name, "type": "int"})
-                elif isinstance(col.type, Float):
-                    columns_by_type["float"].append(col)
-                    key_type_pairs.append({"key": col.name, "type": "float"})
-                elif isinstance(col.type, Boolean):
-                    columns_by_type["bool"].append(col)
-                    key_type_pairs.append({"key": col.name, "type": "bool"})
-                else:
-                    continue
+                for metadata_type, sql_type in sql_type_mapping.items():
+                    if isinstance(col.type, sql_type):
+                        columns_by_type[metadata_type].append(col)
+                        key_type_pairs.append(
+                            {"key": col.name, "type": metadata_type.value}
+                        )
 
             with obj.engine.connect() as conn:
                 for metadata_type, columns in columns_by_type.items():
@@ -537,8 +537,9 @@ class SQLiteChunkStore(ChunkStore):
                 insert_stmt = obj.metadata_type_table.insert()
                 conn.execute(insert_stmt, key_type_pairs)
         else:
+            obj.metadata_tables = {}
             for metadata_type in METADATA_SQL_TYPES:
-                metadata_table_name = f"neural_db_metadata_{metadata_type}"
+                metadata_table_name = f"neural_db_metadata_{metadata_type.value}"
                 if metadata_table_name in obj.metadata.tables:
                     obj.metadata_tables[metadata_type] = obj.metadata.tables[
                         metadata_table_name
@@ -548,7 +549,7 @@ class SQLiteChunkStore(ChunkStore):
                     obj.metadata.create_all(obj.engine)
 
             if "neural_db_metadata_type" in obj.metadata.tables:
-                obj.metadata_table = obj.metadata.tables["neural_db_metadata_type"]
+                obj.metadata_type_table = obj.metadata.tables["neural_db_metadata_type"]
             else:
                 obj._create_metadata_tables()
                 obj.metadata.create_all(obj.engine)
