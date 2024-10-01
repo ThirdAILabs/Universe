@@ -20,10 +20,7 @@ class EqualTo(Constraint):
         self.value = value
 
     def sql_condition(self, column_name: str, table: Table):
-        return and_(
-            table.c.key == column_name,
-            table.c.value == self.value
-        )
+        return and_(table.c.key == column_name, table.c.value == self.value)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name] == self.value
@@ -35,10 +32,7 @@ class AnyOf(Constraint):
         self.values = values
 
     def sql_condition(self, column_name: str, table: Table):
-        return and_(
-            table.c.key == column_name,
-            table.c.value.in_(self.values)
-        )
+        return and_(table.c.key == column_name, table.c.value.in_(self.values))
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name].isin(self.values)
@@ -52,10 +46,7 @@ class NoneOf(Constraint):
     def sql_condition(self, column_name: str, table: Table):
         return and_(
             table.c.key == column_name,
-            or_(
-                ~table.c.value.in_(self.values),
-                table.c.value.is_(None)
-            )
+            or_(~table.c.value.in_(self.values), table.c.value.is_(None)),
         )
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
@@ -69,11 +60,12 @@ class GreaterThan(Constraint):
         self.inclusive = inclusive
 
     def sql_condition(self, column_name: str, table: Table):
-        comparison = table.c.value >= self.value if self.inclusive else table.c.value > self.value
-        return and_(
-            table.c.key == column_name,
-            comparison
+        comparison = (
+            table.c.value >= self.value
+            if self.inclusive
+            else table.c.value > self.value
         )
+        return and_(table.c.key == column_name, comparison)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if self.inclusive:
@@ -88,11 +80,12 @@ class LessThan(Constraint):
         self.inclusive = inclusive
 
     def sql_condition(self, column_name: str, table: Table):
-        comparison = table.c.value <= self.value if self.inclusive else table.c.value < self.value
-        return and_(
-            table.c.key == column_name,
-            comparison
+        comparison = (
+            table.c.value <= self.value
+            if self.inclusive
+            else table.c.value < self.value
         )
+        return and_(table.c.key == column_name, comparison)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if self.inclusive:

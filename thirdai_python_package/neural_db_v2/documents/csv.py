@@ -1,12 +1,12 @@
-from typing import Any, Dict, Iterable, List, Optional, Union
 import warnings
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
+from thirdai.data import get_udt_col_types
 
 from ..core.documents import Document
-from ..core.types import NewChunkBatch, pandas_type_mapping, MetadataType
+from ..core.types import MetadataType, NewChunkBatch, pandas_type_mapping
 from .utils import join_metadata, series_from_value
-from thirdai.data import get_udt_col_types
 
 
 def infer_text_columns(df: pd.DataFrame):
@@ -45,7 +45,7 @@ class CSV(Document):
         self.metadata_columns = metadata_columns
         self.max_rows = max_rows
         self.display_path = display_path
-                
+
     def chunks(self) -> Iterable[NewChunkBatch]:
         data_iter = pd.read_csv(self.path, chunksize=self.max_rows)
 
@@ -56,17 +56,17 @@ class CSV(Document):
 
                     if col not in df.columns:
                         raise ValueError(f"Column '{col}' not found in the CSV.")
-                    
+
                     if type:
                         try:
                             metadata_type = MetadataType(type)
                         except ValueError:
-                            allowed_types = ', '.join([dt.value for dt in MetadataType])
+                            allowed_types = ", ".join([dt.value for dt in MetadataType])
                             raise ValueError(
                                 f"Data type '{type}' used for column '{col}' is not supported. "
                                 f"Allowed types are: {allowed_types}"
                             )
-                        
+
                         pandas_type = pandas_type_mapping[metadata_type]
                         try:
                             df[col] = df[col].astype(pandas_type)
@@ -74,12 +74,16 @@ class CSV(Document):
                             raise ValueError(
                                 f"Cannot cast column '{col}' to type '{type}: {e}"
                             )
-                    
+
                 inferred_pandas_types.append(df.dtypes)
 
-            inferred_pandas_types_map = pd.DataFrame(inferred_pandas_types).max().to_dict()
-            data_iter = pd.read_csv(self.path, chunksize=self.max_rows, dtype=inferred_pandas_types_map)
-        
+            inferred_pandas_types_map = (
+                pd.DataFrame(inferred_pandas_types).max().to_dict()
+            )
+            data_iter = pd.read_csv(
+                self.path, chunksize=self.max_rows, dtype=inferred_pandas_types_map
+            )
+
         for df in data_iter:
             df.reset_index(drop=True, inplace=True)
 
@@ -96,7 +100,11 @@ class CSV(Document):
             text = concat_str_columns(df, self.text_columns)
             keywords = concat_str_columns(df, self.keyword_columns)
 
-            non_metadata_columns = [col for col in self.text_columns + self.keyword_columns if col not in self.metadata_columns]
+            non_metadata_columns = [
+                col
+                for col in self.text_columns + self.keyword_columns
+                if col not in self.metadata_columns
+            ]
             chunk_metadata = df.drop(non_metadata_columns, axis=1)
             metadata = join_metadata(
                 n_rows=len(text),

@@ -1,8 +1,9 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Iterable, Optional, Any
+from typing import Any, Iterable, Optional
 
 from .types import NewChunkBatch
+
 
 def validate_doc_metadata(doc_metadata):
     if doc_metadata is None:
@@ -12,7 +13,9 @@ def validate_doc_metadata(doc_metadata):
             if len(value) > 0:
                 first_elem_type = type(value[0])
                 if not all(isinstance(elem, first_elem_type) for elem in value):
-                    raise ValueError(f"Multivalue doc metadata does not have a consistent type.")
+                    raise ValueError(
+                        f"Multivalue doc metadata does not have a consistent type."
+                    )
 
 
 class Document(ABC):
