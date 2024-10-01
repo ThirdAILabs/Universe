@@ -168,7 +168,7 @@ class MetadataType(Enum):
     BOOLEAN = "boolean"
 
 pandas_type_mapping = {
-    MetadataType.STRING: np.dtype('str'),
+    MetadataType.STRING: np.dtype('object'),
     MetadataType.INTEGER: np.dtype('int64'),
     MetadataType.FLOAT: np.dtype('float64'),
     MetadataType.BOOLEAN: np.dtype('bool'),

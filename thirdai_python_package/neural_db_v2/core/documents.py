@@ -5,6 +5,8 @@ from typing import Iterable, Optional, Any
 from .types import NewChunkBatch
 
 def validate_doc_metadata(doc_metadata):
+    if doc_metadata is None:
+        return
     for _, value in doc_metadata.items():
         if isinstance(value, list):
             if len(value) > 0:
