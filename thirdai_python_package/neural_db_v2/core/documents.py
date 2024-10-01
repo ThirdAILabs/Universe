@@ -19,7 +19,7 @@ def validate_doc_metadata(doc_metadata):
 
 
 class Document(ABC):
-    def __init__(self, doc_id: Optional[str], doc_metadata: Optional[dict[str, Any]]):
+    def __init__(self, doc_id: Optional[str], doc_metadata: Optional[dict[str, Any]] = None):
         self._doc_id = doc_id or str(uuid.uuid4())
 
         validate_doc_metadata(doc_metadata)
