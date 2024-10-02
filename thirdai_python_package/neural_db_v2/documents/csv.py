@@ -103,7 +103,7 @@ class CSV(Document):
             non_metadata_columns = [
                 col
                 for col in self.text_columns + self.keyword_columns
-                if col not in self.metadata_columns
+                if self.metadata_columns and col not in self.metadata_columns
             ]
             chunk_metadata = df.drop(non_metadata_columns, axis=1)
             metadata = join_metadata(
