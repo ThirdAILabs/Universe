@@ -8,9 +8,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 from sqlalchemy import (
-    Boolean,
     Column,
-    Float,
     ForeignKey,
     Index,
     Integer,
@@ -20,10 +18,8 @@ from sqlalchemy import (
     and_,
     create_engine,
     delete,
-    distinct,
     event,
     func,
-    join,
     select,
     text,
     union_all,
@@ -46,6 +42,8 @@ from ..core.types import (
 from .constraints import Constraint
 
 
+# In sqlite3, foreign keys are not enabled by default.
+# This ensures that sqlite3 connections have foreign keys enabled.
 def create_engine_with_fk(database_url, **kwargs):
     engine = create_engine(database_url, **kwargs)
 
@@ -78,33 +76,6 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
         .reset_index(drop=True)  # explode repeats index values, this resets that
         .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
     )
-
-
-METADATA_SQL_TYPES = {
-    MetadataType.INTEGER: Integer,
-    MetadataType.STRING: String,
-    MetadataType.BOOLEAN: Boolean,
-    MetadataType.FLOAT: Float,
-}
-
-
-def get_sql_type(name, dtype):
-    if dtype == int:
-        return Integer
-    elif dtype == float:
-        return Float
-    elif dtype == bool:
-        return Boolean
-    elif dtype == object:
-        return String
-    else:
-        raise ValueError(
-            f"Column {name} has dtype {str(dtype)} which is not a supported type for metadata columns."
-        )
-
-
-def get_sql_columns(df: pd.DataFrame):
-    return [Column(col, get_sql_type(col, df[col].dtype)) for col in df.columns]
 
 
 class SqlLiteIterator:
@@ -197,7 +168,7 @@ class SQLiteChunkStore(ChunkStore):
 
     def _create_metadata_tables(self):
         self.metadata_tables = {}
-        for metadata_type, sql_type in METADATA_SQL_TYPES.items():
+        for metadata_type, sql_type in sql_type_mapping.items():
             metadata_table = Table(
                 f"neural_db_metadata_{metadata_type.value}",
                 self.metadata,
@@ -210,6 +181,7 @@ class SQLiteChunkStore(ChunkStore):
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
                 Index(f"ix_metadata_key_value_{metadata_type.value}", "key", "value"),
+                extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table
 
@@ -218,6 +190,7 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata,
             Column("key", String, primary_key=True),
             Column("type", String),
+            extend_existing=True,
         )
 
     def _write_to_table(self, df: pd.DataFrame, table: Table):
@@ -538,7 +511,7 @@ class SQLiteChunkStore(ChunkStore):
                 conn.execute(insert_stmt, key_type_pairs)
         else:
             obj.metadata_tables = {}
-            for metadata_type in METADATA_SQL_TYPES:
+            for metadata_type in sql_type_mapping:
                 metadata_table_name = f"neural_db_metadata_{metadata_type.value}"
                 if metadata_table_name in obj.metadata.tables:
                     obj.metadata_tables[metadata_type] = obj.metadata.tables[
