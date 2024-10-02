@@ -10,7 +10,7 @@ from .utils import join_metadata, series_from_value
 
 
 def infer_text_columns(df: pd.DataFrame):
-    return [column for column in df.columns if df[column] == "object"]
+    return [column for column in df.columns if df[column].dtype == "object"]
 
 
 def concat_str_columns(df: pd.DataFrame, columns: List[str]):
@@ -103,7 +103,7 @@ class CSV(Document):
             non_metadata_columns = [
                 col
                 for col in self.text_columns + self.keyword_columns
-                if self.metadata_columns and col not in self.metadata_columns
+                if not (self.metadata_columns and col in self.metadata_columns)
             ]
             chunk_metadata = df.drop(non_metadata_columns, axis=1)
             metadata = join_metadata(
