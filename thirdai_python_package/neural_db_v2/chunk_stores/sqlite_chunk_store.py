@@ -39,7 +39,7 @@ from ..core.types import (
     pandas_type_mapping,
     sql_type_mapping,
 )
-from .constraints import Constraint
+from .constraints import Constraint, NoneOf
 
 
 # In sqlite3, foreign keys are not enabled by default.
@@ -227,13 +227,17 @@ class SQLiteChunkStore(ChunkStore):
                             )
                         )
 
-                    df_to_insert = pd.DataFrame({
-                        'chunk_id': chunk_ids,
-                        'key': key,
-                        'value': metadata_col,
-                    })
+                    df_to_insert = pd.DataFrame(
+                        {
+                            "chunk_id": chunk_ids,
+                            "key": key,
+                            "value": metadata_col,
+                        }
+                    )
 
-                    self._write_to_table(df_to_insert, self.metadata_tables[metadata_type], conn)
+                    self._write_to_table(
+                        df_to_insert, self.metadata_tables[metadata_type], conn
+                    )
 
                 continue
 
@@ -309,8 +313,11 @@ class SQLiteChunkStore(ChunkStore):
 
             if not chunk_results:
                 return []
-            
-            metadata_keys = {row.key: None for row in conn.execute(select(self.metadata_type_table.c.key))}
+
+            metadata_keys = {
+                row.key: None
+                for row in conn.execute(select(self.metadata_type_table.c.key))
+            }
 
             for row in chunk_results:
                 chunk_id = row.chunk_id
@@ -370,7 +377,7 @@ class SQLiteChunkStore(ChunkStore):
 
         conditions = []
         table_types = set()
-        query = None
+        query = select(self.chunk_table.c.chunk_id)
         with self.engine.begin() as conn:
             for column, constraint in constraints.items():
                 result = conn.execute(
@@ -381,20 +388,29 @@ class SQLiteChunkStore(ChunkStore):
 
                 if result:
                     metadata_type = MetadataType(result.type)
-                    table = self.metadata_tables[metadata_type]
+                    metadata_table = self.metadata_tables[metadata_type]
 
                     condition = constraint.sql_condition(
-                        column_name=column, table=table
+                        column_name=column, table=metadata_table
                     )
                     conditions.append(condition)
 
-                    if query is None:
-                        query = select(table.c.chunk_id)
-                        base_table = table
-                    elif metadata_type not in table_types:
+                    if metadata_type not in table_types or isinstance(
+                        constraint, NoneOf
+                    ):
                         query = query.select_from(
-                            base_table.join(
-                                table, base_table.c.chunk_id == table.c.chunk_id
+                            self.chunk_table.join(
+                                metadata_table,
+                                and_(
+                                    self.chunk_table.c.chunk_id
+                                    == metadata_table.c.chunk_id,
+                                    (
+                                        (metadata_table.c.key == column)
+                                        if isinstance(constraint, NoneOf)
+                                        else True
+                                    ),
+                                ),
+                                isouter=isinstance(constraint, NoneOf),
                             )
                         )
 
