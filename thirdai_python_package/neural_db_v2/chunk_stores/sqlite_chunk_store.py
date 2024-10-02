@@ -193,10 +193,10 @@ class SQLiteChunkStore(ChunkStore):
             extend_existing=True,
         )
 
-    def _write_to_table(self, df: pd.DataFrame, table: Table):
+    def _write_to_table(self, df: pd.DataFrame, table: Table, con=None):
         df.to_sql(
             table.name,
-            con=self.engine,
+            con=con or self.engine,
             dtype={c.name: c.type for c in table.columns},
             if_exists="append",
             index=False,
@@ -206,15 +206,6 @@ class SQLiteChunkStore(ChunkStore):
         key = metadata_col.name
         for metadata_type, pd_type in pandas_type_mapping.items():
             if metadata_col.dtype == pd_type:
-                metadata_to_insert = []
-                for idx, value in metadata_col.items():
-                    metadata_to_insert.append(
-                        {
-                            "chunk_id": int(chunk_ids.iloc[idx]),
-                            "key": key,
-                            "value": value,
-                        }
-                    )
 
                 with self.engine.begin() as conn:
                     result = conn.execute(
@@ -236,9 +227,13 @@ class SQLiteChunkStore(ChunkStore):
                             )
                         )
 
-                    conn.execute(
-                        self.metadata_tables[metadata_type].insert(), metadata_to_insert
-                    )
+                    df_to_insert = pd.DataFrame({
+                        'chunk_id': chunk_ids,
+                        'key': key,
+                        'value': metadata_col,
+                    })
+
+                    self._write_to_table(df_to_insert, self.metadata_tables[metadata_type], conn)
 
                 continue
 
@@ -306,6 +301,7 @@ class SQLiteChunkStore(ChunkStore):
         id_to_chunk = {}
 
         with self.engine.connect() as conn:
+
             chunk_stmt = select(self.chunk_table).where(
                 self.chunk_table.c.chunk_id.in_(chunk_ids)
             )
@@ -313,6 +309,8 @@ class SQLiteChunkStore(ChunkStore):
 
             if not chunk_results:
                 return []
+            
+            metadata_keys = {row.key: None for row in conn.execute(select(self.metadata_type_table.c.key))}
 
             for row in chunk_results:
                 chunk_id = row.chunk_id
@@ -321,7 +319,7 @@ class SQLiteChunkStore(ChunkStore):
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
-                    metadata={},
+                    metadata=metadata_keys.copy(),
                     doc_id=row.doc_id,
                     doc_version=row.doc_version,
                 )
@@ -347,7 +345,7 @@ class SQLiteChunkStore(ChunkStore):
                 key = row.key
                 value = row.value
 
-                if key in id_to_chunk[chunk_id].metadata:
+                if id_to_chunk[chunk_id].metadata[key] is not None:
                     existing_value = id_to_chunk[chunk_id].metadata[key]
                     if isinstance(existing_value, list):
                         existing_value.append(value)
