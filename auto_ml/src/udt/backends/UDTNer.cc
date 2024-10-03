@@ -82,10 +82,8 @@ data::TransformationPtr makeTransformation(
     const std::vector<dataset::TextTokenizerPtr>& target_word_tokenizers,
     const std::optional<data::FeatureEnhancementConfig>& feature_config) {
   std::optional<std::string> target_column = tags_column;
-  std::optional<size_t> target_dim = tag_tracker->numLabels();
   if (inference) {
     target_column = std::nullopt;
-    target_dim = std::nullopt;
   }
 
   auto transform = data::Pipeline::make();
@@ -101,7 +99,6 @@ data::TransformationPtr makeTransformation(
                       /*tokens_column=*/tokens_column,
                       /*featurized_sentence_column=*/NER_FEATURIZED_SENTENCE,
                       /*target_column=*/target_column,
-                      /*target_dim=*/target_dim,
                       /*dyadic_num_intervals=*/dyadic_num_intervals,
                       /*target_word_tokenizers=*/target_word_tokenizers,
                       /*feature_enhancement_config=*/feature_config,

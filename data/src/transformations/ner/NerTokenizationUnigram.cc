@@ -32,15 +32,13 @@ void throwTokenTagSizeMismatchError(uint32_t row_id, uint32_t tokens_size,
 
 NerTokenizerUnigram::NerTokenizerUnigram(
     std::string tokens_column, std::string featurized_sentence_column,
-    std::optional<std::string> target_column,
-    std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
+    std::optional<std::string> target_column, uint32_t dyadic_num_intervals,
     std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
     std::optional<FeatureEnhancementConfig> feature_enhancement_config,
     ner::utils::TagTrackerPtr tag_tracker)
     : _tokens_column(std::move(tokens_column)),
       _featurized_sentence_column(std::move(featurized_sentence_column)),
       _target_column(std::move(target_column)),
-      _target_dim(target_dim),
       _processor(std::move(target_word_tokenizers), dyadic_num_intervals,
                  std::move(feature_enhancement_config),
                  !_target_column.has_value()),
@@ -107,9 +105,9 @@ ColumnMap NerTokenizerUnigram::apply(ColumnMap columns, State& state) const {
 
   output_columns[_featurized_sentence_column] =
       ValueColumn<std::string>::make(std::move(featurized_sentences));
-  if (_target_column && _target_dim) {
-    output_columns[*_target_column] =
-        ValueColumn<uint32_t>::make(std::move(targets), _target_dim.value());
+  if (_target_column) {
+    output_columns[*_target_column] = ValueColumn<uint32_t>::make(
+        std::move(targets), _tag_tracker->numLabels());
   }
 
   return ColumnMap(output_columns);
@@ -125,9 +123,6 @@ ar::ConstArchivePtr NerTokenizerUnigram::toArchive() const {
   if (_target_column) {
     map->set("target_column", ar::str(*_target_column));
   }
-  if (_target_dim) {
-    map->set("target_dim", ar::u64(*_target_dim));
-  }
 
   map->set("processor", _processor.toArchive());
   return map;
@@ -137,7 +132,6 @@ NerTokenizerUnigram::NerTokenizerUnigram(const ar::Archive& archive)
     : _tokens_column(archive.str("tokens_column")),
       _featurized_sentence_column(archive.str("featurized_sentence_column")),
       _target_column(archive.getOpt<ar::Str>("target_column")),
-      _target_dim(archive.getOpt<ar::U64>("target_dim")),
       _processor(NerDyadicDataProcessor(*archive.get("processor"))) {}
 
 }  // namespace thirdai::data
