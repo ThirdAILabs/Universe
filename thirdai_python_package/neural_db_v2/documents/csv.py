@@ -29,9 +29,9 @@ class CSV(Document):
     def __init__(
         self,
         path,
-        text_columns: Optional[list[str]] = None,
-        keyword_columns: Optional[list[str]] = None,
-        metadata_columns: Optional[Union[list[str], dict[str, Optional[str]]]] = None,
+        text_columns: Optional[List[str]] = None,
+        keyword_columns: Optional[List[str]] = None,
+        metadata_columns: Optional[Union[List[str], Dict[str, Optional[str]]]] = None,
         doc_metadata: Optional[dict[str, Any]] = None,
         max_rows: int = 10_000_000,
         doc_id: Optional[str] = None,
