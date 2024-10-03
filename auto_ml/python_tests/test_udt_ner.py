@@ -387,16 +387,20 @@ def test_udt_ner_add_new_tag(ner_dataset):
     model.train(train, epochs=1, learning_rate=0.001)
 
     # add a new entity to the model
-    model.add_ner_entities(["NAME"])
+    model.add_ner_entities(["FIRSTNAME"])
 
     # generate temp dataset
     data = pd.DataFrame(
-        {TOKENS: ["My name is ABC"] * 1000, TAGS: ["O O O NAME"] * 1000}
+        {TOKENS: ["My name is Jonathan"] * 1000, TAGS: ["O O O FIRSTNAME"] * 1000}
     )
     data.to_csv("temp_name_tag_file.csv", index=False)
-    model.train("temp_name_tag_file.csv", epochs=2, learning_rate=0.001)
+    model.train("temp_name_tag_file.csv", epochs=1, learning_rate=0.001)
 
-    predictions = model.predict({TOKENS: "My name is ABC"}, top_k=1)
-    assert [pred[0][0] for pred in predictions] == ["O", "O", "O", "NAME"]
+    predictions = [
+        pred[0][0] for pred in model.predict({TOKENS: "My name is ABC"}, top_k=1)
+    ]
+
+    print(predictions)
+    assert predictions == ["O", "O", "O", "FIRSTNAME"]
 
     os.remove("temp_name_tag_file.csv")
