@@ -44,6 +44,8 @@ class RuleCollection final : public Rule {
     return std::make_shared<RuleCollection>(std::move(rules));
   }
 
+  void addRule(const std::shared_ptr<Rule>& rule) { _rules.push_back(rule); }
+
   std::vector<MatchResult> apply(const std::string& phrase) const final;
 
   std::vector<std::string> entities() const final;

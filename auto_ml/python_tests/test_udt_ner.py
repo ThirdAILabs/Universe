@@ -404,3 +404,24 @@ def test_udt_ner_add_new_tag(ner_dataset):
     assert predictions == ["O", "O", "O", "FIRSTNAME"]
 
     os.remove("temp_name_tag_file.csv")
+
+
+def test_udt_ner_add_new_rule(ner_dataset):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=[], default_tag="O"),
+        },
+        target=TAGS,
+        fhr=1000,
+        embedding_dimension=100,
+    )
+
+    model.add_ner_rule("EMAIL")
+
+    predictions = [
+        pred[0][0]
+        for pred in model.predict({TOKENS: "My email is jojo@thirdai.com"}, top_k=1)
+    ]
+
+    assert predictions == ["O", "O", "O", "EMAIL"]
