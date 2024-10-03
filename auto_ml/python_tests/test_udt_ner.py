@@ -370,3 +370,33 @@ def test_udt_ner_learned_tags(ner_dataset):
             old_prediction, new_prediction
         ):
             assert old_tag_prediction[0][0] == new_tag_prediction[0][0]
+
+
+def test_udt_ner_add_new_tag(ner_dataset):
+    train, _ = ner_dataset
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(
+                tags=["EMAIL", "CREDITCARDNUMBER"], default_tag="O"
+            ),
+        },
+        target=TAGS,
+    )
+    model.train(train, epochs=1, learning_rate=0.001)
+
+    # add a new entity to the model
+    model.add_ner_entities(["NAME"])
+
+    # generate temp dataset
+    data = pd.DataFrame(
+        {TOKENS: ["My name is ABC"] * 1000, TAGS: ["O O O NAME"] * 1000}
+    )
+    data.to_csv("temp_name_tag_file.csv", index=False)
+    model.train("temp_name_tag_file.csv", epochs=2, learning_rate=0.001)
+
+    predictions = model.predict({TOKENS: "My name is ABC"}, top_k=1)
+    assert [pred[0][0] for pred in predictions] == ["O", "O", "O", "NAME"]
+
+    os.remove("temp_name_tag_file.csv")
