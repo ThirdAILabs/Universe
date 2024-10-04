@@ -16,8 +16,6 @@ namespace thirdai::data {
 // double the memory usage, which can be a bottleneck for Inverted Index
 std::pair<std::vector<std::string>, std::vector<std::pair<size_t, size_t>>>
 splitOnWhiteSpaceWithOffsets(const std::string& text) {
-  std::cerr << "LEN: " << text.size() << std::endl;
-
   std::vector<std::string> words;
   std::vector<std::pair<size_t, size_t>> offsets;
 
