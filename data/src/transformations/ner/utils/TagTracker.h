@@ -98,6 +98,7 @@ class TagTracker {
   std::vector<std::string> listNerTags() const {
     std::vector<std::string> tags;
 
+    tags.reserve(_tag_to_label.size());
     for (const auto& tag_ptr : _tag_to_label) {
       tags.push_back(tag_ptr.first);
     }
