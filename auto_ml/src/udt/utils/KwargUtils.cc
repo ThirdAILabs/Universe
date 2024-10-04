@@ -4,7 +4,8 @@
 
 namespace thirdai::automl {
 
-std::optional<float> floatArg(const py::kwargs& kwargs,
+template <typename CppType, typename PyType>
+std::optional<CppType> getArg(const py::kwargs& kwargs,
                               const std::string& key) {
   if (!kwargs.contains(key)) {
     return std::nullopt;
@@ -12,11 +13,20 @@ std::optional<float> floatArg(const py::kwargs& kwargs,
 
   const auto& value = kwargs[py::str(key)];
 
-  if (!py::isinstance<py::float_>(value)) {
+  if (!py::isinstance<PyType>(value)) {
     return std::nullopt;
   }
 
-  return value.cast<float>();
+  return value.cast<CppType>();
+}
+
+std::optional<float> floatArg(const py::kwargs& kwargs,
+                              const std::string& key) {
+  return getArg<float, py::float_>(kwargs, key);
+}
+
+std::optional<bool> boolArg(const py::kwargs& kwargs, const std::string& key) {
+  return getArg<bool, py::bool_>(kwargs, key);
 }
 
 }  // namespace thirdai::automl

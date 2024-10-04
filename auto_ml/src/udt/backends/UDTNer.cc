@@ -411,9 +411,11 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
   float o_threshold =
       floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
 
+  bool as_unicode = boolArg(kwargs, "as_unicode").value_or(false);
+
   auto [tags, offsets] =
       predictTags({sample.at(_tokens_column)}, sparse_inference,
-                  top_k.value_or(1), o_threshold);
+                  top_k.value_or(1), o_threshold, as_unicode);
 
   if (kwargs.contains("return_offsets") &&
       py::cast<bool>(kwargs["return_offsets"])) {
@@ -445,8 +447,10 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
   float o_threshold =
       floatArg(kwargs, "threshold").value_or(defaults::NER_O_THRESHOLD);
 
-  auto [tags, offsets] =
-      predictTags(sentences, sparse_inference, top_k.value_or(1), o_threshold);
+  bool as_unicode = boolArg(kwargs, "as_unicode").value_or(false);
+
+  auto [tags, offsets] = predictTags(
+      sentences, sparse_inference, top_k.value_or(1), o_threshold, as_unicode);
 
   if (kwargs.contains("return_offsets") &&
       py::cast<bool>(kwargs["return_offsets"])) {
@@ -466,7 +470,8 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
 std::pair<std::vector<SentenceTags>,
           std::vector<std::vector<std::pair<size_t, size_t>>>>
 UDTNer::predictTags(const std::vector<std::string>& sentences,
-                    bool sparse_inference, uint32_t top_k, float o_threshold) {
+                    bool sparse_inference, uint32_t top_k, float o_threshold,
+                    bool as_unicode) {
   std::vector<std::vector<std::string>> tokens;
   std::vector<SentenceTags> output_tags(sentences.size());
 
@@ -475,7 +480,7 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
   auto data = data::ColumnMap({{_tokens_column, sentence_column}});
 
   auto split_sentence_transform =
-      data::StringSplitOnWhiteSpace(_tokens_column, _tokens_column);
+      data::StringSplitOnWhiteSpace(_tokens_column, _tokens_column, as_unicode);
 
   auto tokenized_sentences = split_sentence_transform.applyStateless(data);
 
