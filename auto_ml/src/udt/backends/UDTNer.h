@@ -82,8 +82,12 @@ class UDTNer final : public UDTBackend {
       _rule = std::make_shared<data::ner::RuleCollection>(rule_vector);
     }
 
-    _tag_tracker->addTag(data::ner::getLearnedTagFromString(rule_name),
-                         /*add_new_label=*/false);
+    // if tag is not present in the tracker -> new tag and assign a label
+    // if tag is present -> old tag, do not update label
+    if (!_tag_tracker->tagExists(rule_name)) {
+      _tag_tracker->addTag(data::ner::getLearnedTagFromString(rule_name),
+                           /*add_new_label=*/false);
+    }
   }
 
   void addNerEntitiesToModel(
