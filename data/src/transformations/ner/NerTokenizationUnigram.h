@@ -22,8 +22,7 @@ class NerTokenizerUnigram final : public Transformation {
  public:
   NerTokenizerUnigram(
       std::string tokens_column, std::string featurized_sentence_column,
-      std::optional<std::string> target_column,
-      std::optional<uint32_t> target_dim, uint32_t dyadic_num_intervals,
+      std::optional<std::string> target_column, uint32_t dyadic_num_intervals,
       std::vector<dataset::TextTokenizerPtr> target_word_tokenizers,
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
       ner::utils::TagTrackerPtr tag_tracker = nullptr);
@@ -76,12 +75,10 @@ class NerTokenizerUnigram final : public Transformation {
   /*
    * _tokens_column : the column containing the string tokens
    * _target_column : the column containing the target tags
-   * _target_dim : the number of total different labels
    */
   std::string _tokens_column;
   std::string _featurized_sentence_column;
   std::optional<std::string> _target_column;
-  std::optional<uint32_t> _target_dim;
 
   NerDyadicDataProcessor _processor;
 
