@@ -370,3 +370,31 @@ def test_udt_ner_learned_tags(ner_dataset):
             old_prediction, new_prediction
         ):
             assert old_tag_prediction[0][0] == new_tag_prediction[0][0]
+
+
+def test_unicode_split():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "source": bolt.types.text(),
+            "target": bolt.types.token_tags(tags=["PHONENUMBER"], default_tag="O"),
+        },
+        target="target",
+        rules=True,
+        embedding_dimension=10,
+    )
+
+    sample = "123-456-7890\u00A0123-456-7890"
+
+    entities = model.predict({"source": sample}, return_offsets=True)
+    assert len(entities) == 1
+    entities = [
+        sample[entity["BeginOffset"] : entity["EndOffset"]] for entity in entities
+    ]
+    assert entities == [sample]
+
+    entities = model.predict({"source": sample}, as_unicode=True, return_offsets=True)
+    assert len(entities) == 2
+    entities = [
+        sample[entity["BeginOffset"] : entity["EndOffset"]] for entity in entities
+    ]
+    assert entities == ["123-456-7890", "123-456-7890"]
