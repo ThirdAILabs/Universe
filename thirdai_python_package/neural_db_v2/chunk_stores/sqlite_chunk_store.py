@@ -181,6 +181,7 @@ class SQLiteChunkStore(ChunkStore):
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
                 Index(f"ix_metadata_key_value_{metadata_type.value}", "key", "value"),
+                Index(f"ix_metadata_chunk_id_{metadata_type.value}", "chunk_id"),
                 extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table
@@ -215,10 +216,9 @@ class SQLiteChunkStore(ChunkStore):
                     ).fetchone()
 
                     if result:
-                        existing_type = result.type
-                        if existing_type != metadata_type.value:
+                        if result.type != metadata_type.value:
                             raise ValueError(
-                                f"Type mismatch for key '{key}': existing type '{existing_type}', new type '{metadata_type.value}'"
+                                f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
                             )
                     else:
                         conn.execute(
