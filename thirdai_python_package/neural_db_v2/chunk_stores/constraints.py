@@ -44,7 +44,7 @@ class NoneOf(Constraint):
         self.values = values
 
     def sql_condition(self, column_name: str, table: Table):
-        return or_(~table.c.value.in_(self.values), table.c.value.is_(None))
+        return and_(table.c.key == column_name, ~table.c.value.in_(self.values))
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return ~df[column_name].isin(self.values)
