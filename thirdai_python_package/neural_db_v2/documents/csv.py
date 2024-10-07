@@ -13,6 +13,38 @@ def infer_text_columns(df: pd.DataFrame):
     return [column for column in df.columns if df[column].dtype == "object"]
 
 
+def infer_pandas_column_types(
+    data_iter: Iterable[pd.DataFrame], metadata_columns: Dict[str, Optional[str]]
+):
+    inferred_pandas_types = []
+    for df in data_iter:
+        for col, type in metadata_columns.items():
+
+            if col not in df.columns:
+                raise ValueError(f"Column '{col}' not found in the CSV.")
+
+            if type:
+                try:
+                    metadata_type = MetadataType(type)
+                except ValueError:
+                    allowed_types = ", ".join([dt.value for dt in MetadataType])
+                    raise ValueError(
+                        f"Data type '{type}' used for column '{col}' is not supported. "
+                        f"Allowed types are: {allowed_types}"
+                    )
+
+                pandas_type = pandas_type_mapping[metadata_type]
+                try:
+                    df[col] = df[col].astype(pandas_type)
+                except Exception as e:
+                    raise ValueError(f"Cannot cast column '{col}' to type '{type}: {e}")
+
+        inferred_pandas_types.append(df.dtypes)
+
+    inferred_pandas_types_map = pd.DataFrame(inferred_pandas_types).max().to_dict()
+    return inferred_pandas_types_map
+
+
 def concat_str_columns(df: pd.DataFrame, columns: List[str]):
     if len(columns) == 0:
         return series_from_value(value="", n=len(df))
@@ -32,7 +64,7 @@ class CSV(Document):
         text_columns: Optional[List[str]] = None,
         keyword_columns: Optional[List[str]] = None,
         metadata_columns: Optional[Union[List[str], Dict[str, Optional[str]]]] = None,
-        doc_metadata: Optional[dict[str, Any]] = None,
+        doc_metadata: Optional[Dict[str, Any]] = None,
         max_rows: int = 10_000_000,
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
@@ -50,36 +82,11 @@ class CSV(Document):
         data_iter = pd.read_csv(self.path, chunksize=self.max_rows)
 
         if self.metadata_columns and isinstance(self.metadata_columns, dict):
-            inferred_pandas_types = []
-            for df in data_iter:
-                for col, type in self.metadata_columns.items():
 
-                    if col not in df.columns:
-                        raise ValueError(f"Column '{col}' not found in the CSV.")
-
-                    if type:
-                        try:
-                            metadata_type = MetadataType(type)
-                        except ValueError:
-                            allowed_types = ", ".join([dt.value for dt in MetadataType])
-                            raise ValueError(
-                                f"Data type '{type}' used for column '{col}' is not supported. "
-                                f"Allowed types are: {allowed_types}"
-                            )
-
-                        pandas_type = pandas_type_mapping[metadata_type]
-                        try:
-                            df[col] = df[col].astype(pandas_type)
-                        except Exception as e:
-                            raise ValueError(
-                                f"Cannot cast column '{col}' to type '{type}: {e}"
-                            )
-
-                inferred_pandas_types.append(df.dtypes)
-
-            inferred_pandas_types_map = (
-                pd.DataFrame(inferred_pandas_types).max().to_dict()
+            inferred_pandas_types_map = infer_pandas_column_types(
+                data_iter, self.metadata_columns
             )
+
             data_iter = pd.read_csv(
                 self.path, chunksize=self.max_rows, dtype=inferred_pandas_types_map
             )
