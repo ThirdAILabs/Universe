@@ -405,6 +405,7 @@ class SQLiteChunkStore(ChunkStore):
                             and_(
                                 base_table.c.chunk_id
                                 == metadata_table_alias.c.chunk_id,
+                                metadata_table_alias.c.key == column,
                             ),
                         )
 
