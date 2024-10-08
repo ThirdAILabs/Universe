@@ -5,7 +5,7 @@ import pandas as pd
 from thirdai.data import get_udt_col_types
 
 from ..core.documents import Document
-from ..core.types import MetadataType, NewChunkBatch, pandas_type_mapping
+from ..core.types import MetadataType, NewChunkBatch, metadata_type_to_pandas_type
 from .utils import join_metadata, series_from_value
 
 
@@ -25,6 +25,8 @@ def infer_pandas_column_types(
 
             if type:
                 try:
+                    # In ndb CSVs, we currently don't support multiple values in a column entry for a chunk.
+                    # We will interpret a list value in a CSV as a string.
                     metadata_type = MetadataType(type)
                 except ValueError:
                     allowed_types = ", ".join([dt.value for dt in MetadataType])
@@ -33,7 +35,7 @@ def infer_pandas_column_types(
                         f"Allowed types are: {allowed_types}"
                     )
 
-                pandas_type = pandas_type_mapping[metadata_type]
+                pandas_type = metadata_type_to_pandas_type[metadata_type]
                 try:
                     df[col] = df[col].astype(pandas_type)
                 except Exception as e:

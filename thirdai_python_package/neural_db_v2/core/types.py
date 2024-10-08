@@ -169,12 +169,17 @@ class MetadataType(Enum):
     BOOLEAN = "boolean"
 
 
-pandas_type_mapping = {
+metadata_type_to_pandas_type = {
     MetadataType.STRING: np.dtype("object"),
     MetadataType.INTEGER: np.dtype("int64"),
     MetadataType.FLOAT: np.dtype("float64"),
     MetadataType.BOOLEAN: np.dtype("bool"),
 }
+
+pandas_type_to_metadata_type = {
+    value: key for key, value in metadata_type_to_pandas_type.items()
+}
+
 
 sql_type_mapping = {
     MetadataType.STRING: String,

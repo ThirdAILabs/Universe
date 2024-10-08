@@ -37,7 +37,7 @@ from ..core.types import (
     ChunkId,
     InsertedDocMetadata,
     MetadataType,
-    pandas_type_mapping,
+    pandas_type_to_metadata_type,
     sql_type_mapping,
 )
 from .constraints import Constraint, NoneOf
@@ -207,41 +207,38 @@ class SQLiteChunkStore(ChunkStore):
 
     def _store_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
         key = metadata_col.name
-        for metadata_type, pd_type in pandas_type_mapping.items():
-            if metadata_col.dtype == pd_type:
+        metadata_type = pandas_type_to_metadata_type[metadata_col.dtype]
 
-                with self.engine.begin() as conn:
-                    result = conn.execute(
-                        select(self.metadata_type_table.c.type).where(
-                            self.metadata_type_table.c.key == key
-                        )
-                    ).fetchone()
+        with self.engine.begin() as conn:
+            result = conn.execute(
+                select(self.metadata_type_table.c.type).where(
+                    self.metadata_type_table.c.key == key
+                )
+            ).fetchone()
 
-                    if result:
-                        if result.type != metadata_type.value:
-                            raise ValueError(
-                                f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
-                            )
-                    else:
-                        conn.execute(
-                            self.metadata_type_table.insert().values(
-                                key=key, type=metadata_type.value
-                            )
-                        )
-
-                    df_to_insert = pd.DataFrame(
-                        {
-                            "chunk_id": chunk_ids,
-                            "key": key,
-                            "value": metadata_col,
-                        }
-                    ).dropna()
-
-                    self._write_to_table(
-                        df_to_insert, self.metadata_tables[metadata_type], conn
+            if result:
+                if result.type != metadata_type.value:
+                    raise ValueError(
+                        f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
                     )
+            else:
+                conn.execute(
+                    self.metadata_type_table.insert().values(
+                        key=key, type=metadata_type.value
+                    )
+                )
 
-                continue
+            df_to_insert = pd.DataFrame(
+                {
+                    "chunk_id": chunk_ids,
+                    "key": key,
+                    "value": metadata_col,
+                }
+            ).dropna()
+
+            self._write_to_table(
+                df_to_insert, self.metadata_tables[metadata_type], conn
+            )
 
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
@@ -325,7 +322,7 @@ class SQLiteChunkStore(ChunkStore):
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
-                    metadata={},
+                    metadata=None,
                     doc_id=row.doc_id,
                     doc_version=row.doc_version,
                 )
@@ -351,13 +348,18 @@ class SQLiteChunkStore(ChunkStore):
                 key = row.key
                 value = row.value
 
-                if key in id_to_chunk[chunk_id].metadata:
+                if (
+                    id_to_chunk[chunk_id].metadata
+                    and key in id_to_chunk[chunk_id].metadata
+                ):
                     existing_value = id_to_chunk[chunk_id].metadata[key]
                     if isinstance(existing_value, list):
                         existing_value.append(value)
                     else:
                         id_to_chunk[chunk_id].metadata[key] = [existing_value, value]
                 else:
+                    if id_to_chunk[chunk_id].metadata is None:
+                        id_to_chunk[chunk_id].metadata = {}
                     id_to_chunk[chunk_id].metadata[key] = value
 
         chunks = []
@@ -408,6 +410,9 @@ class SQLiteChunkStore(ChunkStore):
                                 metadata_table_alias.c.key == column,
                             ),
                         )
+
+        if query is None:
+            raise ValueError("Cannot filter constraints with no metadata.")
 
         query = query.where(and_(*conditions))
         with self.engine.connect() as conn:

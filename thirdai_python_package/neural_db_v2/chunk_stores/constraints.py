@@ -47,7 +47,7 @@ class NoneOf(Constraint):
         return and_(table.c.key == column_name, ~table.c.value.in_(self.values))
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
-        return ~df[column_name].isin(self.values)
+        return ~df[column_name].isin(self.values) & pd.notna(df[column_name])
 
 
 class GreaterThan(Constraint):
