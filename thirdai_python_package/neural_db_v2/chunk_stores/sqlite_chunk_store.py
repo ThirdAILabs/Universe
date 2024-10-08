@@ -479,48 +479,16 @@ class SQLiteChunkStore(ChunkStore):
         # Migrate deprecated metadata format
         if "neural_db_metadata" in obj.metadata.tables:
             old_metadata_table = obj.metadata.tables["neural_db_metadata"]
-            metadata_columns = [
-                col for col in old_metadata_table.columns if col.name != "chunk_id"
-            ]
-
-            obj._create_metadata_tables()
-            obj.metadata.create_all(obj.engine)
-
-            columns_by_type = {metadata_type: [] for metadata_type in sql_type_mapping}
-            key_type_pairs = []
-            for col in metadata_columns:
-                for metadata_type, sql_type in sql_type_mapping.items():
-                    if isinstance(col.type, sql_type):
-                        columns_by_type[metadata_type].append(col)
-                        key_type_pairs.append(
-                            {"key": col.name, "type": metadata_type.value}
-                        )
 
             with obj.engine.connect() as conn:
-                for metadata_type, columns in columns_by_type.items():
-                    if not columns:
+                old_metadata_df = pd.read_sql(select(old_metadata_table), conn)
+                for col in old_metadata_df:
+                    if col == "chunk_id":
                         continue
-                    metadata_table = obj.metadata_tables[metadata_type]
-                    select_statements = []
-                    for col in columns:
-                        stmt = select(
-                            [
-                                old_metadata_table.c.chunk_id.label("chunk_id"),
-                                text(f"'{col.name}'").label("key"),
-                                col.label("value"),
-                            ]
-                        ).where(col != None)
-                        select_statements.append(stmt)
-                    union_stmt = select_statements[0]
-                    for stmt in select_statements[1:]:
-                        union_stmt = union_stmt.union_all(stmt)
-                    insert_stmt = metadata_table.insert().from_select(
-                        ["chunk_id", "key", "value"], union_stmt
+                    obj._store_metadata(
+                        old_metadata_df[col], old_metadata_df["chunk_id"]
                     )
-                    conn.execute(insert_stmt)
 
-                insert_stmt = obj.metadata_type_table.insert()
-                conn.execute(insert_stmt, key_type_pairs)
         else:
             obj.metadata_tables = {}
             for metadata_type in sql_type_mapping:
@@ -529,15 +497,21 @@ class SQLiteChunkStore(ChunkStore):
                     obj.metadata_tables[metadata_type] = obj.metadata.tables[
                         metadata_table_name
                     ]
-                else:
-                    obj._create_metadata_tables()
-                    obj.metadata.create_all(obj.engine)
 
             if "neural_db_metadata_type" in obj.metadata.tables:
                 obj.metadata_type_table = obj.metadata.tables["neural_db_metadata_type"]
-            else:
-                obj._create_metadata_tables()
-                obj.metadata.create_all(obj.engine)
+
+            obj._create_metadata_tables()
+            obj.metadata.create_all(obj.engine)
+
+            for name in obj.metadata.tables:
+                # Few people, if any, have used NDBv2 multivalue metadata columns,
+                # so we just throw an error if those tables exist, rather than trying
+                # to convert that metadata to the new format.
+                if name.startswith("multivalue_metadata_"):
+                    raise AttributeError(
+                        "Loading NeuralDB with multivalue metadata table is deprecated. Please downgrade thirdai to <= 0.9.16."
+                    )
 
         with obj.engine.connect() as conn:
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))

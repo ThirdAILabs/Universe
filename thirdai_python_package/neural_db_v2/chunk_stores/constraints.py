@@ -38,6 +38,8 @@ class AnyOf(Constraint):
         return df[column_name].isin(self.values)
 
 
+# NoneOf's behavior is to return any chunk that contains any explicit value (not None)
+# other than those in the 'values' parameter
 class NoneOf(Constraint):
     def __init__(self, values):
         super().__init__()
