@@ -680,6 +680,7 @@ class NeuralDB:
                         "jinaai/jina-reranker-v1-tiny-en",
                         num_labels=1,
                         trust_remote_code=True,
+                        max_position_embeddings=4096,
                     )
                 )
             scores = self.reranker_model.compute_score(

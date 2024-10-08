@@ -12,6 +12,7 @@
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/transformations/ner/learned_tags/CommonLearnedTags.h>
 #include <data/src/transformations/ner/learned_tags/LearnedTag.h>
+#include <data/src/transformations/ner/rules/CommonPatterns.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/TagTracker.h>
 #include <data/src/transformations/ner/utils/TokenLabelCounter.h>
@@ -60,6 +61,35 @@ class UDTNer final : public UDTBackend {
   std::vector<std::string> listNerTags() const final {
     return _tag_tracker->listNerTags();
   }
+
+  void addNerRule(const std::string& rule_name) final {
+    if (_rule != nullptr) {
+      auto rule_collection =
+          std::dynamic_pointer_cast<data::ner::RuleCollection>(_rule);
+
+      for (const auto& existing_rule : rule_collection->entities()) {
+        if (existing_rule == rule_name) {
+          throw std::logic_error(
+              "Entity already present. Cannot add a new rule for the entity " +
+              existing_rule);
+        }
+      }
+      rule_collection->addRule(data::ner::getRuleForEntity(rule_name));
+
+    } else {
+      std::vector<data::ner::RulePtr> rule_vector = {
+          data::ner::getRuleForEntity(rule_name)};
+      _rule = std::make_shared<data::ner::RuleCollection>(rule_vector);
+    }
+
+    // if tag is not present in the tracker -> new tag and assign a label
+    // if tag is present -> old tag, do not update label
+    if (!_tag_tracker->tagExists(rule_name)) {
+      _tag_tracker->addTag(data::ner::getLearnedTagFromString(rule_name),
+                           /*add_new_label=*/false);
+    }
+  }
+
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
           entities) final {
@@ -148,7 +178,7 @@ class UDTNer final : public UDTBackend {
   std::pair<std::vector<SentenceTags>,
             std::vector<std::vector<std::pair<size_t, size_t>>>>
   predictTags(const std::vector<std::string>& sentences, bool sparse_inference,
-              uint32_t top_k, float o_threshold);
+              uint32_t top_k, float o_threshold, bool as_unicode);
 
   struct NerOptions;
 

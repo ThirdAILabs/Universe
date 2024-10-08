@@ -9,10 +9,17 @@ namespace thirdai::data {
 
 class StringSplitOnWhiteSpace final : public Transformation {
  public:
+  /**
+   * Note: The unicode version returns offsets using the unicode characters,
+   * this means that the offsets will not be correct if applied to the string
+   * in ascii format.
+   */
   StringSplitOnWhiteSpace(std::string input_column_name,
-                          std::string output_column_name)
+                          std::string output_column_name,
+                          bool as_unicode = false)
       : _input_column_name(std::move(input_column_name)),
-        _output_column_name(std::move(output_column_name)) {}
+        _output_column_name(std::move(output_column_name)),
+        _as_unicode(as_unicode) {}
 
   explicit StringSplitOnWhiteSpace(const ar::Archive& archive);
 
@@ -23,37 +30,9 @@ class StringSplitOnWhiteSpace final : public Transformation {
   static std::string type() { return "string_split_whitespace"; }
 
  private:
-  // Note: This function is created separately instead of modifying the existing
-  // split function, since this function would almost
-  // double the memory usage, which can be a bottleneck for Inverted Index
-  static std::pair<std::vector<std::string>,
-                   std::vector<std::pair<size_t, size_t>>>
-  splitOnWhiteSpaceWithOffsets(const std::string& text) {
-    std::vector<std::string> words;
-    std::vector<std::pair<size_t, size_t>> offsets;
-
-    bool last_is_word = false;
-    size_t word_start = 0;
-    for (size_t i = 0; i < text.size(); i++) {
-      bool is_word = !std::isspace(text[i]);
-      if (!last_is_word && is_word) {
-        word_start = i;
-      } else if (last_is_word && !is_word) {
-        words.push_back(text.substr(word_start, i - word_start));
-        offsets.emplace_back(word_start, i);
-      }
-      last_is_word = is_word;
-    }
-    if (last_is_word) {
-      words.push_back(text.substr(word_start));
-      offsets.emplace_back(word_start, text.size());
-    }
-
-    return {words, offsets};
-  }
-
   std::string _input_column_name;
   std::string _output_column_name;
+  bool _as_unicode;
 };
 
 }  // namespace thirdai::data

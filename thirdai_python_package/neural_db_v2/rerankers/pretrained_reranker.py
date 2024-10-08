@@ -11,12 +11,17 @@ class PretrainedReranker(Reranker):
         super().__init__()
 
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            "jinaai/jina-reranker-v1-tiny-en", num_labels=1, trust_remote_code=True
+            "jinaai/jina-reranker-v1-tiny-en",
+            num_labels=1,
+            trust_remote_code=True,
+            max_position_embeddings=4096,
         )
 
     def rerank(
         self, query: str, results: List[Tuple[Chunk, Score]]
     ) -> List[Tuple[Chunk, Score]]:
+        if not len(results):
+            return []
         new_scores = self.model.compute_score(
             [(query, chunk.keywords + " " + chunk.text) for chunk, _ in results]
         )
