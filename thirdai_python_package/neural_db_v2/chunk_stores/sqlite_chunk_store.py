@@ -343,6 +343,8 @@ class SQLiteChunkStore(ChunkStore):
             metadata_stmt = select(combined_metadata_query)
             metadata_results = conn.execute(metadata_stmt).fetchall()
 
+            # TODO(Kartik): The following logic could be handled by a groupby clause
+            # and https://www.sqlite.org/lang_aggfunc.html#group_concat
             for row in metadata_results:
                 chunk_id = row.chunk_id
                 key = row.key
