@@ -98,7 +98,7 @@ class Substring(Constraint):
         self.value = value
 
     def sql_condition(self, column_name: str, table: Table):
-        return and_(table.c.key == column_name, table.c.like(f"%{self.value}%"))
+        return and_(table.c.key == column_name, table.c.value.like(f"%{self.value}%"))
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if not pd.api.types.is_string_dtype(df[column_name]):

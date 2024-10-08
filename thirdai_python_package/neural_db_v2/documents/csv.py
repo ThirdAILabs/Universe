@@ -51,12 +51,11 @@ def concat_str_columns(df: pd.DataFrame, columns: List[str]):
     if len(columns) == 0:
         return series_from_value(value="", n=len(df))
 
-    output = df[columns[0]].fillna("")
-
-    for col in columns[1:]:
-        output = output + " " + df[col].fillna("")
-
-    return output
+    return (
+        df[columns]
+        .fillna("")
+        .apply(lambda row: " ".join(filter(None, row.astype(str).str.strip())), axis=1)
+    )
 
 
 class CSV(Document):
