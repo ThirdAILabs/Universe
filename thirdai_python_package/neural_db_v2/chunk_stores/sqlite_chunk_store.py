@@ -241,6 +241,9 @@ class SQLiteChunkStore(ChunkStore):
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
     ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
+        import time
+        df_time = 0
+        start_time = time.time()
         min_insertion_chunk_id = self.next_id
 
         inserted_doc_metadata = []
@@ -261,6 +264,7 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_df["doc_id"] = doc_id
                 chunk_df["doc_version"] = doc_version
 
+                df_start = time.time()
                 if batch.metadata is not None:
                     singlevalue_metadata, multivalue_metadata = (
                         separate_multivalue_columns(batch.metadata)
@@ -270,6 +274,7 @@ class SQLiteChunkStore(ChunkStore):
                         self._store_multivalue_metadata(col, chunk_ids)
 
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
+                df_time += time.time() - df_start
 
             inserted_doc_metadata.append(
                 InsertedDocMetadata(
@@ -287,6 +292,8 @@ class SQLiteChunkStore(ChunkStore):
             max_in_memory_batches=max_in_memory_batches,
         )
 
+        print(f"df time: {df_time}")
+        print(f"Insert time: {time.time() - start_time}")
         return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
