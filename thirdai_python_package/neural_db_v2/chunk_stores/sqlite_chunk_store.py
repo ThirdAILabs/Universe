@@ -214,14 +214,16 @@ class SQLiteChunkStore(ChunkStore):
             extend_existing=True,
         )
 
-    def _write_to_table(self, df: pd.DataFrame, table: Table, con=None):
+    def _write_to_table(
+        self, df: pd.DataFrame, table: Table, con=None, bulk_insert=False
+    ):
         df.to_sql(
             table.name,
             con=con or self.engine,
             dtype={c.name: c.type for c in table.columns},
             if_exists="append",
             index=False,
-            method=sqlite_insert_bulk,
+            method=sqlite_insert_bulk if bulk_insert else None,
         )
 
     def _store_metadata(self, metadata_df: pd.DataFrame, chunk_ids: pd.Series):
@@ -274,6 +276,7 @@ class SQLiteChunkStore(ChunkStore):
                     pd.concat(dfs, ignore_index=True),
                     self.metadata_tables[metadata_type],
                     conn,
+                    bulk_insert=True,
                 )
 
     def insert(
