@@ -212,7 +212,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=2.0.0, <=2.1.4",
+        "pandas>=2.0.0",
     ]
     + neural_db_deps,
     extras_require={
