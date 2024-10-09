@@ -22,7 +22,6 @@ def test_inequal_number_of_tokens_and_tags():
         "source",
         "featurized_sentence",
         "target",
-        len(TAGS),
         dyadic_num_intervals=2,
         target_word_tokenizers=[target_tokenizer],
         feature_enhancement_config=data.transformations.NerFeatureConfig(
@@ -52,7 +51,6 @@ def test_label_not_in_tag_map():
         "source",
         "featurized_sentence",
         "target",
-        len(TAGS),
         dyadic_num_intervals=2,
         target_word_tokenizers=[target_tokenizer],
         feature_enhancement_config=data.transformations.NerFeatureConfig(

@@ -370,3 +370,86 @@ def test_udt_ner_learned_tags(ner_dataset):
             old_prediction, new_prediction
         ):
             assert old_tag_prediction[0][0] == new_tag_prediction[0][0]
+
+
+def test_udt_ner_add_new_tag(ner_dataset):
+    train, _ = ner_dataset
+
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(
+                tags=["EMAIL", "CREDITCARDNUMBER"], default_tag="O"
+            ),
+        },
+        target=TAGS,
+    )
+    model.train(train, epochs=1, learning_rate=0.001)
+
+    # add a new entity to the model
+    model.add_ner_entities(["FIRSTNAME"])
+
+    # generate temp dataset
+    data = pd.DataFrame(
+        {TOKENS: ["My name is Jonathan"] * 1000, TAGS: ["O O O FIRSTNAME"] * 1000}
+    )
+    data.to_csv("temp_name_tag_file.csv", index=False)
+    model.train("temp_name_tag_file.csv", epochs=1, learning_rate=0.001)
+
+    predictions = [
+        pred[0][0] for pred in model.predict({TOKENS: "My name is ABC"}, top_k=1)
+    ]
+
+    print(predictions)
+    assert predictions == ["O", "O", "O", "FIRSTNAME"]
+
+    os.remove("temp_name_tag_file.csv")
+
+
+def test_udt_ner_add_new_rule(ner_dataset):
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            TOKENS: bolt.types.text(),
+            TAGS: bolt.types.token_tags(tags=[], default_tag="O"),
+        },
+        target=TAGS,
+        fhr=1000,
+        embedding_dimension=100,
+    )
+
+    model.add_ner_rule("EMAIL")
+
+    predictions = [
+        pred[0][0]
+        for pred in model.predict({TOKENS: "My email is jojo@thirdai.com"}, top_k=1)
+    ]
+
+    assert predictions == ["O", "O", "O", "EMAIL"]
+
+
+def test_unicode_split():
+    model = bolt.UniversalDeepTransformer(
+        data_types={
+            "source": bolt.types.text(),
+            "target": bolt.types.token_tags(tags=["PHONENUMBER"], default_tag="O"),
+        },
+        target="target",
+        rules=True,
+        embedding_dimension=10,
+    )
+
+    sample = "123-456-7890\u00A0123-456-7890"
+
+    entities = model.predict({"source": sample}, return_offsets=True)
+    assert len(entities) == 1
+    entities = [
+        sample[entity["BeginOffset"] : entity["EndOffset"]] for entity in entities
+    ]
+    assert entities == [sample]
+
+    entities = model.predict({"source": sample}, as_unicode=True, return_offsets=True)
+    assert len(entities) == 2
+    entities = [
+        sample[entity["BeginOffset"] : entity["EndOffset"]] for entity in entities
+    ]
+    assert entities == ["123-456-7890", "123-456-7890"]
