@@ -2,6 +2,7 @@ import warnings
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
+import numpy as np
 from thirdai.data import get_udt_col_types
 
 from ..core.documents import Document
@@ -48,14 +49,16 @@ def infer_pandas_column_types(
 
 
 def concat_str_columns(df: pd.DataFrame, columns: List[str]):
-    if len(columns) == 0:
-        return series_from_value(value="", n=len(df))
-
-    return (
-        df[columns]
-        .fillna("")
-        .apply(lambda row: " ".join(filter(None, row.astype(str).str.strip())), axis=1)
-    )
+    df_filled = df[columns].fillna('')
+    result = pd.Series([''] * len(df), index=df.index)
+    for col in columns:
+        col_data = df_filled[col].astype(str)
+        result = np.where(
+            result != '',
+            np.where(col_data != '', result + ' ' + col_data, result),
+            col_data
+        )
+    return pd.Series(result, index=df.index)
 
 
 class CSV(Document):
