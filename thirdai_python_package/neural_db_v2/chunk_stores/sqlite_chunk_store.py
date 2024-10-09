@@ -1,7 +1,7 @@
-import operator
+import itertools
 import shutil
 import uuid
-from functools import reduce
+from collections import defaultdict
 from sqlite3 import Connection as SQLite3Connection
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
@@ -10,7 +10,6 @@ import pandas as pd
 from sqlalchemy import (
     Column,
     ForeignKey,
-    Index,
     Integer,
     MetaData,
     String,
@@ -22,7 +21,6 @@ from sqlalchemy import (
     event,
     func,
     select,
-    text,
     union_all,
 )
 from sqlalchemy.engine import Engine
@@ -40,7 +38,7 @@ from ..core.types import (
     pandas_type_to_metadata_type,
     sql_type_mapping,
 )
-from .constraints import Constraint, NoneOf
+from .constraints import Constraint
 
 
 # In sqlite3, foreign keys are not enabled by default.
@@ -78,6 +76,29 @@ def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.Dat
         .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
     )
     return df
+
+
+def sqlite_insert_bulk(table, conn, keys, data_iter):
+    columns = ", ".join([f'"{k}"' for k in keys])
+    placeholders = ", ".join(["?"] * len(keys))
+    insert_stmt = f"INSERT INTO {table.name} ({columns}) VALUES ({placeholders})"
+
+    dbapi_conn = conn.connection
+    cursor = dbapi_conn.cursor()
+
+    try:
+        # Process data in chunks
+        while True:
+            chunk = list(itertools.islice(data_iter, 10000))
+            if not chunk:
+                break
+            cursor.executemany(insert_stmt, chunk)
+
+    except Exception as e:
+        dbapi_conn.rollback()
+        raise e
+    finally:
+        cursor.close()
 
 
 class SqlLiteIterator:
@@ -182,8 +203,6 @@ class SQLiteChunkStore(ChunkStore):
                 ),
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
-                Index(f"ix_metadata_key_value_{metadata_type.value}", "key", "value"),
-                Index(f"ix_metadata_chunk_id_{metadata_type.value}", "chunk_id"),
                 extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table
@@ -203,42 +222,62 @@ class SQLiteChunkStore(ChunkStore):
             dtype={c.name: c.type for c in table.columns},
             if_exists="append",
             index=False,
+            method=sqlite_insert_bulk,
         )
 
-    def _store_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
-        key = metadata_col.name
-        metadata_type = pandas_type_to_metadata_type[metadata_col.dtype]
-
+    def _store_metadata(self, metadata_df: pd.DataFrame, chunk_ids: pd.Series):
         with self.engine.begin() as conn:
-            result = conn.execute(
-                select(self.metadata_type_table.c.type).where(
-                    self.metadata_type_table.c.key == key
+            key_to_pandas_type = metadata_df.dtypes.to_dict()
+
+            key_to_metadata_types = {
+                key: pandas_type_to_metadata_type[pandas_type]
+                for key, pandas_type in key_to_pandas_type.items()
+                if pandas_type in pandas_type_to_metadata_type
+            }
+
+            keys = list(key_to_metadata_types.keys())
+
+            existing_keys = conn.execute(
+                select(
+                    self.metadata_type_table.c.key, self.metadata_type_table.c.type
+                ).where(self.metadata_type_table.c.key.in_(keys))
+            ).fetchall()
+            existing_key_types = {row.key: row.type for row in existing_keys}
+
+            new_keys = []
+            for key, metadata_type in key_to_metadata_types.items():
+                existing_type = existing_key_types.get(key)
+                if existing_type:
+                    if existing_type != metadata_type.value:
+                        raise ValueError(
+                            f"Type mismatch for key '{key}': existing type '{existing_type}', new type '{metadata_type.value}'"
+                        )
+                else:
+                    new_keys.append({"key": key, "type": metadata_type.value})
+
+            if new_keys:
+                conn.execute(self.metadata_type_table.insert(), new_keys)
+
+            metadata_type_to_dfs = defaultdict(list)
+            for key, metadata_type in key_to_metadata_types.items():
+                metadata_col = metadata_df[key].dropna()
+                if metadata_col.empty:
+                    continue
+                df_to_insert = pd.DataFrame(
+                    {
+                        "chunk_id": chunk_ids.loc[metadata_col.index],
+                        "key": key,
+                        "value": metadata_col,
+                    }
                 )
-            ).fetchone()
+                metadata_type_to_dfs[metadata_type].append(df_to_insert)
 
-            if result:
-                if result.type != metadata_type.value:
-                    raise ValueError(
-                        f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
-                    )
-            else:
-                conn.execute(
-                    self.metadata_type_table.insert().values(
-                        key=key, type=metadata_type.value
-                    )
+            for metadata_type, dfs in metadata_type_to_dfs.items():
+                self._write_to_table(
+                    pd.concat(dfs, ignore_index=True),
+                    self.metadata_tables[metadata_type],
+                    conn,
                 )
-
-            df_to_insert = pd.DataFrame(
-                {
-                    "chunk_id": chunk_ids,
-                    "key": key,
-                    "value": metadata_col,
-                }
-            ).dropna()
-
-            self._write_to_table(
-                df_to_insert, self.metadata_tables[metadata_type], conn
-            )
 
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
@@ -269,12 +308,12 @@ class SQLiteChunkStore(ChunkStore):
                     singlevalue_metadata, multivalue_metadata = (
                         separate_multivalue_columns(batch.metadata)
                     )
-                    for col in singlevalue_metadata:
-                        self._store_metadata(singlevalue_metadata[col], chunk_ids)
+                    self._store_metadata(singlevalue_metadata, chunk_ids)
                     for col in multivalue_metadata:
                         flattened_metadata = flatten_multivalue_column(col, chunk_ids)
                         self._store_metadata(
-                            flattened_metadata[col.name], flattened_metadata["chunk_id"]
+                            flattened_metadata[[col.name]],
+                            flattened_metadata["chunk_id"],
                         )
 
             inserted_doc_metadata.append(
@@ -292,7 +331,6 @@ class SQLiteChunkStore(ChunkStore):
             max_insertion_chunk_id=max_insertion_chunk_id,
             max_in_memory_batches=max_in_memory_batches,
         )
-
         return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
