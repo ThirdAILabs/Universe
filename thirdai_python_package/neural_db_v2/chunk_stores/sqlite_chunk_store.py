@@ -41,6 +41,55 @@ from ..core.types import (
     sql_type_mapping,
 )
 from .constraints import Constraint, NoneOf
+import time
+
+prestuff = 0
+total_df_create_time = 0
+total_df_insert_time = 0
+
+def sqlite_insert_bulk(table, conn, keys, data_iter):
+    """
+    Efficiently insert data into SQLite using executemany.
+
+    Parameters
+    ----------
+    table : pandas.io.sql.SQLTable
+        Represents the table to insert data into.
+    conn : sqlalchemy.engine.Engine or sqlalchemy.engine.Connection
+        The database connection.
+    keys : list of str
+        Column names.
+    data_iter : Iterable
+        Iterable yielding rows to insert.
+    """
+    # Convert data_iter to a list of tuples
+    data = list(data_iter)
+
+    # Prepare column names and placeholders
+    columns = ', '.join([f'"{k}"' for k in keys])
+    placeholders = ', '.join(['?'] * len(keys))
+
+    # Handle schema if present
+    if table.schema:
+        table_name = f'"{table.schema}"."{table.name}"'
+    else:
+        table_name = f'"{table.name}"'
+
+    insert_stmt = f'INSERT INTO {table_name} ({columns}) VALUES ({placeholders})'
+
+    # Get the raw connection from SQLAlchemy connection
+    dbapi_conn = conn.connection
+    cursor = dbapi_conn.cursor()
+
+    try:
+        # Execute the insert statement with executemany
+        cursor.executemany(insert_stmt, data)
+    except Exception as e:
+        # Rollback in case of error
+        dbapi_conn.rollback()
+        raise e
+    finally:
+        cursor.close()
 
 
 # In sqlite3, foreign keys are not enabled by default.
@@ -182,8 +231,6 @@ class SQLiteChunkStore(ChunkStore):
                 ),
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
-                Index(f"ix_metadata_key_value_{metadata_type.value}", "key", "value"),
-                Index(f"ix_metadata_chunk_id_{metadata_type.value}", "chunk_id"),
                 extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table
@@ -203,55 +250,80 @@ class SQLiteChunkStore(ChunkStore):
             dtype={c.name: c.type for c in table.columns},
             if_exists="append",
             index=False,
+            method=sqlite_insert_bulk
         )
 
-    def _store_metadata(self, metadata_col: pd.Series, chunk_ids: pd.Series):
-        key = metadata_col.name
-        metadata_type = pandas_type_to_metadata_type[metadata_col.dtype]
-
+    def _store_metadata(self, metadata_df: pd.Series, chunk_ids: pd.Series):
+        
         with self.engine.begin() as conn:
-            result = conn.execute(
-                select(self.metadata_type_table.c.type).where(
-                    self.metadata_type_table.c.key == key
-                )
-            ).fetchone()
 
-            if result:
-                if result.type != metadata_type.value:
-                    raise ValueError(
-                        f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
+            for pandas_type in list(pandas_type_to_metadata_type.keys()):
+                base_df = pd.DataFrame()
+                for col_name in metadata_df:
+                    metadata_col = metadata_df[col_name]
+                    if metadata_col.dtype != pandas_type:
+                        continue
+                    key = metadata_col.name
+                    metadata_type = pandas_type_to_metadata_type[metadata_col.dtype]
+                    global total_df_create_time
+                    global total_df_insert_time
+                    global prestuff
+
+
+                    result = conn.execute(
+                        select(self.metadata_type_table.c.type).where(
+                            self.metadata_type_table.c.key == key
+                        )
+                    ).fetchone()
+
+                    if result:
+                        if result.type != metadata_type.value:
+                            raise ValueError(
+                                f"Type mismatch for key '{key}': existing type '{result.type}', new type '{metadata_type.value}'"
+                            )
+                    else:
+                        conn.execute(
+                            self.metadata_type_table.insert().values(
+                                key=key, type=metadata_type.value
+                            )
+                        )
+                    
+                    df_create_time = time.time()
+                    df_to_insert = pd.DataFrame(
+                        {
+                            "chunk_id": chunk_ids,
+                            "key": key,
+                            "value": metadata_col,
+                        }
+                    ).dropna()
+                    base_df = pd.concat([base_df, df_to_insert], ignore_index=True)
+
+                    total_df_create_time += time.time() - df_create_time
+
+                if not base_df.empty:
+                    df_insert_time = time.time()
+                    print(base_df)
+                    self._write_to_table(
+                        base_df, self.metadata_tables[metadata_type], conn
                     )
-            else:
-                conn.execute(
-                    self.metadata_type_table.insert().values(
-                        key=key, type=metadata_type.value
-                    )
-                )
-
-            df_to_insert = pd.DataFrame(
-                {
-                    "chunk_id": chunk_ids,
-                    "key": key,
-                    "value": metadata_col,
-                }
-            ).dropna()
-
-            self._write_to_table(
-                df_to_insert, self.metadata_tables[metadata_type], conn
-            )
+                    total_df_insert_time += time.time() - df_insert_time
 
     def insert(
         self, docs: List[Document], max_in_memory_batches=10000, **kwargs
     ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
+        start_time = time.time()
         min_insertion_chunk_id = self.next_id
+        global prestuff
 
         inserted_doc_metadata = []
         for doc in docs:
+            
             doc_id = doc.doc_id()
             doc_version = self.max_version_for_doc(doc_id) + 1
 
             doc_chunk_ids = []
             for batch in doc.chunks():
+                prestuff_time = time.time()
                 chunk_ids = pd.Series(
                     np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
                 )
@@ -263,19 +335,25 @@ class SQLiteChunkStore(ChunkStore):
                 chunk_df["doc_id"] = doc_id
                 chunk_df["doc_version"] = doc_version
 
+                
                 self._write_to_table(df=chunk_df, table=self.chunk_table)
+                
 
                 if batch.metadata is not None:
+                    
                     singlevalue_metadata, multivalue_metadata = (
                         separate_multivalue_columns(batch.metadata)
                     )
-                    for col in singlevalue_metadata:
-                        self._store_metadata(singlevalue_metadata[col], chunk_ids)
+                    
+                    # for col in singlevalue_metadata:
+                    self._store_metadata(singlevalue_metadata, chunk_ids)
                     for col in multivalue_metadata:
                         flattened_metadata = flatten_multivalue_column(col, chunk_ids)
                         self._store_metadata(
                             flattened_metadata[col.name], flattened_metadata["chunk_id"]
                         )
+                prestuff += time.time() - prestuff_time
+                
 
             inserted_doc_metadata.append(
                 InsertedDocMetadata(
@@ -292,7 +370,10 @@ class SQLiteChunkStore(ChunkStore):
             max_insertion_chunk_id=max_insertion_chunk_id,
             max_in_memory_batches=max_in_memory_batches,
         )
-
+        print(f"prestuff time is {prestuff}")
+        print(f"df create time is {total_df_create_time}")
+        print(f"df insert time is {total_df_insert_time}")
+        print(f"Insert time is {time.time() - start_time}")
         return inserted_chunks_iterator, inserted_doc_metadata
 
     def delete(self, chunk_ids: List[ChunkId]):
