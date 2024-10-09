@@ -87,7 +87,6 @@ def sqlite_insert_bulk(table, conn, keys, data_iter):
     cursor = dbapi_conn.cursor()
 
     try:
-        # Process data in chunks
         while True:
             chunk = list(itertools.islice(data_iter, 10000))
             if not chunk:
@@ -234,9 +233,7 @@ class SQLiteChunkStore(ChunkStore):
                 for key, pandas_type in key_to_pandas_type.items()
                 if pandas_type in pandas_type_to_metadata_type
             }
-
             keys = list(key_to_metadata_types.keys())
-
             existing_keys = conn.execute(
                 select(
                     self.metadata_type_table.c.key, self.metadata_type_table.c.type
