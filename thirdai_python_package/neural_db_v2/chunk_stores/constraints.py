@@ -90,3 +90,16 @@ class LessThan(Constraint):
         if self.inclusive:
             return df[column_name] <= self.value
         return df[column_name] < self.value
+
+class Substring(Constraint):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def sql_condition(self, column_name: str, table: Table):
+        return and_(table.c.key == column_name, table.c.value.like(f"%{self.value}%"))
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        if not pd.api.types.is_string_dtype(df[column_name]):
+            return pd.Series([False] * len(df), index=df.index)
+        return df[column_name].str.contains(self.value, na=False)
