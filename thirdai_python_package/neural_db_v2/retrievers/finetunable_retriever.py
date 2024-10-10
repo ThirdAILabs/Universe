@@ -1,15 +1,14 @@
+import json
+import os
 from typing import Iterable, List, Optional, Set, Tuple
 
+import pandas as pd
+import torch
 from thirdai import search
+from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 from ..core.retriever import Retriever
 from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
-from transformers import AutoModelForMaskedLM, AutoTokenizer
-import torch
-import json
-import os
-from pandera import typing as pt
-import pandas as pd
 
 
 class Splade:
@@ -21,7 +20,7 @@ class Splade:
             "naver/splade-cocondenser-selfdistil"
         )
 
-    def augment_single(self, text: str) -> str:
+    def augment(self, text: str) -> str:
         tokens = self.tokenizer(
             text, return_tensors="pt", truncation=True, max_length=512
         )
@@ -38,34 +37,6 @@ class Splade:
             if not t.startswith("##")
         )
         return text + " " + tokens
-
-    def augment_batch(self, texts: List[str]) -> List[str]:
-        tokens = self.tokenizer(
-            texts, return_tensors="pt", truncation=True, max_length=512, padding=True
-        )
-        output = self.model(**tokens)["logits"]
-        scores, _ = torch.max(
-            torch.log(1 + torch.relu(output)) * tokens["attention_mask"].unsqueeze(-1),
-            dim=1,
-        )
-
-        tokens = []
-
-        return [
-            texts[i]
-            + " "
-            + " ".join(
-                t
-                for t in map(
-                    self.tokenizer._convert_id_to_token, scores[i].nonzero().squeeze()
-                )
-                if not t.startswith("##")
-            )
-            for i in range(len(texts))
-        ]
-
-    def augment(self, texts: pt.Series[str], batch_size=100) -> pt.Series[str]:
-        return pd.Series([self.augment_single(t) for t in texts])
 
 
 class FinetunableRetriever(Retriever):
@@ -87,14 +58,14 @@ class FinetunableRetriever(Retriever):
         self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         if self.splade:
-            queries = self.splade.augment_batch(queries)
+            queries = self.splade.augment([self.splade.augment(q) for q in queries])
         return self.retriever.query(queries, k=top_k)
 
     def rank(
         self, queries: List[str], choices: List[Set[ChunkId]], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         if self.splade:
-            queries = self.splade.augment_batch(queries)
+            queries = self.splade.augment([self.splade.augment(q) for q in queries])
         return self.retriever.rank(queries, candidates=choices, k=top_k)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
@@ -121,7 +92,7 @@ class FinetunableRetriever(Retriever):
                 )
                 text = chunk.text[i : i + index_batch_size].reset_index(drop=True)
                 if self.splade:
-                    text = self.splade.augment(text)
+                    text = pd.Series([self.splade.augment(t) for t in text])
 
                 texts = keywords + " " + text
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
