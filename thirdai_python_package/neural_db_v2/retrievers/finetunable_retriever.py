@@ -4,6 +4,71 @@ from thirdai import search
 
 from ..core.retriever import Retriever
 from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
+from transformers import AutoModelForMaskedLM, AutoTokenizer
+import torch
+import json
+import os
+from pandera import typing as pt
+import pandas as pd
+
+
+class Splade:
+    def __init__(self):
+        self.model = AutoModelForMaskedLM.from_pretrained(
+            "naver/splade-cocondenser-selfdistil"
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "naver/splade-cocondenser-selfdistil"
+        )
+
+    def augment_single(self, text: str) -> str:
+        tokens = self.tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=512
+        )
+        output = self.model(**tokens)["logits"]
+        scores, _ = torch.max(
+            torch.log(1 + torch.relu(output)) * tokens["attention_mask"].unsqueeze(-1),
+            dim=1,
+        )
+
+        tokens = scores.squeeze().nonzero().squeeze()
+        tokens = " ".join(
+            t
+            for t in map(self.tokenizer._convert_id_to_token, tokens)
+            if not t.startswith("##")
+        )
+        return text + " " + tokens
+
+    def augment_batch(self, texts: List[str]) -> List[str]:
+        tokens = self.tokenizer(
+            texts, return_tensors="pt", truncation=True, max_length=512
+        )
+        output = self.model(**tokens)["logits"]
+        scores, _ = torch.max(
+            torch.log(1 + torch.relu(output)) * tokens["attention_mask"].unsqueeze(-1),
+            dim=1,
+        )
+
+        tokens = []
+
+        return [
+            texts[i]
+            + " "
+            + " ".join(
+                t
+                for t in map(
+                    self.tokenizer._convert_id_to_token, scores[i].nonzero().squeeze()
+                )
+                if not t.startswith("##")
+            )
+            for i in range(len(texts))
+        ]
+
+    def augment(self, texts: pt.Series[str], batch_size=100) -> pt.Series[str]:
+        output = []
+        for i in range(0, len(texts), batch_size):
+            output.extend(self.augment_batch(texts[i : i + batch_size].to_list()))
+        return pd.Series(output)
 
 
 class FinetunableRetriever(Retriever):
@@ -11,19 +76,28 @@ class FinetunableRetriever(Retriever):
         self,
         save_path: Optional[str] = None,
         config: Optional[search.IndexConfig] = search.IndexConfig(),
+        splade: bool = False,
         **kwargs
     ):
         super().__init__()
         self.retriever = search.FinetunableRetriever(save_path=save_path, config=config)
+        if splade:
+            self.splade = Splade()
+        else:
+            self.splade = None
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
+        if self.splade:
+            queries = self.splade.augment_batch(queries)
         return self.retriever.query(queries, k=top_k)
 
     def rank(
         self, queries: List[str], choices: List[Set[ChunkId]], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
+        if self.splade:
+            queries = self.splade.augment_batch(queries)
         return self.retriever.rank(queries, candidates=choices, k=top_k)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
@@ -44,11 +118,15 @@ class FinetunableRetriever(Retriever):
             # for large chunks
             for i in range(0, len(chunk), index_batch_size):
                 ids = chunk.chunk_id[i : i + index_batch_size]
-                texts = (
-                    chunk.keywords[i : i + index_batch_size]
-                    + " "
-                    + chunk.text[i : i + index_batch_size]
+
+                keywords = chunk.keywords[i : i + index_batch_size].reset_index(
+                    drop=True
                 )
+                text = chunk.text[i : i + index_batch_size].reset_index(drop=True)
+                if self.splade:
+                    text = self.splade.augment(text)
+
+                texts = keywords + " " + text
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
 
     def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
@@ -62,9 +140,16 @@ class FinetunableRetriever(Retriever):
 
     def save(self, path: str):
         self.retriever.save(path)
+        options = {"splade": bool(self.splade is not None)}
+        with open(os.path.join(path, "options.json")) as f:
+            json.dump(options, f)
 
     @classmethod
     def load(cls, path: str, read_only: bool = False, **kwargs):
         instance = cls()
         instance.retriever = search.FinetunableRetriever.load(path, read_only=read_only)
+        with open(os.path.join(path, "options.json"), "rb") as f:
+            options = json.load(f)
+        if options["splade"]:
+            instance.splade = Splade()
         return instance
