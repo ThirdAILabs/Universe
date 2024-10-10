@@ -121,6 +121,7 @@ def check_mach_delete(retriever, load_chunks):
     retriever.delete([before_del_results[0][0][0]])
     after_del_results = retriever.search([load_chunks["text"][0]], top_k=1)
 
+    print(before_del_results[0][0][0], after_del_results[0][0][0])
     assert before_del_results[0][0][0] != after_del_results[0][0][0]
 
 
