@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Prepare Black
         run: |
-          sudo pip3 install black
+          pip3 install black
       - name: Prepare isort
         run: |
           sudo pip3 install isort
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Prepare cmake format
         run: |
-          sudo pip3 install cmake-format
+          pip3 install cmake-format
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
