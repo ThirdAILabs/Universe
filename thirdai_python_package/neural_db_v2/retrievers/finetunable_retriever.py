@@ -41,7 +41,7 @@ class Splade:
 
     def augment_batch(self, texts: List[str]) -> List[str]:
         tokens = self.tokenizer(
-            texts, return_tensors="pt", truncation=True, max_length=512
+            texts, return_tensors="pt", truncation=True, max_length=512, padding=True
         )
         output = self.model(**tokens)["logits"]
         scores, _ = torch.max(
@@ -65,10 +65,8 @@ class Splade:
         ]
 
     def augment(self, texts: pt.Series[str], batch_size=100) -> pt.Series[str]:
-        output = []
-        for i in range(0, len(texts), batch_size):
-            output.extend(self.augment_batch(texts[i : i + batch_size].to_list()))
-        return pd.Series(output)
+        output = [self.augment_single(t) for t in texts]
+        return pd.Series([self.augment_single(t) for t in texts])
 
 
 class FinetunableRetriever(Retriever):
