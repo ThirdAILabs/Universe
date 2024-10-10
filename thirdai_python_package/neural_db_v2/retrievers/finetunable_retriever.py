@@ -109,7 +109,7 @@ class FinetunableRetriever(Retriever):
     def save(self, path: str):
         self.retriever.save(path)
         options = {"splade": bool(self.splade is not None)}
-        with open(os.path.join(path, "options.json")) as f:
+        with open(os.path.join(path, "options.json"), "wb") as f:
             json.dump(options, f)
 
     @classmethod
