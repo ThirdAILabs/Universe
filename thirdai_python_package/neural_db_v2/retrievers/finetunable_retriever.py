@@ -65,7 +65,6 @@ class Splade:
         ]
 
     def augment(self, texts: pt.Series[str], batch_size=100) -> pt.Series[str]:
-        output = [self.augment_single(t) for t in texts]
         return pd.Series([self.augment_single(t) for t in texts])
 
 
