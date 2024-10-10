@@ -58,14 +58,14 @@ class FinetunableRetriever(Retriever):
         self, queries: List[str], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         if self.splade:
-            queries = self.splade.augment([self.splade.augment(q) for q in queries])
+            queries = [self.splade.augment(q) for q in queries]
         return self.retriever.query(queries, k=top_k)
 
     def rank(
         self, queries: List[str], choices: List[Set[ChunkId]], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         if self.splade:
-            queries = self.splade.augment([self.splade.augment(q) for q in queries])
+            queries = [self.splade.augment(q) for q in queries]
         return self.retriever.rank(queries, candidates=choices, k=top_k)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
