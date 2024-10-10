@@ -116,8 +116,13 @@ class FinetunableRetriever(Retriever):
     def load(cls, path: str, read_only: bool = False, **kwargs):
         instance = cls()
         instance.retriever = search.FinetunableRetriever.load(path, read_only=read_only)
-        with open(os.path.join(path, "options.json"), "rb") as f:
-            options = json.load(f)
-        if options["splade"]:
+        if os.path.exists(os.path.join(path, "options.json")):
+            with open(os.path.join(path, "options.json"), "rb") as f:
+                options = json.load(f)
+        else:
+            options = {}
+        if "splade" in options and options["splade"]:
             instance.splade = Splade()
+        else:
+            instance.splade = None
         return instance
