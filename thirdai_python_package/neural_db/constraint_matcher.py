@@ -80,6 +80,25 @@ class EqualTo(AnyOf[ItemT]):
         super().__init__([value])
 
 
+class Substring(Filter[ItemT]):
+    def __init__(self, value: str):
+        self.value = value
+
+    def filter(self, value_to_items: ItemConstraintIndex) -> Set[ItemT]:
+        matches = set()
+        for val, items in value_to_items.items():
+            if self.value in val:
+                matches.update(items)
+        return matches
+
+    def filter_df_column(self, df: pd.DataFrame, column_name: str):
+        return df[df[column_name].str.contains(self.value, na=False)]
+
+    def sql_condition(self, column_name: str):
+        value_for_sql = format_value_for_sql(f"%{self.value}%")
+        return f"{column_name} LIKE {value_for_sql}"
+    
+
 class InRange(Filter[ItemT]):
     def __init__(
         self, minimum: Any, maximum: Any, inclusive_min=True, inclusive_max=True
