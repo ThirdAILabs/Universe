@@ -183,3 +183,14 @@ def test_neural_db_v2_reranker():
     assert len(reranked) > 0
     assert len(regular) == len(reranked)
     assert [x[1] for x in regular] != [x[1] for x in reranked]
+
+
+def test_neural_db_v2_with_splade():
+    db = ndb.NeuralDB(splade=True)
+
+    db.insert([ndb.CSV(CSV_FILE)])
+
+    results = db.search("what are the roots of lorem ipsum", top_k=3)
+
+    assert len(results) > 0
+    assert results[0][0].chunk_id == 1

@@ -188,6 +188,7 @@ neural_db_v2_deps = [
     "pandera",
     "sqlalchemy_utils",
     "transformers",
+    "torch",
     "unstructured[pptx]",
 ]
 
