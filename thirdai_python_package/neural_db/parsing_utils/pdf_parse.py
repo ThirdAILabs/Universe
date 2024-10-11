@@ -94,7 +94,7 @@ def process_pdf_file(filename):
                             prev_blocks[page_no] = current_block_nums[page_no]
 
                         prev_para = paras[-1]
-                        prev_para.text += f" {current}"
+                        prev_para.text += f"\n{current}"
                         prev_para.block_nums = prev_blocks
 
                     else:
