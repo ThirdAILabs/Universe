@@ -106,18 +106,22 @@ class FinetunableRetriever(Retriever):
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
 
+    @staticmethod
+    def options_path(path: str) -> str:
+        return os.path.join(path, "options.json")
+
     def save(self, path: str):
         self.retriever.save(path)
         options = {"splade": bool(self.splade is not None)}
-        with open(os.path.join(path, "options.json"), "wb") as f:
+        with open(FinetunableRetriever.options_path(path), "w") as f:
             json.dump(options, f)
 
     @classmethod
     def load(cls, path: str, read_only: bool = False, **kwargs):
         instance = cls()
         instance.retriever = search.FinetunableRetriever.load(path, read_only=read_only)
-        if os.path.exists(os.path.join(path, "options.json")):
-            with open(os.path.join(path, "options.json"), "rb") as f:
+        if FinetunableRetriever.options_path(path):
+            with open(FinetunableRetriever.options_path(path), "r") as f:
                 options = json.load(f)
         else:
             options = {}
