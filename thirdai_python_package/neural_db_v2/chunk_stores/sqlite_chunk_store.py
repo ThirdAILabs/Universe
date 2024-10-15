@@ -22,6 +22,7 @@ from sqlalchemy import (
     join,
     select,
     text,
+    and_,
 )
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
@@ -419,6 +420,30 @@ class SQLiteChunkStore(ChunkStore):
                     "document": row.document,
                 }
                 for row in conn.execute(stmt)
+            ]
+
+    def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
+        stmt = select(self.chunk_table).where(
+            and_(
+                self.chunk_table.c.chunk_id >= chunk.chunk_id - radius,
+                self.chunk_table.c.chunk_id <= chunk.chunk_id + radius,
+                self.chunk_table.c.doc_id == chunk.doc_id,
+                self.chunk_table.c.doc_version == chunk.doc_version,
+            )
+        )
+
+        with self.engine.connect() as conn:
+            return [
+                Chunk(
+                    text=row.text,
+                    keywords=row.keywords,
+                    metadata=None,
+                    document=row.document,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
+                    chunk_id=row.chunk_id,
+                )
+                for row in conn.execute(stmt).all()
             ]
 
     def save(self, path: str):
