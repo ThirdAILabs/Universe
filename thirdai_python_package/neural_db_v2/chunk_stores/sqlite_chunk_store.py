@@ -15,6 +15,7 @@ from sqlalchemy import (
     MetaData,
     String,
     Table,
+    and_,
     create_engine,
     delete,
     distinct,
@@ -22,7 +23,6 @@ from sqlalchemy import (
     join,
     select,
     text,
-    and_,
 )
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
