@@ -425,8 +425,8 @@ class SQLiteChunkStore(ChunkStore):
     def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
         stmt = select(self.chunk_table).where(
             and_(
-                self.chunk_table.c.chunk_id >= chunk.chunk_id - radius,
-                self.chunk_table.c.chunk_id <= chunk.chunk_id + radius,
+                self.chunk_table.c.chunk_id >= (chunk.chunk_id - radius),
+                self.chunk_table.c.chunk_id <= (chunk.chunk_id + radius),
                 self.chunk_table.c.doc_id == chunk.doc_id,
                 self.chunk_table.c.doc_version == chunk.doc_version,
             )
