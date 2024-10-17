@@ -166,6 +166,27 @@ class PandasChunkStore(ChunkStore):
             .to_dict("records")
         )
 
+    def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
+        rows = self.chunk_df[
+            (self.chunk_df["chunk_id"] >= (chunk.chunk_id - radius))
+            & (self.chunk_df["chunk_id"] <= (chunk.chunk_id + radius))
+            & (self.chunk_df["doc_id"] == chunk.doc_id)
+            & (self.chunk_df["doc_version"] == chunk.doc_version)
+        ]
+
+        return [
+            Chunk(
+                text=row.text,
+                keywords=row.keywords,
+                metadata=None,
+                document=row.document,
+                chunk_id=row.chunk_id,
+                doc_id=row.doc_id,
+                doc_version=row.doc_version,
+            )
+            for row in rows.itertuples()
+        ]
+
     def save(self, path: str):
         pickle_to(self, path)
 

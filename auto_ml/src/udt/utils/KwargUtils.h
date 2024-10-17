@@ -8,4 +8,6 @@ namespace thirdai::automl {
 
 std::optional<float> floatArg(const py::kwargs& kwargs, const std::string& key);
 
+std::optional<bool> boolArg(const py::kwargs& kwargs, const std::string& key);
+
 }  // namespace thirdai::automl

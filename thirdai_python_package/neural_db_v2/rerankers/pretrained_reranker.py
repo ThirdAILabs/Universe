@@ -20,6 +20,8 @@ class PretrainedReranker(Reranker):
     def rerank(
         self, query: str, results: List[Tuple[Chunk, Score]]
     ) -> List[Tuple[Chunk, Score]]:
+        if len(results) < 2:
+            return results
         new_scores = self.model.compute_score(
             [(query, chunk.keywords + " " + chunk.text) for chunk, _ in results]
         )

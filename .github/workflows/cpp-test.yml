@@ -22,6 +22,9 @@ jobs:
   cpp-release-tests:
     runs-on: ubuntu-latest
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -31,6 +34,8 @@ jobs:
           
       - name: Run all c++ tests
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE
           bin/cpp-test.sh -V
           
@@ -38,6 +43,9 @@ jobs:
     runs-on: 
       labels: ubuntu-latest-8-cores
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -52,12 +60,17 @@ jobs:
         run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Run all c++ tests
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
           bin/cpp-test.sh -j 12 -V
 
   cpp-debug-tests:
     runs-on: ubuntu-latest
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -67,5 +80,7 @@ jobs:
           
       - name: Run all c++ tests
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m Debug
           bin/cpp-test.sh -V

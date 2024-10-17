@@ -153,7 +153,7 @@ with open("thirdai.version") as version_file:
 
 neural_db_deps = [
     "PyTrie",
-    "PyMuPDF==1.23.26",
+    "PyMuPDF",
     "langchain",
     "langchain_community",
     "bs4",
@@ -167,8 +167,8 @@ neural_db_deps = [
     "sortedcontainers",
     "SQLAlchemy>=2.0.0",
     "scikit-learn",
-    "Office365-REST-Python-Client==2.5.1",
-    "simple-salesforce==1.12.5",
+    "Office365-REST-Python-Client",
+    "simple-salesforce",
     "ipython",
     # There is an issue with 0.11.3 of pdfplumber in which the annotations use
     # type[CellGroup] which leads to the following error:
@@ -188,6 +188,7 @@ neural_db_v2_deps = [
     "pandera",
     "sqlalchemy_utils",
     "transformers",
+    "torch",
     "unstructured[pptx]",
 ]
 
@@ -212,7 +213,7 @@ setup(
         "numpy",
         "typing_extensions",
         "requests",
-        "pandas>=2.0.0, <=2.1.4",
+        "pandas>=2.0.0",
     ]
     + neural_db_deps,
     extras_require={
@@ -239,7 +240,6 @@ setup(
             "toml",
             "psutil",
             "transformers",
-            "pandas>=2.0.0",
             "cryptography",
             "tokenizers",
             "pyarrow",
@@ -251,7 +251,7 @@ setup(
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",
-            "unstructured[all-docs]<=0.10.20",
+            "unstructured[all-docs]",
             "faker",
         ]
         + neural_db_deps
@@ -268,7 +268,7 @@ setup(
             "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
             "ray[default]",
             "torch",
-            "unstructured[all-docs]<=0.10.20",
+            "unstructured[all-docs]",
         ]
         + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
