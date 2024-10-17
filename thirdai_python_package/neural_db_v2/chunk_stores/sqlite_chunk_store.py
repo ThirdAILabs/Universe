@@ -10,6 +10,7 @@ import pandas as pd
 from sqlalchemy import (
     Column,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     String,
@@ -202,6 +203,7 @@ class SQLiteChunkStore(ChunkStore):
                 ),
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
+                Index(f"ix_metadata_key_value_{metadata_type.value}", "key"),
                 extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table

@@ -97,7 +97,7 @@ class Substring(Filter[ItemT]):
     def sql_condition(self, column_name: str):
         value_for_sql = format_value_for_sql(f"%{self.value}%")
         return f"{column_name} LIKE {value_for_sql}"
-    
+
 
 class InRange(Filter[ItemT]):
     def __init__(
