@@ -138,6 +138,9 @@ class NeuralDB:
     def documents(self) -> List[dict]:
         return self.chunk_store.documents()
 
+    def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
+        return self.chunk_store.context(chunk=chunk, radius=radius)
+
     @staticmethod
     def chunk_store_path(directory: str) -> str:
         return os.path.join(directory, "chunk_store")

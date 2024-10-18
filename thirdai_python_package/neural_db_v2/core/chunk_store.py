@@ -37,3 +37,7 @@ class ChunkStore(ABC):
     @abstractmethod
     def documents(self) -> List[dict]:
         raise NotImplementedError
+
+    @abstractmethod
+    def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
+        raise NotImplemented
