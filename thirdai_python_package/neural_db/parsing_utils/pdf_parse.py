@@ -128,8 +128,7 @@ def process_pdf_file(filename):
                 sent = re.sub(
                     " +",
                     " ",
-                    str(para.text)
-                    .strip(),
+                    str(para.text).strip(),
                 )
                 if len(sent) > 0:
                     rows.append(
