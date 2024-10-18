@@ -80,11 +80,11 @@ jobs:
           CIBW_BUILD: "cp*manylinux_x86_64"
           CIBW_BUILD_VERBOSITY: 3
 
-          # CIBW_BEFORE_TEST_LINUX: |
-          #   yum install golang libreoffice -y
-          #   pip install --upgrade pip
-          # CIBW_TEST_EXTRAS: "test"
-          # CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
+          CIBW_BEFORE_TEST_LINUX: |
+            yum install golang libreoffice -y
+            pip install --upgrade pip
+          CIBW_TEST_EXTRAS: "test"
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
           # Skip building on CPython <3.8 on the Mac
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
