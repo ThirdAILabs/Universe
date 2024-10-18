@@ -11,6 +11,7 @@
 #include <search/src/inverted_index/Tokenizer.h>
 #include <search/src/inverted_index/Utils.h>
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <numeric>
@@ -138,6 +139,12 @@ void FinetunableRetriever::associate(const std::vector<std::string>& sources,
   finetune(ids_only, sources);
 }
 
+void normalizeScores(std::vector<DocScore>& scores) {
+  for (auto& [_, score] : scores) {
+    score = std::tanh(score / 5);
+  }
+}
+
 std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
                                                   uint32_t k,
                                                   bool parallelize) const {
@@ -160,7 +167,9 @@ std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
     }
   }
 
-  return InvertedIndex::topk(top_scores, k);
+  auto results = InvertedIndex::topk(top_scores, k);
+  normalizeScores(results);
+  return results;
 }
 
 std::vector<std::vector<DocScore>> FinetunableRetriever::queryBatch(
@@ -198,7 +207,9 @@ std::vector<DocScore> FinetunableRetriever::rank(
     }
   }
 
-  return InvertedIndex::topk(top_scores, k);
+  auto results = InvertedIndex::topk(top_scores, k);
+  normalizeScores(results);
+  return results;
 }
 
 std::vector<std::vector<DocScore>> FinetunableRetriever::rankBatch(
