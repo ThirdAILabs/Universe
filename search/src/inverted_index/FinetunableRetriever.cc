@@ -149,7 +149,9 @@ std::vector<DocScore> FinetunableRetriever::query(const std::string& query,
                                                   uint32_t k,
                                                   bool parallelize) const {
   if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
-    return _doc_index->query(query, k, parallelize);
+    auto results = _doc_index->query(query, k, parallelize);
+    normalizeScores(results);
+    return results;
   }
 
   auto top_docs =
@@ -187,7 +189,9 @@ std::vector<DocScore> FinetunableRetriever::rank(
     const std::string& query, const std::unordered_set<DocId>& candidates,
     uint32_t k, bool parallelize) const {
   if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
-    return _doc_index->rank(query, candidates, k, parallelize);
+    auto results = _doc_index->rank(query, candidates, k, parallelize);
+    normalizeScores(results);
+    return results;
   }
 
   auto top_docs = _doc_index->rank(query, candidates,
