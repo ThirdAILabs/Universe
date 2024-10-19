@@ -39,13 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Prepare Black
-      # We need the '--break-system-packages' flag to fix the 'error: externally-managed-environment' error
         run: |
-          sudo pip3 install black --break-system-packages
+          pip3 install black
       - name: Prepare isort
-      # We need the '--break-system-packages' flag to fix the 'error: externally-managed-environment' error
         run: |
-          sudo pip3 install isort --break-system-packages
+          pip3 install isort
       - name: Check Black format 
         run: |
           black . --check --exclude "build|.venv|venv|.env|env|deps"
@@ -58,9 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Prepare cmake format
-      # We need the '--break-system-packages' flag to fix the 'error: externally-managed-environment' error
         run: |
-          sudo pip3 install cmake-format --break-system-packages
+          pip3 install cmake-format
       - name: Check Cmake format
         run: |
           find . -name 'CMakeLists.txt' -o -name '*.cmake' | grep -v ./deps | xargs -I% cmake-format --check % 
