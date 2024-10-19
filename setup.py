@@ -189,7 +189,7 @@ neural_db_v2_deps = [
     "sqlalchemy_utils",
     "transformers",
     "torch",
-    "unstructured[pptx]",
+    "unstructured[pptx]<=0.10.20",
 ]
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -251,7 +251,7 @@ setup(
             "pyOpenSSL>22.1.0",
             "ray",
             "grpcio",
-            "unstructured[all-docs]",
+            "unstructured[all-docs]<=0.10.20",
             "faker",
         ]
         + neural_db_deps
@@ -268,7 +268,7 @@ setup(
             "nltk>=3.8.2",  # 3.8.1 downloads punkt instead of punkt_tab
             "ray[default]",
             "torch",
-            "unstructured[all-docs]",
+            "unstructured[all-docs]<=0.10.20",
         ]
         + neural_db_deps,
         # See https://github.com/readthedocs/sphinx_rtd_theme/issues/1343 for why we restrict the sphinx version
