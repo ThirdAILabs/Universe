@@ -72,10 +72,7 @@ def process_pdf_file(filename):
                 if block.block_type == BlockType.Text:
                     current_block_nums = {}
                     current_block_nums[page_no] = [block.block_no]
-                    current = sent_tokenize(
-                        block.lines.strip().replace("\r\n", " ").replace("\n", " ")
-                    )
-                    current = " ".join(current)
+                    current = block.lines.strip()
 
                     if (
                         len(paras) > 0
@@ -97,7 +94,7 @@ def process_pdf_file(filename):
                             prev_blocks[page_no] = current_block_nums[page_no]
 
                         prev_para = paras[-1]
-                        prev_para.text += f" {current}"
+                        prev_para.text += f"\n{current}"
                         prev_para.block_nums = prev_blocks
 
                     else:
@@ -131,11 +128,7 @@ def process_pdf_file(filename):
                 sent = re.sub(
                     " +",
                     " ",
-                    str(para.text)
-                    .replace("\t", " ")
-                    .replace(",", " ")
-                    .replace("\n", " ")
-                    .strip(),
+                    str(para.text).strip(),
                 )
                 if len(sent) > 0:
                     rows.append(
