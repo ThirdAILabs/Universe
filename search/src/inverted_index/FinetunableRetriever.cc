@@ -1,5 +1,4 @@
 #include "FinetunableRetriever.h"
-#include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>

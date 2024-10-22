@@ -4,7 +4,6 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
-#include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <archive/src/List.h>
 #include <archive/src/Map.h>
