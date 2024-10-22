@@ -23,7 +23,6 @@ from .savable_state import (
 )
 from .supervised_datasource import Sup, SupDataSource
 from .trainer.checkpoint_config import CheckpointConfig
-import time
 
 Strength = Enum("Strength", ["Weak", "Medium", "Strong"])
 
