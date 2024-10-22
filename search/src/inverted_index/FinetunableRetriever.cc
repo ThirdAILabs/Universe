@@ -1,4 +1,5 @@
 #include "FinetunableRetriever.h"
+#include <bolt/src/utils/Timer.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -222,12 +223,14 @@ std::vector<std::vector<DocScore>> FinetunableRetriever::rankBatch(
 }
 
 void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
-  _doc_index->remove(ids);
+  std::unordered_set<DocId> id_set(ids.begin(), ids.end());
 
-  std::vector<QueryId> irrelevant_queries;
+  _doc_index->remove(id_set);
+
+  std::unordered_set<QueryId> irrelevant_queries;
   for (DocId doc : ids) {
     for (QueryId unused_query : _query_to_docs->deleteValue(doc)) {
-      irrelevant_queries.push_back(unused_query);
+      irrelevant_queries.insert(unused_query);
     }
   }
 
