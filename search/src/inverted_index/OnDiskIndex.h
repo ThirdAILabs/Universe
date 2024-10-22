@@ -38,7 +38,7 @@ class OnDiskIndex final : public Retriever {
                              const std::unordered_set<DocId>& candidates,
                              uint32_t k, bool parallelize) const final;
 
-  void remove(const std::vector<DocId>& id_list) final;
+  void remove(const std::unordered_set<DocId>& ids) final;
 
   size_t size() const final { return getNDocs(); }
 
