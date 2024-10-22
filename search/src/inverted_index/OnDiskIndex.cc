@@ -634,9 +634,7 @@ std::vector<DocScore> OnDiskIndex::rank(
   return top_scores;
 }
 
-void OnDiskIndex::remove(const std::vector<DocId>& id_list) {
-  std::unordered_set<DocId> ids(id_list.begin(), id_list.end());
-
+void OnDiskIndex::remove(const std::unordered_set<DocId>& ids) {
   rocksdb::Transaction* txn = startTransaction();
 
   int64_t sum_deleted_len = 0;
