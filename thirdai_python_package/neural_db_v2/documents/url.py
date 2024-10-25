@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Iterable, Optional
 
 import thirdai.neural_db.parsing_utils.url_parse as url_parse
@@ -33,6 +34,11 @@ class URL(Document):
         content = url_parse.create_train_df(elements)
 
         text = content["text"]
+
+        if len(text) == 0:
+            logging.warning(f"Unable to parse content from url {self.path}.")
+            return []
+
         keywords = content["title"] if self.title_is_strong else content["text"]
 
         metadata = join_metadata(
