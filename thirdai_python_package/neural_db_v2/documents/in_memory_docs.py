@@ -26,6 +26,9 @@ class InMemoryText(Document):
         self.doc_metadata = doc_metadata
 
     def chunks(self) -> Iterable[NewChunkBatch]:
+        if len(self.text) == 0:
+            return []
+
         metadata = join_metadata(
             n_rows=len(self.text),
             chunk_metadata=self.chunk_metadata,

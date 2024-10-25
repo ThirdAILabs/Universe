@@ -43,6 +43,9 @@ class Unstructured(Document):
 
         text = contents["para"]
 
+        if len(text) == 0:
+            return []
+
         metadata = join_metadata(
             n_rows=len(text),
             chunk_metadata=contents[self.chunk_metadata_columns],

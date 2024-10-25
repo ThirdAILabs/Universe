@@ -33,6 +33,10 @@ class URL(Document):
         content = url_parse.create_train_df(elements)
 
         text = content["text"]
+
+        if len(text) == 0:
+            return []
+
         keywords = content["title"] if self.title_is_strong else content["text"]
 
         metadata = join_metadata(

@@ -61,6 +61,10 @@ class PDF(Document):
             )
 
         text = parsed_chunks["para"]
+
+        if len(text) == 0:
+            return []
+
         keywords = (
             parsed_chunks["emphasis"]
             if self.version == "v2"
