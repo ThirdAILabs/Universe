@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, Optional
+import logging
+from typing import Iterable, Optional
 
 import pandas as pd
 
@@ -27,6 +28,7 @@ class InMemoryText(Document):
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         if len(self.text) == 0:
+            logging.warning(f"Creating empty InMemoryText document {self.path}.")
             return []
 
         metadata = join_metadata(
