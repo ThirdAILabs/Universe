@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Iterable, Optional
 
 import thirdai.neural_db.parsing_utils.doc_parse as doc_parse
@@ -30,6 +31,10 @@ class DOCX(Document):
         parsed_chunks = doc_parse.create_train_df(elements)
 
         text = parsed_chunks["para"]
+
+        if len(text) == 0:
+            logging.warning(f"Unable to parse content from docx {self.path}.")
+            return []
 
         metadata = join_metadata(
             n_rows=len(text), chunk_metadata=None, doc_metadata=self.doc_metadata

@@ -1,6 +1,6 @@
+import logging
 from typing import Any, Dict, Iterable, List, Optional
 
-import pandas as pd
 from thirdai.neural_db.parsing_utils.unstructured_parse import (
     EmlParse,
     PptxParse,
@@ -42,6 +42,12 @@ class Unstructured(Document):
         contents = parser.create_train_df(elements)
 
         text = contents["para"]
+
+        if len(text) == 0:
+            logging.warning(
+                f"Unable to parse content from unstructured document {self.path}."
+            )
+            return []
 
         metadata = join_metadata(
             n_rows=len(text),
