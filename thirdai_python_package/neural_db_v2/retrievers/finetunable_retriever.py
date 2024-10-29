@@ -53,6 +53,8 @@ class FinetunableRetriever(Retriever):
             self.splade = Splade()
         else:
             self.splade = None
+        if save_path:
+            self.save_options(save_path)
 
     def search(
         self, queries: List[str], top_k: int, **kwargs
@@ -110,11 +112,14 @@ class FinetunableRetriever(Retriever):
     def options_path(path: str) -> str:
         return os.path.join(path, "options.json")
 
-    def save(self, path: str):
-        self.retriever.save(path)
+    def save_options(self, path: str):
         options = {"splade": bool(self.splade is not None)}
         with open(FinetunableRetriever.options_path(path), "w") as f:
             json.dump(options, f)
+
+    def save(self, path: str):
+        self.retriever.save(path)
+        self.save_options(path)
 
     @classmethod
     def load(cls, path: str, read_only: bool = False, **kwargs):
