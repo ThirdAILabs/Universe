@@ -90,6 +90,7 @@ class LessThan(Constraint):
         if self.inclusive:
             return df[column_name] <= self.value
         return df[column_name] < self.value
+    
 
 class Substring(Constraint):
     def __init__(self, value):

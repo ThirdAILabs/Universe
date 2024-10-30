@@ -11,6 +11,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     GreaterThan,
     LessThan,
     NoneOf,
+    Substring
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
 from thirdai.neural_db_v2.documents import InMemoryText, PrebatchedDoc
@@ -514,6 +515,14 @@ def test_multivalue_metadata():
 
     chunk_ids = store.filter_chunk_ids(
         {
+            "items": GreaterThan(3),
+            "permissions": Substring("oup4"),
+        }
+    )
+    assert chunk_ids == set([2, 4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
             "items": GreaterThan(4),
             "time": LessThan(25),
         }
@@ -532,6 +541,15 @@ def test_multivalue_metadata():
     chunk_ids = store.filter_chunk_ids(
         {
             "permissions": EqualTo("group4"),
+            "start": AnyOf(["r", "x"]),
+            "items": AnyOf([2, 3]),
+        }
+    )
+    assert chunk_ids == set([2])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": Substring("oup4"),
             "start": AnyOf(["r", "x"]),
             "items": AnyOf([2, 3]),
         }
