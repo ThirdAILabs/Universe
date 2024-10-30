@@ -11,7 +11,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     GreaterThan,
     LessThan,
     NoneOf,
-    Substring
+    Substring,
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
 from thirdai.neural_db_v2.documents import InMemoryText, PrebatchedDoc
