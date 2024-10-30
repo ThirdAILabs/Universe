@@ -1,8 +1,7 @@
-import warnings
+import logging
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
-from thirdai.data import get_udt_col_types
 
 from ..core.documents import Document
 from ..core.types import MetadataType, NewChunkBatch, metadata_type_to_pandas_type
@@ -94,6 +93,10 @@ class CSV(Document):
             )
 
         for df in data_iter:
+            if len(df) == 0:
+                logging.warning(f"Inserting empty csv file {self.path} into NeuralDB.")
+                continue
+
             df.reset_index(drop=True, inplace=True)
 
             if not self.text_columns and not self.keyword_columns:
@@ -107,6 +110,7 @@ class CSV(Document):
                 self.keyword_columns = []
 
             text = concat_str_columns(df, self.text_columns)
+
             keywords = concat_str_columns(df, self.keyword_columns)
 
             non_metadata_columns = [

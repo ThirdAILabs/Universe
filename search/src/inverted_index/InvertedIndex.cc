@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::search {
@@ -339,22 +340,21 @@ std::vector<DocScore> InvertedIndex::rank(
   return top_scores;
 }
 
-void InvertedIndex::remove(const std::vector<DocId>& ids) {
-  for (DocId id : ids) {
-    for (auto& shard : _shards) {
-      if (!shard.contains(id)) {
-        continue;
+void InvertedIndex::remove(const std::unordered_set<DocId>& ids) {
+  for (auto& shard : _shards) {
+    for (DocId id : ids) {
+      if (shard.contains(id)) {
+        _sum_doc_lens -= shard.doc_lens.at(id);
+        shard.doc_lens.erase(id);
       }
+    }
 
-      _sum_doc_lens -= shard.doc_lens.at(id);
-      shard.doc_lens.erase(id);
-
-      for (auto& [token, docs] : shard.token_to_docs) {
-        docs.erase(
-            std::remove_if(docs.begin(), docs.end(),
-                           [id](const auto& item) { return item.first == id; }),
-            docs.end());
-      }
+    for (auto& [token, docs] : shard.token_to_docs) {
+      docs.erase(std::remove_if(docs.begin(), docs.end(),
+                                [&ids](const auto& item) -> bool {
+                                  return ids.count(item.first);
+                                }),
+                 docs.end());
     }
   }
 

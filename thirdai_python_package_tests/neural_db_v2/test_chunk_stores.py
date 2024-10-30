@@ -661,3 +661,37 @@ def test_list_documents(chunk_store):
 
     assert len(docs) == len(expected_docs)
     assert set(docs) == set(expected_docs)
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_context(chunk_store):
+    store = chunk_store()
+
+    store.insert(
+        [
+            InMemoryText(document_name="b.txt", text=["b1", "b2", "b3"], doc_id="b1"),
+            InMemoryText(
+                document_name="a.txt", text=["a1", "a2", "a3", "a4"], doc_id="a1"
+            ),
+            InMemoryText(document_name="a.txt", text=["a5", "a6"], doc_id="a1"),
+        ]
+    )
+
+    b1, a1, a3, a5 = store.get_chunks([0, 3, 5, 7])
+
+    def get_context_text(chunk, radius):
+        context = store.context(chunk, radius)
+        return [c.text for c in context]
+
+    assert get_context_text(b1, 2) == ["b1", "b2", "b3"]
+
+    # Context should not go beyond document (preceding or subsequent doc)
+    assert get_context_text(b1, 4) == ["b1", "b2", "b3"]
+    assert get_context_text(a1, 2) == ["a1", "a2", "a3"]
+
+    # Check context in the middle
+    assert get_context_text(a3, 1) == ["a2", "a3", "a4"]
+
+    # Context should not go to different version of same doc
+    assert get_context_text(a3, 2) == ["a1", "a2", "a3", "a4"]
+    assert get_context_text(a5, 1) == ["a5", "a6"]
