@@ -68,12 +68,13 @@ class OnDiskIndex final : public Retriever {
 
   std::vector<HashedToken> tokenize(const std::string& text) const;
 
-  rocksdb::Transaction* startTransaction() {
+  std::unique_ptr<rocksdb::Transaction> startTransaction() {
     if (!_transaction_db) {
       throw std::invalid_argument(
           "This operation is not supported in read only mode");
     }
-    return _transaction_db->BeginTransaction(rocksdb::WriteOptions());
+    return std::unique_ptr<rocksdb::Transaction>(
+        _transaction_db->BeginTransaction(rocksdb::WriteOptions()));
   }
 
   void storeDocLens(const std::vector<DocId>& ids,

@@ -321,7 +321,7 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
                                const std::vector<uint32_t>& doc_lens) {
   int64_t sum_doc_lens = 0;
 
-  rocksdb::Transaction* txn = startTransaction();
+  auto txn = startTransaction();
 
   for (size_t i = 0; i < ids.size(); i++) {
     const DocId doc_id = ids[i];
@@ -355,7 +355,8 @@ void OnDiskIndex::storeDocLens(const std::vector<DocId>& ids,
   if (!status.ok()) {
     raiseError(status, "txn commit");
   }
-  delete txn;
+
+  txn.reset();
 
   updateNDocs(ids.size());
   updateSumDocLens(sum_doc_lens);
@@ -446,7 +447,7 @@ void OnDiskIndex::incrementDocLens(
 void OnDiskIndex::incrementDocTokenCounts(
     const std::unordered_map<HashedToken, std::vector<DocCount>>&
         token_to_doc_updates) {
-  rocksdb::Transaction* txn = startTransaction();
+  auto txn = startTransaction();
 
   for (const auto& [token, updates] : token_to_doc_updates) {
     rocksdb::Slice key(reinterpret_cast<const char*>(&token), sizeof(token));
@@ -485,8 +486,6 @@ void OnDiskIndex::incrementDocTokenCounts(
   if (!status.ok()) {
     raiseError(status, "txn commit");
   }
-
-  delete txn;
 }
 
 // TODO(Nicholas): This logic is similar to that of the regular inverted index,
@@ -635,13 +634,16 @@ std::vector<DocScore> OnDiskIndex::rank(
 }
 
 void OnDiskIndex::remove(const std::unordered_set<DocId>& ids) {
-  rocksdb::Transaction* txn = startTransaction();
+  auto txn = startTransaction();
 
   int64_t sum_deleted_len = 0;
   for (const auto& doc : ids) {
     std::string serialized_doc_len;
     auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
                                         docIdKey(doc), &serialized_doc_len);
+    if (!get_status.ok()) {
+      raiseError(get_status, "txn get");
+    }
     int64_t doc_len;
     if (!deserialize(serialized_doc_len, doc_len)) {
       throw std::runtime_error("document length corrupted");
@@ -657,8 +659,8 @@ void OnDiskIndex::remove(const std::unordered_set<DocId>& ids) {
   updateSumDocLens(-sum_deleted_len);
   updateNDocs(-ids.size());
 
-  rocksdb::Iterator* iter =
-      txn->GetIterator(rocksdb::ReadOptions(), _token_to_docs);
+  auto iter = std::unique_ptr<rocksdb::Iterator>(
+      txn->GetIterator(rocksdb::ReadOptions(), _token_to_docs));
 
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     auto curr_value = iter->value();
@@ -685,14 +687,12 @@ void OnDiskIndex::remove(const std::unordered_set<DocId>& ids) {
     }
   }
 
-  delete iter;
+  iter.reset();
 
   auto status = txn->Commit();
   if (!status.ok()) {
     raiseError(status, "txn commit");
   }
-
-  delete txn;
 }
 
 void OnDiskIndex::prune() {
@@ -701,8 +701,8 @@ void OnDiskIndex::prune() {
   const int64_t max_docs_with_token =
       std::max<int64_t>(_max_token_occurrence_frac * n_docs, 1000);
 
-  rocksdb::Iterator* iter =
-      _db->NewIterator(rocksdb::ReadOptions(), _token_to_docs);
+  auto iter = std::unique_ptr<rocksdb::Iterator>(
+      _db->NewIterator(rocksdb::ReadOptions(), _token_to_docs));
 
   rocksdb::WriteBatch batch;
   TokenStatus prune = TokenStatus::Pruned;
@@ -719,7 +719,7 @@ void OnDiskIndex::prune() {
     }
   }
 
-  delete iter;
+  iter.reset();
 
   auto status = _db->Write(rocksdb::WriteOptions(), &batch);
   if (!status.ok()) {
