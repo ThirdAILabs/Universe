@@ -542,20 +542,7 @@ class SQLiteChunkStore(ChunkStore):
             obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
             obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
 
-        # Migrate deprecated metadata format
-        if "neural_db_metadata" in obj.metadata.tables:
-            old_metadata_table = obj.metadata.tables["neural_db_metadata"]
-
-            with obj.engine.connect() as conn:
-                old_metadata_df = pd.read_sql(select(old_metadata_table), conn)
-                for col in old_metadata_df:
-                    if col == "chunk_id":
-                        continue
-                    obj._store_metadata(
-                        old_metadata_df[col], old_metadata_df["chunk_id"]
-                    )
-
-        else:
+        if "neural_db_metadata_type" in obj.metadata.tables:
             obj.metadata_tables = {}
             for metadata_type in sql_type_mapping:
                 metadata_table_name = f"neural_db_metadata_{metadata_type.value}"
@@ -569,6 +556,8 @@ class SQLiteChunkStore(ChunkStore):
 
             obj._create_metadata_tables()
             obj.metadata.create_all(obj.engine)
+        else:
+            # Migrate deprecated metadata format
 
             for name in obj.metadata.tables:
                 # Few people, if any, have used NDBv2 multivalue metadata columns,
@@ -576,10 +565,24 @@ class SQLiteChunkStore(ChunkStore):
                 # to convert that metadata to the new format.
                 if name.startswith("multivalue_metadata_"):
                     raise AttributeError(
-                        "Loading NeuralDB with multivalue metadata table is deprecated. Please downgrade thirdai to <= 0.9.16."
+                        "Loading NeuralDB with multivalue metadata table is deprecated. Please downgrade thirdai to <= 0.9.20."
                     )
 
-        with obj.engine.connect() as conn:
+            obj._create_metadata_tables()
+            obj.metadata.create_all(obj.engine)
+
+            old_metadata_table = obj.metadata.tables["neural_db_metadata"]
+
+            with obj.engine.connect() as conn:
+                old_metadata_df = pd.read_sql(select(old_metadata_table), conn)
+                for col in old_metadata_df:
+                    if col == "chunk_id":
+                        continue
+                    obj._store_metadata(
+                        old_metadata_df[[col]], old_metadata_df["chunk_id"]
+                    )
+
+        with obj.engine.begin() as conn:
             result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
             max_id = result.scalar()
             obj.next_id = (max_id or 0) + 1
