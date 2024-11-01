@@ -422,6 +422,10 @@ class UDTBackend {
     throw notSupported("add_new_entity_to_model");
   }
 
+  virtual std::pair<std::string, std::string> sourceTargetCols() const {
+    throw notSupported("source_target_cols");
+  }
+
   virtual ~UDTBackend() = default;
 
  protected:
