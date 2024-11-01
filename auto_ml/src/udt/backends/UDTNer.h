@@ -165,6 +165,10 @@ class UDTNer final : public UDTBackend {
     curr_model = model;
   }
 
+  std::pair<std::string, std::string> sourceTargetCols() const final {
+    return {_tokens_column, _tags_column};
+  }
+
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
   static std::unique_ptr<UDTNer> fromArchive(const ar::Archive& archive);

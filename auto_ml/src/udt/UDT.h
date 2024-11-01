@@ -155,6 +155,10 @@ class UDT {
     return _backend->listNerTags();
   }
 
+  std::pair<std::string, std::string> sourceTargetCols() const {
+    return _backend->sourceTargetCols();
+  }
+
   void updateTemporalTrackers(const MapInput& sample) {
     if (auto featurizer = _backend->featurizer()) {
       featurizer->updateTemporalTrackers(sample);
