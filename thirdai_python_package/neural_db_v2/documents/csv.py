@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
@@ -54,12 +55,17 @@ class CSV(Document):
         data_iter = pd.read_csv(self.path, chunksize=self.max_rows)
 
         for df in data_iter:
+            if len(df) == 0:
+                logging.warning(f"Inserting empty csv file {self.path} into NeuralDB.")
+                continue
+
             df.reset_index(drop=True, inplace=True)
 
             if len(self.text_columns) + len(self.keyword_columns) == 0:
                 self.text_columns = infer_text_columns(df)
 
             text = concat_str_columns(df, self.text_columns)
+
             keywords = concat_str_columns(df, self.keyword_columns)
 
             chunk_metadata = df.drop(self.text_columns + self.keyword_columns, axis=1)

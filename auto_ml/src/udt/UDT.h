@@ -155,6 +155,10 @@ class UDT {
     return _backend->listNerTags();
   }
 
+  std::pair<std::string, std::string> sourceTargetCols() const {
+    return _backend->sourceTargetCols();
+  }
+
   void updateTemporalTrackers(const MapInput& sample) {
     if (auto featurizer = _backend->featurizer()) {
       featurizer->updateTemporalTrackers(sample);
@@ -514,6 +518,10 @@ class UDT {
 
   static size_t estimateHashTableSize(size_t output_dim,
                                       std::optional<float> sparsity);
+
+  void addNerRule(const std::string& rule_name) {
+    _backend->addNerRule(rule_name);
+  }
 
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&

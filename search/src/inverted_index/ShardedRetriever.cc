@@ -194,7 +194,7 @@ std::vector<DocScore> ShardedRetriever::rank(
   return topkAcrossShards(results, k);
 }
 
-void ShardedRetriever::remove(const std::vector<DocId>& ids) {
+void ShardedRetriever::remove(const std::unordered_set<DocId>& ids) {
   for (const auto& shard : _shards) {
     shard->remove(ids);
   }

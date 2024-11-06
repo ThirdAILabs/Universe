@@ -2,6 +2,7 @@
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <memory>
+#include <regex>
 #include <stdexcept>
 
 namespace thirdai::search {
@@ -29,6 +30,23 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
   }
 
   Tokens tokens = text::splitOnWhiteSpace(text);
+
+  // This is to handle tokens like U.S. or at&t in which the regular
+  // tokenization would lead to different tokens/letters that will may be more
+  // common and impact search results. We cap the total match length at 7 so
+  // that there are at most 6 letters in the original token, tokens longer than
+  // this are usually fine to split up into the sub tokens because each token is
+  // long enough to have meaning on its own.
+  auto match_begin =
+      std::sregex_iterator(input.begin(), input.end(), _punct_word_re);
+  auto match_end = std::sregex_iterator();
+
+  for (auto it = match_begin; it != match_end; ++it) {
+    if (it->length() < 7) {
+      const std::string cleaned = it->str(1) + it->str(2);
+      tokens.push_back(cleaned);
+    }
+  }
 
   if (_stem) {
     return text::porter_stemmer::stem(tokens, _lowercase);

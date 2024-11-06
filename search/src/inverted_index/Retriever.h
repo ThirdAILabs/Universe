@@ -63,7 +63,7 @@ class Retriever {
 
   virtual void prune() {}
 
-  virtual void remove(const std::vector<DocId>& ids) = 0;
+  virtual void remove(const std::unordered_set<DocId>& ids) = 0;
 
   virtual size_t size() const = 0;
 

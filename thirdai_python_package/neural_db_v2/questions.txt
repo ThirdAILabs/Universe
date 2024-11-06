@@ -1,2 +1,0 @@
-Should we have document objects or have text, keyword, and metadata columns?
-Should we pass in iterable of documents, iterable of batches of documents, or a single batch of documents?

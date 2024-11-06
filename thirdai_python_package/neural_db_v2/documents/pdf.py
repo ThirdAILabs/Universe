@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Iterable, Optional
 
 from thirdai.neural_db.documents import process_pdf as pdf_parse_v1
@@ -61,10 +62,15 @@ class PDF(Document):
             )
 
         text = parsed_chunks["para"]
+
+        if len(text) == 0:
+            logging.warning(f"Unable to parse content from pdf {self.path}.")
+            return []
+
         keywords = (
             parsed_chunks["emphasis"]
             if self.version == "v2"
-            else series_from_value("", len(text))
+            else series_from_value(self.doc_keywords, len(text))
         )
 
         metadata_columns = (
