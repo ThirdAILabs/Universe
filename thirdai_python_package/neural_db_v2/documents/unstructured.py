@@ -23,12 +23,11 @@ class Unstructured(Document):
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
     ):
-        super().__init__(doc_id=doc_id)
+        super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
         self.path = path
         self.parser = parser
         self.chunk_metadata_columns = chunk_metadata_columns
-        self.doc_metadata = doc_metadata
         self.display_path = display_path
 
     def chunks(self) -> Iterable[NewChunkBatch]:

@@ -11,6 +11,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     GreaterThan,
     LessThan,
     NoneOf,
+    Substring,
 )
 from thirdai.neural_db_v2.core.types import NewChunkBatch
 from thirdai.neural_db_v2.documents import InMemoryText, PrebatchedDoc
@@ -126,19 +127,19 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[0],
         chunk_id=1,
         value=1,
-        metadata={"class": "b", "number": 9, "item": "y", "time": None},
+        metadata={"class": "b", "number": 9, "item": "y"},
     )
     check_chunk_contents(
         chunks[1],
         chunk_id=3,
         value=3,
-        metadata={"class": "b", "number": 2, "time": 2.6, "item": None},
+        metadata={"class": "b", "number": 2, "time": 2.6},
     )
     check_chunk_contents(
         chunks[2],
         chunk_id=0,
         value=0,
-        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+        metadata={"class": "a", "number": 4, "item": "x"},
     )
 
     store.delete([1, 2])
@@ -152,13 +153,13 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[0],
         chunk_id=3,
         value=3,
-        metadata={"class": "b", "number": 2, "time": 2.6, "item": None},
+        metadata={"class": "b", "number": 2, "time": 2.6},
     )
     check_chunk_contents(
         chunks[1],
         chunk_id=0,
         value=0,
-        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+        metadata={"class": "a", "number": 4, "item": "x"},
     )
 
     new_batches = PrebatchedDoc(
@@ -182,19 +183,19 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[0],
         chunk_id=8,
         value=1,
-        metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
+        metadata={"class": "d", "time": 8.1, "item": "z"},
     )
     check_chunk_contents(
         chunks[1],
         chunk_id=0,
         value=0,
-        metadata={"class": "a", "number": 4, "item": "x", "time": None},
+        metadata={"class": "a", "number": 4, "item": "x"},
     )
     check_chunk_contents(
         chunks[2],
         chunk_id=7,
         value=8,
-        metadata={"class": "c", "number": None, "time": 7.2, "item": "y"},
+        metadata={"class": "c", "time": 7.2, "item": "y"},
     )
 
     path = "test_chunk_store_basic_operations.store"
@@ -206,7 +207,7 @@ def test_chunk_store_basic_operations(chunk_store):
         chunks[0],
         chunk_id=8,
         value=1,
-        metadata={"class": "d", "number": None, "time": 8.1, "item": "z"},
+        metadata={"class": "d", "time": 8.1, "item": "z"},
     )
 
     os.remove(path)
@@ -263,7 +264,7 @@ def test_chunk_store_constraints_none_of(chunk_store):
     store = get_simple_chunk_store(chunk_store)
 
     chunk_ids = store.filter_chunk_ids({"number": NoneOf([4, 9])})
-    assert chunk_ids == set([2, 3, 5, 6])
+    assert chunk_ids == set([2, 3])
 
     clean_up_sql_lite_db(store)
 
@@ -514,6 +515,14 @@ def test_multivalue_metadata():
 
     chunk_ids = store.filter_chunk_ids(
         {
+            "items": GreaterThan(3),
+            "permissions": Substring("oup4"),
+        }
+    )
+    assert chunk_ids == set([2, 4])
+
+    chunk_ids = store.filter_chunk_ids(
+        {
             "items": GreaterThan(4),
             "time": LessThan(25),
         }
@@ -538,23 +547,28 @@ def test_multivalue_metadata():
     )
     assert chunk_ids == set([2])
 
+    chunk_ids = store.filter_chunk_ids(
+        {
+            "permissions": Substring("oup4"),
+            "start": AnyOf(["r", "x"]),
+            "items": AnyOf([2, 3]),
+        }
+    )
+    assert chunk_ids == set([2])
+
     chunks = store.get_chunks([0, 4, 3])
 
     chunk_0_metadata = {
         "start": "a",
-        "end": None,
         "items": [1, 3],
         "time": 20,
-        "type": None,
         "permissions": ["group1", "group2", "group3"],
     }
     assert chunks[0].metadata == chunk_0_metadata
 
     chunk_4_metadata = {
         "start": "x",
-        "end": None,
         "items": [1, 5],
-        "time": None,
         "type": "pdf",
         "permissions": ["group1", "group4"],
     }
@@ -563,7 +577,6 @@ def test_multivalue_metadata():
     chunk_3_metadata = {
         "start": "u",
         "end": "w",
-        "time": None,
         "type": "pdf",
         "permissions": ["group1", "group4"],
     }

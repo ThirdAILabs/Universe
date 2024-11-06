@@ -26,7 +26,7 @@ class PDF(Document):
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
     ):
-        super().__init__(doc_id=doc_id)
+        super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
         if version not in ["v1", "v2"]:
             raise ValueError("Invalid version, must be either 'v1' or 'v2'.")
@@ -39,7 +39,6 @@ class PDF(Document):
         self.ignore_header_footer = ignore_header_footer
         self.ignore_nonstandard_orientation = ignore_nonstandard_orientation
         self.table_parsing = table_parsing
-        self.doc_metadata = doc_metadata
         self.doc_keywords = doc_keywords
         self.emphasize_section_titles = emphasize_section_titles
         self.table_parsing = table_parsing

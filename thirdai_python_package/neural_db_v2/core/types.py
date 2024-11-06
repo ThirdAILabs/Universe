@@ -1,9 +1,11 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from pandera import typing as pt
+from sqlalchemy import Boolean, Float, Integer, String
 from thirdai import data
 
 # We typedef doc ID to anticipate switching over to string IDs
@@ -158,3 +160,30 @@ class InsertedDocMetadata:
     doc_id: str
     doc_version: int
     chunk_ids: List[ChunkId]
+
+
+class MetadataType(Enum):
+    INTEGER = "integer"
+    STRING = "string"
+    FLOAT = "float"
+    BOOLEAN = "boolean"
+
+
+metadata_type_to_pandas_type = {
+    MetadataType.STRING: np.dtype("object"),
+    MetadataType.INTEGER: np.dtype("int64"),
+    MetadataType.FLOAT: np.dtype("float64"),
+    MetadataType.BOOLEAN: np.dtype("bool"),
+}
+
+pandas_type_to_metadata_type = {
+    value: key for key, value in metadata_type_to_pandas_type.items()
+}
+
+
+sql_type_mapping = {
+    MetadataType.STRING: String,
+    MetadataType.INTEGER: Integer,
+    MetadataType.FLOAT: Float,
+    MetadataType.BOOLEAN: Boolean,
+}
