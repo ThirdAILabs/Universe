@@ -362,7 +362,7 @@ class SQLiteChunkStore(ChunkStore):
                     keywords=row.keywords,
                     document=row.document,
                     chunk_id=row.chunk_id,
-                    metadata=None,
+                    metadata={},
                     doc_id=row.doc_id,
                     doc_version=row.doc_version,
                 )
@@ -390,19 +390,15 @@ class SQLiteChunkStore(ChunkStore):
                 key = row.key
                 value = row.value
 
-                if (
-                    id_to_chunk[chunk_id].metadata
-                    and key in id_to_chunk[chunk_id].metadata
-                ):
-                    existing_value = id_to_chunk[chunk_id].metadata[key]
-                    if isinstance(existing_value, list):
-                        existing_value.append(value)
-                    else:
-                        id_to_chunk[chunk_id].metadata[key] = [existing_value, value]
-                else:
-                    if id_to_chunk[chunk_id].metadata is None:
-                        id_to_chunk[chunk_id].metadata = {}
+                if key not in id_to_chunk[chunk_id].metadata:
                     id_to_chunk[chunk_id].metadata[key] = value
+                elif isinstance(id_to_chunk[chunk_id].metadata[key], list):
+                    id_to_chunk[chunk_id].metadata[key].append(value)
+                else:
+                    id_to_chunk[chunk_id].metadata[key] = [
+                        id_to_chunk[chunk_id].metadata[key],
+                        value,
+                    ]
 
         chunks = []
         for chunk_id in chunk_ids:
