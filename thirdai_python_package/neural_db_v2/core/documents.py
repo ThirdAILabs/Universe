@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from .types import NewChunkBatch
 
@@ -9,7 +9,7 @@ def validate_doc_metadata(doc_metadata):
     if doc_metadata is None:
         return
     for _, value in doc_metadata.items():
-        if isinstance(value, list):
+        if isinstance(value, List):
             if len(value) > 0:
                 first_elem_type = type(value[0])
                 if not all(isinstance(elem, first_elem_type) for elem in value):
@@ -20,7 +20,7 @@ def validate_doc_metadata(doc_metadata):
 
 class Document(ABC):
     def __init__(
-        self, doc_id: Optional[str], doc_metadata: Optional[dict[str, Any]] = None
+        self, doc_id: Optional[str], doc_metadata: Optional[Dict[str, Any]] = None
     ):
         self._doc_id = doc_id or str(uuid.uuid4())
 
