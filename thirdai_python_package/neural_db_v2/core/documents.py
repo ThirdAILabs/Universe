@@ -1,6 +1,6 @@
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from .types import NewChunkBatch
 
@@ -20,7 +20,7 @@ def validate_doc_metadata(doc_metadata):
 
 class Document(ABC):
     def __init__(
-        self, doc_id: Optional[str], doc_metadata: Optional[dict[str, Any]] = None
+        self, doc_id: Optional[str], doc_metadata: Optional[Dict[str, Any]] = None
     ):
         self._doc_id = doc_id or str(uuid.uuid4())
 
