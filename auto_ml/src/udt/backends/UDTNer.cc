@@ -139,8 +139,8 @@ std::vector<data::ner::NerTagPtr> mapTagsToLabels(
     const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
         tags) {
   /*
-   * Constructs a pair containing a vector of NerLearnedTags and a set of
-   * strings. The vector represents the tags as they will appear in the model.
+   * Constructs a vector of NerLearnedTags.
+   * The vector represents the tags as they will appear in the model.
    *
    * Process:
    * 1. If a tag is explicitly an instance of NerLearnedTag, it is directly
