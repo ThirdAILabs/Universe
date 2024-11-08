@@ -134,37 +134,23 @@ std::string tokensColumn(ColumnDataTypes data_types,
   return data_types.begin()->first;
 }
 
-std::pair<std::vector<data::ner::NerTagPtr>, std::unordered_set<std::string>>
-mapTagsToLabels(
+std::vector<data::ner::NerTagPtr> mapTagsToLabels(
     const std::string& default_tag,
     const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
-        tags,
-    const data::ner::RulePtr& rule, bool ignore_rule_tags) {
+        tags) {
   /*
    * Constructs a pair containing a vector of NerLearnedTags and a set of
-   * strings. The vector represents the tags as they will appear in the model,
-   * and the set contains tags that will not have an explicit output in the
-   * model(ignored by the model).
+   * strings. The vector represents the tags as they will appear in the model.
    *
    * Process:
    * 1. If a tag is explicitly an instance of NerLearnedTag, it is directly
    * added to the output model.
-   * 2. If a tag is a string and not found in the rules, it is converted to
+   * 2. If a tag is a string, it is converted to
    * NerLearnedTag and added to the model.
-   * 3. If a tag is a string and found in the rules, it is ignored if
-   * ignore_rule_tags is true, otherwise it is added.
-   *
-   * Union(model_tags, ignored_tags) = {tag : tag in Dataset}. This constraint
-   * is needed to avoid errors while transforming the training dataset.
    */
-
-  // Get rule entities or an empty vector if no rule is provided
-  auto rule_tags =
-      rule == nullptr ? std::vector<std::string>() : rule->entities();
 
   std::vector<data::ner::NerTagPtr> model_tags = {
       data::ner::getLearnedTagFromString(default_tag)};
-  std::unordered_set<std::string> ignored_tags;
 
   for (const auto& tag : tags) {
     if (std::holds_alternative<data::ner::NerLearnedTag>(tag)) {
@@ -173,16 +159,10 @@ mapTagsToLabels(
           std::get<data::ner::NerLearnedTag>(tag)));
     } else {
       auto tag_string = std::get<std::string>(tag);
-      if (std::find(rule_tags.begin(), rule_tags.end(), tag_string) ==
-              rule_tags.end() ||
-          !ignore_rule_tags) {
-        model_tags.push_back(data::ner::getLearnedTagFromString(tag_string));
-      } else if (ignore_rule_tags) {
-        ignored_tags.insert(tag_string);
-      }
+      model_tags.push_back(data::ner::getLearnedTagFromString(tag_string));
     }
   }
-  return {model_tags, ignored_tags};
+  return model_tags;
 }
 
 std::shared_ptr<data::NerTokenizerUnigram> extractNerTokenizerTransform(
@@ -279,26 +259,16 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
     options = fromScratch(args);
   }
 
-  bool ignore_rule_tags = args.get<bool>("ignore_rule_tags", "boolean", true);
-
-  if (args.get<bool>("rules", "boolean", false)) {
-    _rule = data::ner::getRuleForEntities(defaults::NER_RULE_BASED_ENTITIES);
-  }
-
   std::vector<data::ner::NerTagPtr> model_tags;
-  std::unordered_set<std::string> ignored_tags;
 
-  std::tie(model_tags, ignored_tags) = mapTagsToLabels(
-      target->default_tag, target->tags, _rule, ignore_rule_tags);
-
-  _tag_tracker = data::ner::utils::TagTracker::make(model_tags, ignored_tags);
+  model_tags = mapTagsToLabels(target->default_tag, target->tags);
 
   if (args.get<bool>("use_token_tag_counter", "bool", false)) {
     _tag_tracker = data::ner::utils::TagTracker::make(
-        model_tags, ignored_tags,
+        model_tags, {},
         args.get<uint32_t>("token_counter_bins", "uint32_t", 10));
   } else {
-    _tag_tracker = data::ner::utils::TagTracker::make(model_tags, ignored_tags);
+    _tag_tracker = data::ner::utils::TagTracker::make(model_tags, {});
   }
 
   _model = buildModel(options.input_dim, options.emb_dim,
