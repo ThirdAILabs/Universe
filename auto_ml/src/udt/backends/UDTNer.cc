@@ -143,8 +143,10 @@ std::vector<data::ner::NerTagPtr> mapTagsToLabels(
    * The vector represents the tags as they will appear in the model.
    *
    * Process:
-   * 1. If the tag is an instance of NerLearnedTag -> directly added to the output model.
-   * 2. If the tag is a string, it is converted to NerLearnedTag and added to the model.
+   * 1. If the tag is an instance of NerLearnedTag -> directly added to the
+   * output model.
+   * 2. If the tag is a string, it is converted to NerLearnedTag and added to
+   * the model.
    */
 
   std::vector<data::ner::NerTagPtr> model_tags = {
