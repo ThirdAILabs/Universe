@@ -193,10 +193,10 @@ def evaluate(model, test):
 
 
 @pytest.mark.parametrize(
-    "use_rules,ignore_rule_tags",
-    [(True, True), (True, False), (False, True), (False, False)],
+    "use_rules",
+    [(True), (False)],
 )
-def test_udt_ner_model(ner_dataset, use_rules, ignore_rule_tags):
+def test_udt_ner_model(ner_dataset, use_rules):
     train, test = ner_dataset
 
     model = bolt.UniversalDeepTransformer(
@@ -208,9 +208,11 @@ def test_udt_ner_model(ner_dataset, use_rules, ignore_rule_tags):
         },
         target=TAGS,
         embedding_dimension=500,
-        rules=use_rules,
-        ignore_rule_tags=ignore_rule_tags,
     )
+
+    if use_rules:
+        model.add_ner_rule("EMAIL")
+        model.add_ner_rule("CREDITCARDNUMBER")
 
     model.train(train, epochs=1, learning_rate=0.001, metrics=["categorical_accuracy"])
 
@@ -347,7 +349,6 @@ def test_udt_ner_learned_tags(ner_dataset):
         },
         target=TAGS,
         embedding_dimension=500,
-        rules=True,
         use_token_tag_counter=True,
     )
 
@@ -431,14 +432,14 @@ def test_unicode_split():
     model = bolt.UniversalDeepTransformer(
         data_types={
             "source": bolt.types.text(),
-            "target": bolt.types.token_tags(tags=["PHONENUMBER"], default_tag="O"),
+            "target": bolt.types.token_tags(tags=[], default_tag="O"),
         },
         target="target",
-        rules=True,
         embedding_dimension=10,
     )
+    model.add_ner_rule("PHONENUMBER")
 
-    sample = "123-456-7890\u00A0123-456-7890"
+    sample = "123-456-7890\u00a0123-456-7890"
 
     entities = model.predict({"source": sample}, return_offsets=True)
     assert len(entities) == 1
