@@ -44,8 +44,17 @@ from .constraints import Constraint
 
 # In sqlite3, foreign keys are not enabled by default.
 # This ensures that sqlite3 connections have foreign keys enabled.
-def create_engine_with_fk(database_url, **kwargs):
-    engine = create_engine(database_url, **kwargs)
+def create_engine_with_fk(
+    database_url,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1200,
+    **kwargs,
+):
+    engine = create_engine(
+        database_url, pool_size, max_overflow, pool_timeout, pool_recycle, **kwargs
+    )
 
     @event.listens_for(engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):
