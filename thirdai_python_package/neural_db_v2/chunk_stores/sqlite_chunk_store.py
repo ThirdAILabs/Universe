@@ -21,6 +21,7 @@ from sqlalchemy import (
     delete,
     event,
     func,
+    or_,
     select,
     union_all,
 )
@@ -418,47 +419,57 @@ class SQLiteChunkStore(ChunkStore):
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
 
-        conditions = []
-        query = None
-        base_table = None
-        with self.engine.begin() as conn:
-            for column, constraint in constraints.items():
+        subqueries = []
+        total_constraints = len(constraints)
+        table_to_columns = defaultdict(list)
+
+        for column in constraints:
+            with self.engine.begin() as conn:
                 result = conn.execute(
                     select(self.metadata_type_table.c.type).where(
                         self.metadata_type_table.c.key == column
                     )
                 ).fetchone()
 
-                if result:
-                    metadata_type = MetadataType(result.type)
-                    metadata_table = self.metadata_tables[metadata_type]
+            if result:
+                metadata_type = MetadataType(result.type)
+                metadata_table = self.metadata_tables[metadata_type]
+                table_to_columns[metadata_table].append(column)
+            else:
+                raise ValueError(f"Column {column} not found in metadata.")
 
-                    metadata_table_alias = alias(metadata_table)
+        for table, columns in table_to_columns.items():
 
-                    condition = constraint.sql_condition(
-                        column_name=column, table=metadata_table_alias
-                    )
-                    conditions.append(condition)
+            conditions = []
+            for column in columns:
+                condition = constraints[column].sql_condition(
+                    column_name=column, table=table
+                )
+                conditions.append(condition)
 
-                    if query is None:
-                        base_table = metadata_table_alias
-                        query = select(base_table.c.chunk_id).select_from(base_table)
-                    else:
-                        query = query.join(
-                            metadata_table_alias,
-                            and_(
-                                base_table.c.chunk_id
-                                == metadata_table_alias.c.chunk_id,
-                                metadata_table_alias.c.key == column,
-                            ),
-                        )
+            subquery = select(
+                table.c.chunk_id.label("chunk_id"), table.c.key.label("key")
+            ).where(or_(*conditions))
+            subqueries.append(subquery)
 
-        if query is None:
+        if not subqueries:
             raise ValueError("Cannot filter constraints with no metadata.")
 
-        query = query.where(and_(*conditions))
+        combined_subquery = union_all(*subqueries)
+
+        combined_subquery = combined_subquery.alias("combined_subquery")
+
+        query = (
+            select(combined_subquery.c.chunk_id)
+            .group_by(combined_subquery.c.chunk_id)
+            .having(
+                func.count(func.distinct(combined_subquery.c.key)) == total_constraints
+            )
+        )
+
         with self.engine.connect() as conn:
-            return set(row.chunk_id for row in conn.execute(query))
+            result = conn.execute(query)
+            return set(row.chunk_id for row in result)
 
     def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(
