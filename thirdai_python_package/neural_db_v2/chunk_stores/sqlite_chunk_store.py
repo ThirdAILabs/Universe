@@ -182,7 +182,7 @@ class SQLiteChunkStore(ChunkStore):
         Params:
             save_path: Optional[str] - Path to save db to, otherwise is random
             encryption_key: Optional[str] - Must be passed to encrypt data
-            use_metadata_index: bool - If true, insertion time doubles but query time halves
+            use_metadata_index: bool - If true, insertion time doubles but query time with constraints roughly halves
         """
         super().__init__()
 
