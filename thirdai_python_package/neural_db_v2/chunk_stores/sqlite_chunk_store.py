@@ -207,7 +207,9 @@ class SQLiteChunkStore(ChunkStore):
 
     def _create_metadata_tables(self, use_metadata_index: bool = False):
         if use_metadata_index:
-            metadata_index = Index(f"ix_metadata_key_value_{metadata_type.value}", "key", "value")
+            metadata_index = Index(
+                f"ix_metadata_key_value_{metadata_type.value}", "key", "value"
+            )
         else:
             metadata_index = Index(f"ix_metadata_key_{metadata_type.value}", "key")
 
