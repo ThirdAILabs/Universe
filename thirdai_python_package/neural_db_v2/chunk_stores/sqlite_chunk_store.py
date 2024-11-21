@@ -170,7 +170,7 @@ class SQLiteChunkStore(ChunkStore):
         self,
         save_path: Optional[str] = None,
         encryption_key: Optional[str] = None,
-        use_metadata_index: bool = False,
+        use_metadata_index: bool = True,
         **kwargs,
     ):
         """
