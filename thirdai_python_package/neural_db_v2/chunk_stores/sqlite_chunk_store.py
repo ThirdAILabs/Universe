@@ -460,7 +460,8 @@ class SQLiteChunkStore(ChunkStore):
         query = None
         base_table = None
         for column, constraint in constraints.items():
-            if metadata_type := metadata_types[column]:
+            metadata_type = metadata_types[column]
+            if metadata_type:
                 metadata_table = self.metadata_tables[metadata_type]
 
                 metadata_table_alias = alias(metadata_table)
