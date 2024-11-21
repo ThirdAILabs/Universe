@@ -457,8 +457,6 @@ class SQLiteChunkStore(ChunkStore):
 
         combined_subquery = union_all(*subqueries)
 
-        combined_subquery = combined_subquery.alias("combined_subquery")
-
         query = (
             select(combined_subquery.c.chunk_id)
             .group_by(combined_subquery.c.chunk_id)
