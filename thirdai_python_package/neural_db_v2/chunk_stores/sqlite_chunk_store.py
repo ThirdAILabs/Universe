@@ -211,15 +211,15 @@ class SQLiteChunkStore(ChunkStore):
         self.next_id = 0
 
     def _create_metadata_tables(self, use_metadata_index: bool = False):
-        if use_metadata_index:
-            metadata_index = Index(
-                f"ix_metadata_key_value_{metadata_type.value}", "key", "value"
-            )
-        else:
-            metadata_index = Index(f"ix_metadata_key_{metadata_type.value}", "key")
-
         self.metadata_tables = {}
         for metadata_type, sql_type in sql_type_mapping.items():
+            if use_metadata_index:
+                metadata_index = Index(
+                    f"ix_metadata_key_value_{metadata_type.value}", "key", "value"
+                )
+            else:
+                metadata_index = Index(f"ix_metadata_key_{metadata_type.value}", "key")
+
             metadata_table = Table(
                 f"neural_db_metadata_{metadata_type.value}",
                 self.metadata,
