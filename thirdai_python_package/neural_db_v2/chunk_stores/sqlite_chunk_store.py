@@ -44,8 +44,22 @@ from .constraints import Constraint
 
 # In sqlite3, foreign keys are not enabled by default.
 # This ensures that sqlite3 connections have foreign keys enabled.
-def create_engine_with_fk(database_url, **kwargs):
-    engine = create_engine(database_url, **kwargs)
+def create_engine_with_fk(
+    database_url,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1200,
+    **kwargs,
+):
+    engine = create_engine(
+        database_url,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
+        pool_recycle=pool_recycle,
+        **kwargs,
+    )
 
     @event.listens_for(engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):
@@ -161,8 +175,15 @@ class SQLiteChunkStore(ChunkStore):
         self,
         save_path: Optional[str] = None,
         encryption_key: Optional[str] = None,
+        use_metadata_index: bool = False,
         **kwargs,
     ):
+        """
+        Params:
+            save_path: Optional[str] - Path to save db to, otherwise is random
+            encryption_key: Optional[str] - Must be passed to encrypt data
+            use_metadata_index: bool - If true, insertion time doubles but query time with constraints roughly halves
+        """
         super().__init__()
 
         self.db_name = save_path or f"{uuid.uuid4()}.db"
@@ -183,15 +204,22 @@ class SQLiteChunkStore(ChunkStore):
             Column("doc_version", Integer),
         )
 
-        self._create_metadata_tables()
+        self._create_metadata_tables(use_metadata_index)
 
         self.metadata.create_all(self.engine)
 
         self.next_id = 0
 
-    def _create_metadata_tables(self):
+    def _create_metadata_tables(self, use_metadata_index: bool = False):
         self.metadata_tables = {}
         for metadata_type, sql_type in sql_type_mapping.items():
+            if use_metadata_index:
+                metadata_index = Index(
+                    f"ix_metadata_key_value_{metadata_type.value}", "key", "value"
+                )
+            else:
+                metadata_index = Index(f"ix_metadata_key_{metadata_type.value}", "key")
+
             metadata_table = Table(
                 f"neural_db_metadata_{metadata_type.value}",
                 self.metadata,
@@ -203,7 +231,7 @@ class SQLiteChunkStore(ChunkStore):
                 ),
                 Column("key", String, primary_key=True),
                 Column("value", sql_type, primary_key=True),
-                Index(f"ix_metadata_key_{metadata_type.value}", "key"),
+                metadata_index,
                 extend_existing=True,
             )
             self.metadata_tables[metadata_type] = metadata_table
@@ -418,9 +446,7 @@ class SQLiteChunkStore(ChunkStore):
         if not len(constraints):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
 
-        conditions = []
-        query = None
-        base_table = None
+        metadata_types = {}
         with self.engine.begin() as conn:
             for column, constraint in constraints.items():
                 result = conn.execute(
@@ -428,30 +454,34 @@ class SQLiteChunkStore(ChunkStore):
                         self.metadata_type_table.c.key == column
                     )
                 ).fetchone()
+                metadata_types[column] = MetadataType(result.type) if result else None
 
-                if result:
-                    metadata_type = MetadataType(result.type)
-                    metadata_table = self.metadata_tables[metadata_type]
+        conditions = []
+        query = None
+        base_table = None
+        for column, constraint in constraints.items():
+            metadata_type = metadata_types[column]
+            if metadata_type:
+                metadata_table = self.metadata_tables[metadata_type]
 
-                    metadata_table_alias = alias(metadata_table)
+                metadata_table_alias = alias(metadata_table)
 
-                    condition = constraint.sql_condition(
-                        column_name=column, table=metadata_table_alias
+                condition = constraint.sql_condition(
+                    column_name=column, table=metadata_table_alias
+                )
+                conditions.append(condition)
+
+                if query is None:
+                    base_table = metadata_table_alias
+                    query = select(base_table.c.chunk_id).select_from(base_table)
+                else:
+                    query = query.join(
+                        metadata_table_alias,
+                        and_(
+                            base_table.c.chunk_id == metadata_table_alias.c.chunk_id,
+                            metadata_table_alias.c.key == column,
+                        ),
                     )
-                    conditions.append(condition)
-
-                    if query is None:
-                        base_table = metadata_table_alias
-                        query = select(base_table.c.chunk_id).select_from(base_table)
-                    else:
-                        query = query.join(
-                            metadata_table_alias,
-                            and_(
-                                base_table.c.chunk_id
-                                == metadata_table_alias.c.chunk_id,
-                                metadata_table_alias.c.key == column,
-                            ),
-                        )
 
         if query is None:
             raise ValueError("Cannot filter constraints with no metadata.")
