@@ -19,16 +19,13 @@ class PandasChunkStore(ChunkStore):
 
         self.chunk_df = pd.DataFrame(
             {
-                col: []
-                for col in [
-                    "chunk_id",
-                    "custom_id",
-                    "text",
-                    "keywords",
-                    "document",
-                    "doc_id",
-                    "doc_version",
-                ]
+                "chunk_id": pd.Series(dtype="int64"),
+                "custom_id": pd.Series(dtype="object"),
+                "text": pd.Series(dtype="object"),
+                "keywords": pd.Series(dtype="object"),
+                "document": pd.Series(dtype="object"),
+                "doc_id": pd.Series(dtype="object"),
+                "doc_version": pd.Series(dtype="int64"),
             }
         )
 
@@ -139,6 +136,12 @@ class PandasChunkStore(ChunkStore):
 
         if self.metadata_df.empty:
             raise ValueError("Cannot filter constraints with no metadata.")
+
+        missing_columns = [
+            column for column in constraints if column not in self.metadata_df.columns
+        ]
+        if missing_columns:
+            raise KeyError(f"Missing columns in metadata: {', '.join(missing_columns)}")
 
         condition = reduce(
             operator.and_,
