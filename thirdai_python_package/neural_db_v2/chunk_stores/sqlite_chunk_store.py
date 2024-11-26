@@ -23,10 +23,15 @@ from sqlalchemy import (
     func,
     select,
     union_all,
+    text,
+    Text,
+    cast,
+    inspect
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
+from sqlalchemy.exc import ProgrammingError
 
 from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
@@ -40,6 +45,114 @@ from ..core.types import (
     sql_type_mapping,
 )
 from .constraints import Constraint
+import random
+import string
+
+import csv
+from io import StringIO
+import io
+import psycopg2
+
+def psql_insert_copy(table, conn, keys, data_iter):
+    """
+    Execute SQL statement inserting data via COPY FROM.
+
+    Parameters:
+    - table: pandas.io.sql.SQLTable
+        The table to insert data into.
+    - conn: sqlalchemy.engine.Engine or sqlalchemy.engine.Connection
+        Database connection.
+    - keys: list of str
+        Column names.
+    - data_iter: iterator
+        Iterator of data to write.
+
+    """
+    # Get a DBAPI connection that can provide a cursor
+    dbapi_conn = conn.connection
+    with dbapi_conn.cursor() as cur:
+        s_buf = StringIO()
+        writer = csv.writer(s_buf)
+        writer.writerows(data_iter)
+        s_buf.seek(0)
+
+        columns = ', '.join('"{}"'.format(k) for k in keys)
+        if table.schema:
+            table_name = '{}.{}'.format(table.schema, table.name)
+        else:
+            table_name = table.name
+
+        sql = 'COPY {} ({}) FROM STDIN WITH CSV'.format(
+            table_name, columns)
+        cur.copy_expert(sql=sql, file=s_buf)
+
+
+def copy_dataframe_to_postgres(df, table_name, engine, schema=None, sep='\t', null_string=''):
+    """
+    Efficiently copy a DataFrame to an existing PostgreSQL table using COPY FROM.
+
+    Parameters:
+    - df: pandas.DataFrame
+        The DataFrame to copy.
+    - table_name: str
+        The name of the existing table in the database.
+    - engine: sqlalchemy.engine.Engine
+        The SQLAlchemy engine connected to the database.
+    - schema: str, optional
+        The schema of the table if not the default (public).
+    - sep: str, default '\t'
+        Field delimiter for the CSV file.
+    - null_string: str, default ''
+        The string representation of NULL values.
+    """
+    # Ensure the table exists
+    inspector = inspect(engine)
+    if not inspector.has_table(table_name, schema=schema):
+        raise ValueError(f"Table '{table_name}' does not exist in the database.")
+
+    # Get the list of columns in the existing table
+    db_columns = [col['name'] for col in inspector.get_columns(table_name, schema=schema)]
+
+    # Ensure DataFrame columns match the database table columns
+    missing_columns = set(df.columns) - set(db_columns)
+    if missing_columns:
+        raise ValueError(f"The following columns are missing in the database table: {missing_columns}")
+
+    extra_columns = set(db_columns) - set(df.columns)
+    if extra_columns:
+        # Optionally handle extra columns in the table that are not in the DataFrame
+        # For now, we'll proceed without them
+        pass
+
+    # Reorder DataFrame columns to match the database table columns
+    df = df[db_columns]
+
+    # Prepare data for COPY FROM
+    conn = engine.raw_connection()
+    try:
+        cur = conn.cursor()
+        output = io.StringIO()
+        # Use na_rep to represent NaN values as null_string
+        df.to_csv(output, sep=sep, header=False, index=False, na_rep=null_string)
+        output.seek(0)
+        # Prepare the list of columns for the COPY command
+        columns_formatted = ', '.join(f'"{col}"' for col in db_columns)
+        # Include schema in table name if provided
+        if schema:
+            table_full_name = f'"{schema}"."{table_name}"'
+        else:
+            table_full_name = f'"{table_name}"'
+        # COPY command with column names
+        copy_sql = f"COPY {table_full_name} ({columns_formatted}) FROM STDIN WITH CSV DELIMITER '{sep}' NULL '{null_string}'"
+        cur.copy_expert(copy_sql, output)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"Error during COPY FROM operation: {e}")
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 # In sqlite3, foreign keys are not enabled by default.
@@ -151,8 +264,8 @@ class SqlLiteIterator:
 
         return ChunkBatch(
             chunk_id=df["chunk_id"],
-            text=df["text"],
-            keywords=df["keywords"],
+            text=df["text"].fillna(''),
+            keywords=df["keywords"].fillna(''),
         )
 
     def __iter__(self):
@@ -176,6 +289,7 @@ class SQLiteChunkStore(ChunkStore):
         save_path: Optional[str] = None,
         encryption_key: Optional[str] = None,
         use_metadata_index: bool = False,
+        postgresql_uri: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -183,11 +297,32 @@ class SQLiteChunkStore(ChunkStore):
             save_path: Optional[str] - Path to save db to, otherwise is random
             encryption_key: Optional[str] - Must be passed to encrypt data
             use_metadata_index: bool - If true, insertion time doubles but query time with constraints roughly halves
+            postgresql_uri: Optional[str] - If provided, the chunk store will use postgres rather than sqlite
         """
         super().__init__()
+        postgresql_uri = "postgresql+psycopg2://postgres:thirdaipass@ndb-metadata.cjhmqzlwgr5q.us-east-1.rds.amazonaws.com:5432/postgres"
+        self.postgresql_uri = postgresql_uri
+        if postgresql_uri:
 
-        self.db_name = save_path or f"{uuid.uuid4()}.db"
-        self.engine = create_engine_with_fk(f"sqlite:///{self.db_name}")
+            # Target database name
+            self.chunk_store_db_name = ''.join(random.choices(string.ascii_lowercase, k=16))
+
+            # Create an engine for the default database
+            engine = create_engine(self.postgresql_uri)
+
+            # Create a new database
+            try:
+                with engine.connect() as connection:
+                    connection.execution_options(isolation_level="AUTOCOMMIT")  # Required for CREATE DATABASE
+                    connection.execute(text(f"CREATE DATABASE {self.chunk_store_db_name}"))
+                    print(f"Database '{self.chunk_store_db_name}' created successfully!")
+
+                self.engine = create_engine_with_fk(f"{self.postgresql_uri.rsplit('/', 1)[0]}/{self.chunk_store_db_name}")
+            except ProgrammingError as e:
+                print(f"An error occurred: {e}")
+        else:
+            self.db_name = save_path or f"{uuid.uuid4()}.db"
+            self.engine = create_engine_with_fk(f"sqlite:///{self.db_name}")
 
         self.metadata = MetaData()
 
@@ -247,13 +382,20 @@ class SQLiteChunkStore(ChunkStore):
     def _write_to_table(
         self, df: pd.DataFrame, table: Table, con=None, bulk_insert=False
     ):
-        df.to_sql(
-            table.name,
-            con=con or self.engine,
-            dtype={c.name: c.type for c in table.columns},
-            if_exists="append",
-            index=False,
-            method=sqlite_insert_bulk if bulk_insert else None,
+        # df.to_sql(
+        #     table.name,
+        #     con=con or self.engine,
+        #     dtype={c.name: c.type for c in table.columns},
+        #     if_exists="append",
+        #     index=False,
+        #     method=sqlite_insert_bulk if bulk_insert else psql_insert_copy,
+        # )
+        copy_dataframe_to_postgres(
+            df,
+            table_name=table.name,
+            engine=self.engine,
+            sep='\t',
+            null_string=''
         )
 
     def _store_metadata(self, metadata_df: pd.DataFrame, chunk_ids: pd.Series):
@@ -306,7 +448,7 @@ class SQLiteChunkStore(ChunkStore):
                     pd.concat(dfs, ignore_index=True),
                     self.metadata_tables[metadata_type],
                     conn,
-                    bulk_insert=True,
+                    bulk_insert=False,
                 )
 
     def insert(
@@ -400,7 +542,7 @@ class SQLiteChunkStore(ChunkStore):
                 subquery = select(
                     metadata_table.c.chunk_id,
                     metadata_table.c.key,
-                    metadata_table.c.value,
+                    cast(metadata_table.c.value, Text).label('value'),
                 ).where(metadata_table.c.chunk_id.in_(chunk_ids))
                 metadata_subqueries.append(subquery)
 
