@@ -111,7 +111,12 @@ class NeuralDB:
         self.chunk_store.delete(chunk_ids)
         self.retriever.delete(chunk_ids)
 
-    def delete_doc(self, doc_id: str, keep_latest_version: bool = False):
+    def delete_doc(
+        self,
+        doc_id: str,
+        keep_latest_version: bool = False,
+        return_deleted_chunks: bool = False,
+    ):
         before_version = (
             self.chunk_store.max_version_for_doc(doc_id)
             if keep_latest_version
@@ -121,8 +126,14 @@ class NeuralDB:
             doc_id=doc_id, before_version=before_version
         )
 
+        if return_deleted_chunks:
+            chunks_to_delete = self.chunk_store.get_chunks(chunk_ids)
+
         self.retriever.delete(chunk_ids)
         self.chunk_store.delete(chunk_ids)
+
+        if return_deleted_chunks:
+            return chunks_to_delete
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.retriever.upvote(queries, chunk_ids, **kwargs)
