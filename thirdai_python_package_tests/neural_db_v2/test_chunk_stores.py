@@ -214,6 +214,16 @@ def test_chunk_store_basic_operations(chunk_store):
 
 
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_missing_columns(chunk_store):
+    store = get_simple_chunk_store(chunk_store)
+
+    with pytest.raises(KeyError, match="Missing columns in metadata: BADCOLUMN"):
+        store.filter_chunk_ids({"BADCOLUMN": EqualTo("b")})
+
+    clean_up_sql_lite_db(store)
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
 def test_chunk_store_constraints_equal_to(chunk_store):
     store = get_simple_chunk_store(chunk_store)
 

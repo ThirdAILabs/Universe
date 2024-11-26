@@ -447,44 +447,55 @@ class SQLiteChunkStore(ChunkStore):
             raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
 
         metadata_types = {}
+        missing_columns = []
         with self.engine.begin() as conn:
+            is_empty = (
+                conn.execute(select(self.metadata_type_table.c.key).limit(1)).fetchone()
+                is None
+            )
+
             for column, constraint in constraints.items():
                 result = conn.execute(
                     select(self.metadata_type_table.c.type).where(
                         self.metadata_type_table.c.key == column
                     )
                 ).fetchone()
-                metadata_types[column] = MetadataType(result.type) if result else None
+                if result:
+                    metadata_types[column] = MetadataType(result.type)
+                else:
+                    missing_columns.append(column)
+
+        if is_empty:
+            raise ValueError("Cannot filter constraints with no metadata.")
+
+        if missing_columns:
+            raise KeyError(f"Missing columns in metadata: {', '.join(missing_columns)}")
 
         conditions = []
         query = None
         base_table = None
         for column, constraint in constraints.items():
             metadata_type = metadata_types[column]
-            if metadata_type:
-                metadata_table = self.metadata_tables[metadata_type]
+            metadata_table = self.metadata_tables[metadata_type]
 
-                metadata_table_alias = alias(metadata_table)
+            metadata_table_alias = alias(metadata_table)
 
-                condition = constraint.sql_condition(
-                    column_name=column, table=metadata_table_alias
+            condition = constraint.sql_condition(
+                column_name=column, table=metadata_table_alias
+            )
+            conditions.append(condition)
+
+            if query is None:
+                base_table = metadata_table_alias
+                query = select(base_table.c.chunk_id).select_from(base_table)
+            else:
+                query = query.join(
+                    metadata_table_alias,
+                    and_(
+                        base_table.c.chunk_id == metadata_table_alias.c.chunk_id,
+                        metadata_table_alias.c.key == column,
+                    ),
                 )
-                conditions.append(condition)
-
-                if query is None:
-                    base_table = metadata_table_alias
-                    query = select(base_table.c.chunk_id).select_from(base_table)
-                else:
-                    query = query.join(
-                        metadata_table_alias,
-                        and_(
-                            base_table.c.chunk_id == metadata_table_alias.c.chunk_id,
-                            metadata_table_alias.c.key == column,
-                        ),
-                    )
-
-        if query is None:
-            raise ValueError("Cannot filter constraints with no metadata.")
 
         query = query.where(and_(*conditions))
         with self.engine.connect() as conn:

@@ -99,8 +99,9 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
 
 
 @pytest.mark.release
-def test_neural_db_v2_doc_versioning():
-    db = ndb.NeuralDB(chunk_store=SQLiteChunkStore(), retriever=FinetunableRetriever())
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_neural_db_v2_doc_versioning(chunk_store):
+    db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=FinetunableRetriever())
 
     db.insert(
         [
