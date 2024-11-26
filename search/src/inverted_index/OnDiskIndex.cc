@@ -641,6 +641,9 @@ void OnDiskIndex::remove(const std::unordered_set<DocId>& ids) {
     std::string serialized_doc_len;
     auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _counters,
                                         docIdKey(doc), &serialized_doc_len);
+    if (get_status.IsNotFound()) {
+      continue;
+    }
     if (!get_status.ok()) {
       raiseError(get_status, "txn get");
     }
