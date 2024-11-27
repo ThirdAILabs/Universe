@@ -130,7 +130,11 @@ def test_neural_db_v2_doc_versioning(chunk_store):
     check_results(db.search("a b c d e", top_k=5), "a", [1, 2, 3])
     check_results(db.search("v w x y z", top_k=5), "b", [1, 2, 3])
 
-    db.delete_doc("b", keep_latest_version=True)
+    deleted_chunks = db.delete_doc(
+        "b", keep_latest_version=True, return_deleted_chunks=True
+    )
+    assert len(deleted_chunks) == 2
+    assert set([c.chunk_id for c in deleted_chunks]) == set([2, 4])
     check_results(db.search("v w x y z", top_k=5), "b", [3])
 
     db.delete_doc("a")
