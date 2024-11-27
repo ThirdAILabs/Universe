@@ -241,7 +241,7 @@ setup(
             "psutil",
             "transformers",
             "cryptography",
-            "tokenizers",
+            "tokenizers<=0.20.3",
             "pyarrow",
             "prometheus_client",
             "gcsfs",
