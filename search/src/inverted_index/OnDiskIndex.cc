@@ -236,6 +236,8 @@ OnDiskIndex::OnDiskIndex(const std::string& save_path,
   rocksdb::Options options;
   options.create_if_missing = true;
   options.create_missing_column_families = true;
+  // use direct I/O for writes
+  options.use_direct_io_for_flush_and_compaction = true;
 
   rocksdb::ColumnFamilyOptions counter_options;
   counter_options.merge_operator = std::make_shared<IncrementCounter>();
