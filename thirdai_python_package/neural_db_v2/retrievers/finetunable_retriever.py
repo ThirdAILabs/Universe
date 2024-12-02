@@ -12,12 +12,17 @@ from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
 
 class Splade:
-    def __init__(self):
+    def __init__(
+        self, model_path: Optional[str] = None, tokenizer_path: Optional[str] = None
+    ):
+
         self.model = AutoModelForMaskedLM.from_pretrained(
-            "naver/splade-cocondenser-selfdistil"
+            pretrained_model_name_or_path=model_path
+            or "naver/splade-cocondenser-selfdistil"
         )
         self.tokenizer = AutoTokenizer.from_pretrained(
-            "naver/splade-cocondenser-selfdistil"
+            pretrained_model_name_or_path=tokenizer_path
+            or "naver/splade-cocondenser-selfdistil"
         )
 
     def augment(self, text: str) -> str:
@@ -45,12 +50,16 @@ class FinetunableRetriever(Retriever):
         save_path: Optional[str] = None,
         config: Optional[search.IndexConfig] = search.IndexConfig(),
         splade: bool = False,
+        splade_model_path: Optional[str] = None,
+        splade_tokenizer_path: Optional[str] = None,
         **kwargs
     ):
         super().__init__()
         self.retriever = search.FinetunableRetriever(save_path=save_path, config=config)
         if splade:
-            self.splade = Splade()
+            self.splade = Splade(
+                model_path=splade_model_path, tokenizer_path=splade_tokenizer_path
+            )
         else:
             self.splade = None
         if save_path:
@@ -114,6 +123,10 @@ class FinetunableRetriever(Retriever):
 
     def save_options(self, path: str):
         options = {"splade": bool(self.splade is not None)}
+
+        if self.splade:
+            options["splade_model_path"] = self.splade.model.config.name_or_path
+            options["splade_tokenizer_path"] = self.splade.tokenizer.name_or_path
         with open(FinetunableRetriever.options_path(path), "w") as f:
             json.dump(options, f)
 
@@ -131,7 +144,10 @@ class FinetunableRetriever(Retriever):
         else:
             options = {}
         if "splade" in options and options["splade"]:
-            instance.splade = Splade()
+            instance.splade = Splade(
+                model_path=options.get("splade_model_path"),
+                tokenizer_path=options.get("splade_tokenizer_path"),
+            )
         else:
             instance.splade = None
         return instance
