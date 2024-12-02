@@ -118,6 +118,10 @@ class UDTClassifier final : public UDTBackend {
     }
   }
 
+  TextDatasetConfig textDatasetConfig() const final {
+    return _featurizer->textDatasetConfig();
+  }
+
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
 
   static std::unique_ptr<UDTClassifier> fromArchive(const ar::Archive& archive);
