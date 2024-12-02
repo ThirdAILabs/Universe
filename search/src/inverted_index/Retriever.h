@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -12,6 +14,15 @@ class Retriever {
  public:
   virtual void index(const std::vector<DocId>& ids,
                      const std::vector<std::string>& docs) = 0;
+  
+  virtual std::vector<std::vector<float>> idfs(const std::vector<std::string>& docs) {
+    (void) docs;
+    throw std::runtime_error("Not implemented");
+  }
+
+  virtual std::unordered_map<std::string, float> tokenToIdf() {
+    throw std::runtime_error("Not implemented");
+  }
 
   // This method is only used for early upvotes since the secondary query index
   // doesn't work well with only a couple of upvotes. Hence it is optional.

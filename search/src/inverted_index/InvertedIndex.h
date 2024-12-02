@@ -24,6 +24,10 @@ class InvertedIndex final : public Retriever {
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs) final;
 
+  std::vector<std::vector<float>> idfs(const std::vector<std::string>& docs) final;
+
+  std::unordered_map<std::string, float> tokenToIdf() final;
+
   void update(const std::vector<DocId>& ids,
               const std::vector<std::string>& extra_tokens) final;
 
@@ -114,6 +118,7 @@ class InvertedIndex final : public Retriever {
   size_t _shard_size;
 
   std::unordered_map<Token, float> _token_to_idf;
+  std::unordered_map<Token, float> _token_to_real_idf;
 
   // Determines the maximum number of docs that will be scored for a given
   // query. This is to help reduce query time. The documents that are scored are

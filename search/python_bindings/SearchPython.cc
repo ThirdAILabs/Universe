@@ -179,6 +179,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("save_path") = std::nullopt)
       .def("index", &FinetunableRetriever::index, py::arg("ids"),
            py::arg("docs"))
+      .def("idfs", &FinetunableRetriever::idfs, py::arg("docs"))
+      .def("token_to_idf", &FinetunableRetriever::tokenToIdf)
       .def("finetune", &FinetunableRetriever::finetune, py::arg("doc_ids"),
            py::arg("queries"))
       .def("associate", &FinetunableRetriever::associate, py::arg("sources"),

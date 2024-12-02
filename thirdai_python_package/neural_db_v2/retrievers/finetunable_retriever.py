@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from thirdai import search
 from transformers import AutoModelForMaskedLM, AutoTokenizer
+from tqdm import tqdm
 
 from ..core.retriever import Retriever
 from ..core.types import ChunkBatch, ChunkId, Score, SupervisedBatch
@@ -67,7 +68,7 @@ class FinetunableRetriever(Retriever):
         self, queries: List[str], choices: List[Set[ChunkId]], top_k: int, **kwargs
     ) -> List[List[Tuple[ChunkId, Score]]]:
         if self.splade:
-            queries = [self.splade.augment(q) for q in queries]
+            queries = [self.splade.augment(q) for q in tqdm(queries)]
         return self.retriever.rank(queries, candidates=choices, k=top_k)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
@@ -94,7 +95,7 @@ class FinetunableRetriever(Retriever):
                 )
                 text = chunk.text[i : i + index_batch_size].reset_index(drop=True)
                 if self.splade:
-                    text = pd.Series([self.splade.augment(t) for t in text])
+                    text = pd.Series([self.splade.augment(t) for t in tqdm(text)])
 
                 texts = keywords + " " + text
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())

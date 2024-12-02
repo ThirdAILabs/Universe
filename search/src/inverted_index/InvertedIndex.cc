@@ -17,6 +17,7 @@
 #include <exception>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -66,6 +67,23 @@ void InvertedIndex::index(const std::vector<DocId>& ids,
   }
 
   recomputeMetadata();
+}
+
+std::vector<std::vector<float>> InvertedIndex::idfs(const std::vector<std::string>& docs) {
+  std::vector<std::vector<float>> idfs(docs.size());
+  #pragma omp parallel for default(none) shared(docs, idfs)
+  for (size_t i = 0; i < docs.size(); i++) {
+    auto doc_tokens = _tokenizer->tokenize(docs[i]);
+    idfs[i].resize(doc_tokens.size());
+    std::transform(doc_tokens.begin(), doc_tokens.end(), idfs[i].begin(), [&](const auto& token) {
+      return _token_to_real_idf[token];
+    });
+  }
+  return idfs;
+}
+
+std::unordered_map<std::string, float> InvertedIndex::tokenToIdf() {
+  return _token_to_real_idf;
 }
 
 void InvertedIndex::Shard::insertDoc(
@@ -142,6 +160,7 @@ void InvertedIndex::computeIdfs() {
     if (idf_score >= idf_cutoff) {
       _token_to_idf[token] = idf_score;
     }
+    _token_to_real_idf[token] = 1.0 / count;
   }
 }
 

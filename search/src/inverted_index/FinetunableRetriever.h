@@ -38,6 +38,10 @@ class FinetunableRetriever {
   void index(const std::vector<DocId>& ids,
              const std::vector<std::string>& docs);
 
+  std::vector<std::vector<float>> idfs(const std::vector<std::string>& docs);
+
+  std::unordered_map<std::string, float> tokenToIdf();
+
   void finetune(const std::vector<std::vector<DocId>>& doc_ids,
                 const std::vector<std::string>& queries);
 

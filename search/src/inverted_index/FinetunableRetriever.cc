@@ -91,6 +91,14 @@ void FinetunableRetriever::index(const std::vector<DocId>& ids,
   _doc_index->index(ids, docs);
 }
 
+std::vector<std::vector<float>> FinetunableRetriever::idfs(const std::vector<std::string>& docs) {
+  return _doc_index->idfs(docs);
+}
+
+std::unordered_map<std::string, float> FinetunableRetriever::tokenToIdf() {
+  return _doc_index->tokenToIdf();
+}
+
 void FinetunableRetriever::finetune(
     const std::vector<std::vector<DocId>>& doc_ids,
     const std::vector<std::string>& queries) {
