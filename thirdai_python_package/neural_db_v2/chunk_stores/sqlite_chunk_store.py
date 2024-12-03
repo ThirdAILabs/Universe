@@ -1,5 +1,6 @@
 import itertools
 import shutil
+import os
 import uuid
 from collections import defaultdict
 from sqlite3 import Connection as SQLite3Connection
@@ -369,6 +370,31 @@ class SQLiteChunkStore(ChunkStore):
                 self.chunk_table.c.chunk_id.in_(chunk_ids)
             )
             conn.execute(delete_chunks)
+        # After deletion, advise OS to drop page cache for the database file
+        self._drop_page_cache()
+
+    def _drop_page_cache(self):
+        """
+        Advise the OS to drop the page cache for the SQLite database file.
+        """
+        db_file_path = self.db_name
+        try:
+            if os.path.exists(db_file_path):
+                with open(db_file_path, "r") as f:
+                    fd = f.fileno()
+                    # Flush the file to disk
+                    os.fsync(fd)
+                    # Advise OS to drop cache
+                    if hasattr(os, "posix_fadvise") and hasattr(
+                        os, "POSIX_FADV_DONTNEED"
+                    ):
+                        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+                    else:
+                        print("posix_fadvise not available on this system.")
+            else:
+                print(f"Database file {db_file_path} does not exist.")
+        except Exception as e:
+            print(f"Error in dropping page cache for {db_file_path}: {e}")
 
     def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
         id_to_chunk = {}
@@ -438,6 +464,8 @@ class SQLiteChunkStore(ChunkStore):
                 raise ValueError(f"Could not find chunk with id {chunk_id}.")
             chunks.append(id_to_chunk[chunk_id])
 
+        # After deletion, advise OS to drop page cache for the database file
+        self._drop_page_cache()
         return chunks
 
     def filter_chunk_ids(
@@ -510,6 +538,9 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             return [row.chunk_id for row in conn.execute(stmt)]
 
+        # After deletion, advise OS to drop page cache for the database file
+        self._drop_page_cache()
+
     def max_version_for_doc(self, doc_id: str) -> int:
         stmt = select(func.max(self.chunk_table.c.doc_version)).where(
             self.chunk_table.c.doc_id == doc_id
@@ -518,6 +549,9 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             result = conn.execute(stmt)
             return result.scalar() or 0
+
+        # After deletion, advise OS to drop page cache for the database file
+        self._drop_page_cache()
 
     def documents(self) -> List[dict]:
         stmt = select(
