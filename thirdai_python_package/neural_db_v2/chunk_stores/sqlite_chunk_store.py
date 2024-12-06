@@ -53,7 +53,7 @@ def create_engine_with_fk(
     pool_recycle=1200,
     **kwargs,
 ):
-    if database_url == "sqlite:///:memory:":
+    if "sqlite:///:memory:" in database_url:
         engine = create_engine(
             database_url,
             **kwargs,
@@ -575,6 +575,7 @@ class SQLiteChunkStore(ChunkStore):
         cls,
         path: str,
         encryption_key: Optional[str] = None,
+        read_only: bool = False,
         in_memory_sqlite: bool = False,
         **kwargs,
     ):
@@ -583,7 +584,13 @@ class SQLiteChunkStore(ChunkStore):
         obj.db_name = path
 
         if in_memory_sqlite:
-            obj.engine = create_engine_with_fk(f"sqlite:///:memory:")
+            if not read_only:
+                raise Exception(
+                    "Must load SQLite chunk store with read_only=True to load in-memory db"
+                )
+            obj.engine = create_engine_with_fk(
+                f"sqlite:///:memory:{'?mode=ro' if read_only else ''}"
+            )
             with sqlite3.connect(obj.db_name) as disk_conn:
                 sqlalchemy_conn = obj.engine.raw_connection()
                 try:
@@ -594,7 +601,9 @@ class SQLiteChunkStore(ChunkStore):
 
             print("Loaded SQLite DB in memory")
         else:
-            obj.engine = create_engine_with_fk(f"sqlite:///{obj.db_name}")
+            obj.engine = create_engine_with_fk(
+                f"sqlite:///{obj.db_name}{'?mode=ro' if read_only else ''}"
+            )
 
         obj.metadata = MetaData()
         obj.metadata.reflect(bind=obj.engine)
