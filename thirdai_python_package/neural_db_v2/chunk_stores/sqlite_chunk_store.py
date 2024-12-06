@@ -1,5 +1,6 @@
 import itertools
 import shutil
+import sqlite3
 import uuid
 from collections import defaultdict
 from sqlite3 import Connection as SQLite3Connection
@@ -52,14 +53,20 @@ def create_engine_with_fk(
     pool_recycle=1200,
     **kwargs,
 ):
-    engine = create_engine(
-        database_url,
-        pool_size=pool_size,
-        max_overflow=max_overflow,
-        pool_timeout=pool_timeout,
-        pool_recycle=pool_recycle,
-        **kwargs,
-    )
+    if database_url == "sqlite:///:memory:":
+        engine = create_engine(
+            database_url,
+            **kwargs,
+        )
+    else:
+        engine = create_engine(
+            database_url,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=pool_timeout,
+            pool_recycle=pool_recycle,
+            **kwargs,
+        )
 
     @event.listens_for(engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):
@@ -564,11 +571,30 @@ class SQLiteChunkStore(ChunkStore):
         shutil.copyfile(self.db_name, path)
 
     @classmethod
-    def load(cls, path: str, encryption_key: Optional[str] = None, **kwargs):
+    def load(
+        cls,
+        path: str,
+        encryption_key: Optional[str] = None,
+        in_memory_sqlite: bool = False,
+        **kwargs,
+    ):
         obj = cls.__new__(cls)
 
         obj.db_name = path
-        obj.engine = create_engine_with_fk(f"sqlite:///{obj.db_name}")
+
+        if in_memory_sqlite:
+            obj.engine = create_engine_with_fk(f"sqlite:///:memory:")
+            with sqlite3.connect(obj.db_name) as disk_conn:
+                sqlalchemy_conn = obj.engine.raw_connection()
+                try:
+                    memory_conn = sqlalchemy_conn.connection
+                    disk_conn.backup(memory_conn)
+                finally:
+                    sqlalchemy_conn.close()
+
+            print("Loaded SQLite DB in memory")
+        else:
+            obj.engine = create_engine_with_fk(f"sqlite:///{obj.db_name}")
 
         obj.metadata = MetaData()
         obj.metadata.reflect(bind=obj.engine)
