@@ -21,6 +21,9 @@ class EqualTo(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         return and_(table.c.key == column_name, table.c.value == self.value)
+    
+    def sql_metadata_condition(self, column_name: str, table: Table):
+        return table.c[column_name] == self.value
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name] == self.value
@@ -33,6 +36,9 @@ class AnyOf(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         return and_(table.c.key == column_name, table.c.value.in_(self.values))
+    
+    def sql_metadata_condition(self, column_name: str, table: Table):
+        return table.c[column_name].in_(self.values)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return df[column_name].isin(self.values)
@@ -47,6 +53,9 @@ class NoneOf(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         return and_(table.c.key == column_name, ~table.c.value.in_(self.values))
+    
+    def sql_condition(self, column_name: str, table: Table):
+        return ~table.c[column_name].in_(self.values)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         return ~df[column_name].isin(self.values) & pd.notna(df[column_name])
@@ -65,6 +74,9 @@ class GreaterThan(Constraint):
             else table.c.value > self.value
         )
         return and_(table.c.key == column_name, comparison)
+    
+    def sql_metadata_condition(self, column_name: str, table: Table):
+        return table.c[column_name] >= self.value if self.inclusive else table.c[column_name] > self.value
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if self.inclusive:
@@ -85,6 +97,9 @@ class LessThan(Constraint):
             else table.c.value < self.value
         )
         return and_(table.c.key == column_name, comparison)
+    
+    def sql_metadata_condition(self, column_name: str, table: Table):
+        return table.c[column_name] <= self.value if self.inclusive else table.c[column_name] < self.value
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if self.inclusive:
@@ -99,6 +114,9 @@ class Substring(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         return and_(table.c.key == column_name, table.c.value.like(f"%{self.value}%"))
+    
+    def sql_metadata_condition(self, column_name: str, table: Table):
+        return table.c[column_name].like(f"%{self.value}%")
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if not pd.api.types.is_string_dtype(df[column_name]):

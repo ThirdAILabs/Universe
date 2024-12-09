@@ -1,2 +1,3 @@
 from .pandas_chunk_store import PandasChunkStore
 from .sqlite_chunk_store import SQLiteChunkStore
+from .sqlite_metadata_chunk_store import SQLiteMetadataChunkStore

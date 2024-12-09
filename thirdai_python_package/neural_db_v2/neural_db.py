@@ -1,8 +1,8 @@
 import json
 import os
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union, Dict
 
-from .chunk_stores import PandasChunkStore, SQLiteChunkStore
+from .chunk_stores import PandasChunkStore, SQLiteChunkStore, SQLiteMetadataChunkStore
 from .core.chunk_store import ChunkStore
 from .core.documents import Document
 from .core.reranker import Reranker
@@ -20,12 +20,17 @@ class NeuralDB:
         chunk_store: Optional[ChunkStore] = None,
         retriever: Optional[Retriever] = None,
         save_path: Optional[str] = None,
+        metadata_columns: Optional[Dict[str, Optional[str]]] = None,
         **kwargs,
     ):
         self.reranker: Optional[Reranker] = None
 
         if save_path is None:
-            self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
+            if metadata_columns:
+                print("making metadata")
+                self.chunk_store = chunk_store or SQLiteMetadataChunkStore(metadata_columns, **kwargs)
+            else:
+                self.chunk_store = chunk_store or SQLiteChunkStore(**kwargs)
             self.retriever = retriever or FinetunableRetriever(**kwargs)
             return
 
@@ -36,9 +41,15 @@ class NeuralDB:
 
         os.makedirs(save_path)
 
-        self.chunk_store = SQLiteChunkStore(
-            save_path=self.chunk_store_path(save_path), **kwargs
-        )
+        if metadata_columns:
+            print("making metadata")
+            self.chunk_store = SQLiteMetadataChunkStore(
+                metadata_columns=metadata_columns, save_path=self.chunk_store_path(save_path), **kwargs
+            )
+        else:
+            self.chunk_store = SQLiteChunkStore(
+                save_path=self.chunk_store_path(save_path), **kwargs
+            )
         self.retriever = FinetunableRetriever(
             save_path=self.retriever_path(save_path), **kwargs
         )
