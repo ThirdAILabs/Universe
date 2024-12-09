@@ -1,0 +1,482 @@
+import itertools
+import shutil
+import uuid
+from collections import defaultdict
+from sqlite3 import Connection as SQLite3Connection
+from typing import Dict, Iterable, List, Optional, Set, Tuple
+
+import numpy as np
+import pandas as pd
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    alias,
+    and_,
+    create_engine,
+    delete,
+    event,
+    func,
+    select,
+    union_all,
+)
+from sqlalchemy.engine import Engine
+from sqlalchemy_utils import StringEncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
+
+from ..core.chunk_store import ChunkStore
+from ..core.documents import Document
+from ..core.types import (
+    Chunk,
+    ChunkBatch,
+    ChunkId,
+    InsertedDocMetadata,
+    MetadataType,
+    pandas_type_to_metadata_type,
+    sql_type_mapping,
+)
+from .constraints import Constraint
+import time
+
+
+# In sqlite3, foreign keys are not enabled by default.
+# This ensures that sqlite3 connections have foreign keys enabled.
+def create_engine_with_fk(
+    database_url,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1200,
+    **kwargs,
+):
+    engine = create_engine(
+        database_url,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
+        pool_recycle=pool_recycle,
+        **kwargs,
+    )
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        if isinstance(dbapi_connection, SQLite3Connection):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON;")
+            cursor.close()
+
+    return engine
+
+
+def separate_multivalue_columns(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, List[pd.Series]]:
+    multivalue_columns = []
+    for col in df.columns:
+        if df[col].dtype == object and df[col].map(lambda x: isinstance(x, List)).any():
+            multivalue_columns.append(df[col])
+
+    return df.drop([c.name for c in multivalue_columns], axis=1), multivalue_columns
+
+
+def flatten_multivalue_column(column: pd.Series, chunk_ids: pd.Series) -> pd.DataFrame:
+    df = (
+        pd.DataFrame({"chunk_id": chunk_ids, column.name: column})
+        .explode(column.name)  # flattens column and repeats values in other column
+        .dropna()  # explode converts [] to a row with a NaN in the exploded column
+        .reset_index(drop=True)  # explode repeats index values, this resets that
+        .infer_objects(copy=False)  # explode doesn't adjust dtype of exploded column
+    )
+    return df
+
+
+def sqlite_insert_bulk(table, conn, keys, data_iter):
+    columns = ", ".join([f'"{k}"' for k in keys])
+    placeholders = ", ".join(["?"] * len(keys))
+    insert_stmt = f"INSERT INTO {table.name} ({columns}) VALUES ({placeholders})"
+
+    dbapi_conn = conn.connection
+    cursor = dbapi_conn.cursor()
+
+    try:
+        while True:
+            chunk = list(itertools.islice(data_iter, 10000))
+            if not chunk:
+                break
+            cursor.executemany(insert_stmt, chunk)
+
+    except Exception as e:
+        dbapi_conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+
+
+class SqlLiteIterator:
+    def __init__(
+        self,
+        table: Table,
+        engine: Engine,
+        min_insertion_chunk_id: int,
+        max_insertion_chunk_id: int,
+        max_in_memory_batches: int = 100,
+    ):
+        self.chunk_table = table
+        self.engine = engine
+
+        # Since assigned chunk_ids are contiguous, each SqlLiteIterator can search
+        # through a range of chunk_ids. We need a min and a max in the case
+        # we do an insertion while another iterator instance still exists
+        self.min_insertion_chunk_id = min_insertion_chunk_id
+        self.max_insertion_chunk_id = max_insertion_chunk_id
+
+        self.max_in_memory_batches = max_in_memory_batches
+
+    def __next__(self) -> Optional[ChunkBatch]:
+        # The "next" call on the sql_row_iterator returns one row at a time
+        # despite fetching them in "max_in_memory_batches" quantities from the database.
+        # Thus we call "next" "max_in_memory_batches" times to pull out all the rows we want
+        sql_lite_batch = []
+        try:
+            for _ in range(self.max_in_memory_batches):
+                sql_lite_batch.append(next(self.sql_row_iterator))
+        except StopIteration:
+            if not sql_lite_batch:
+                raise StopIteration
+
+        df = pd.DataFrame(sql_lite_batch, columns=self.sql_row_iterator.keys())
+
+        return ChunkBatch(
+            chunk_id=df["chunk_id"],
+            text=df["text"],
+            keywords=df["keywords"],
+        )
+
+    def __iter__(self):
+        stmt = select(self.chunk_table).where(
+            (self.chunk_table.c.chunk_id >= self.min_insertion_chunk_id)
+            & (self.chunk_table.c.chunk_id < self.max_insertion_chunk_id)
+        )
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            self.sql_row_iterator = result.yield_per(self.max_in_memory_batches)
+        return self
+
+
+def encrypted_type(key: str):
+    return StringEncryptedType(String, key=key, engine=AesEngine)
+
+
+class SQLiteMetadataChunkStore(ChunkStore):
+    def __init__(
+        self,
+        metadata_columns: Optional[Dict[str, Optional[str]]] = None,
+        save_path: Optional[str] = None,
+        encryption_key: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Params:
+            save_path: Optional[str] - Path to save db to, otherwise is random
+            encryption_key: Optional[str] - Must be passed to encrypt data
+        """
+        print("CONSTRUCTINGGGGGG")
+        super().__init__()
+
+        self.db_name = save_path or f"{uuid.uuid4()}.db"
+        self.engine = create_engine_with_fk(f"sqlite:///{self.db_name}")
+
+        self.metadata = MetaData()
+
+        text_type = encrypted_type(encryption_key) if encryption_key else String
+
+        self.metadata_to_id = {metadata_key: str(uuid.uuid4()) for metadata_key in metadata_columns}
+        metadata_columns = [
+            Column(self.metadata_to_id[metadata_key], sql_type_mapping[MetadataType(metadata_type)], index=False) 
+            for metadata_key, metadata_type in metadata_columns.items()
+        ]
+
+        self.chunk_table = Table(
+            "neural_db_chunks",
+            self.metadata,
+            Column("chunk_id", Integer, primary_key=True),
+            Column("text", text_type),
+            Column("keywords", text_type),
+            Column("document", text_type),
+            Column("doc_id", String, index=True),
+            Column("doc_version", Integer),
+            *metadata_columns
+        )
+
+        self.metadata_to_id_table = Table(
+            "metadata_to_id",
+            self.metadata,
+            Column("metadata_key", String, primary_key=True),
+            Column("id", String, primary_key=True),
+        )
+
+        self.metadata.create_all(self.engine)
+
+        with self.engine.connect() as connection:
+            insert_data = [{"metadata_key": key, "id": value} for key, value in self.metadata_to_id.items()]
+            connection.execute(self.metadata_to_id_table.insert(), insert_data)
+            print(self.metadata_to_id)
+
+        self.next_id = 0
+
+    def _write_to_table(
+        self, df: pd.DataFrame, table: Table, con=None, bulk_insert=False
+    ):
+        df.to_sql(
+            table.name,
+            con=con or self.engine,
+            dtype={c.name: c.type for c in table.columns},
+            if_exists="append",
+            index=False,
+            method=sqlite_insert_bulk if bulk_insert else None,
+        )
+
+    def insert(
+        self, docs: List[Document], max_in_memory_batches=10000, **kwargs
+    ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
+        min_insertion_chunk_id = self.next_id
+
+        inserted_doc_metadata = []
+        for doc in docs:
+            doc_id = doc.doc_id()
+            doc_version = self.max_version_for_doc(doc_id) + 1
+
+            doc_chunk_ids = []
+            for batch in doc.chunks():
+                chunk_ids = pd.Series(
+                    np.arange(self.next_id, self.next_id + len(batch), dtype=np.int64)
+                )
+                self.next_id += len(batch)
+                doc_chunk_ids.extend(chunk_ids)
+
+                chunk_df = batch.to_df()
+                chunk_df["chunk_id"] = chunk_ids
+                chunk_df["doc_id"] = doc_id
+                chunk_df["doc_version"] = doc_version
+
+                for col in batch.metadata.columns:
+                    chunk_df[self.metadata_to_id[col]] = batch.metadata[col]
+
+                self._write_to_table(df=chunk_df, table=self.chunk_table)
+
+            inserted_doc_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunk_ids
+                )
+            )
+
+        max_insertion_chunk_id = self.next_id
+
+        inserted_chunks_iterator = SqlLiteIterator(
+            table=self.chunk_table,
+            engine=self.engine,
+            min_insertion_chunk_id=min_insertion_chunk_id,
+            max_insertion_chunk_id=max_insertion_chunk_id,
+            max_in_memory_batches=max_in_memory_batches,
+        )
+        return inserted_chunks_iterator, inserted_doc_metadata
+
+    def delete(self, chunk_ids: List[ChunkId]):
+        with self.engine.begin() as conn:
+            delete_chunks = delete(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
+            conn.execute(delete_chunks)
+
+    def get_chunks(self, chunk_ids: List[ChunkId], **kwargs) -> List[Chunk]:
+        id_to_chunk = {}
+
+        with self.engine.connect() as conn:
+
+            chunk_stmt = select(self.chunk_table).where(
+                self.chunk_table.c.chunk_id.in_(chunk_ids)
+            )
+            chunk_results = conn.execute(chunk_stmt).fetchall()
+
+            if not chunk_results:
+                return []
+
+            for row in chunk_results:
+                chunk_id = row.chunk_id
+                id_to_chunk[chunk_id] = Chunk(
+                    text=row.text,
+                    keywords=row.keywords,
+                    document=row.document,
+                    chunk_id=row.chunk_id,
+                    metadata=None,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
+                )
+
+        chunks = []
+        for chunk_id in chunk_ids:
+            if chunk_id not in id_to_chunk:
+                raise ValueError(f"Could not find chunk with id {chunk_id}.")
+            chunks.append(id_to_chunk[chunk_id])
+
+        return chunks
+
+    def filter_chunk_ids(
+        self, constraints: Dict[str, Constraint], **kwargs
+    ) -> Set[ChunkId]:
+        if not len(constraints):
+            raise ValueError("Cannot call filter_chunk_ids with empty constraints.")
+
+        conditions = []
+        for column, constraint in constraints.items():
+            column_id = self.metadata_to_id[column]
+
+            condition = constraint.sql_metadata_condition(
+                column_name=column_id, table=self.chunk_table
+            )
+            conditions.append(condition)
+
+        start_time = time.time()
+        query = select(self.chunk_table.c.chunk_id).where(and_(*conditions))
+
+        compiled = query.compile(compile_kwargs={"literal_binds": True})
+        print(str(compiled))
+        
+        with self.engine.connect() as conn:
+            result = set(row.chunk_id for row in conn.execute(query))
+            print(f"Filter time: {time.time() - start_time}")
+            return result
+        
+
+    def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
+        stmt = select(self.chunk_table.c.chunk_id).where(
+            (self.chunk_table.c.doc_id == doc_id)
+            & (self.chunk_table.c.doc_version < before_version)
+        )
+
+        with self.engine.connect() as conn:
+            return [row.chunk_id for row in conn.execute(stmt)]
+
+    def max_version_for_doc(self, doc_id: str) -> int:
+        stmt = select(func.max(self.chunk_table.c.doc_version)).where(
+            self.chunk_table.c.doc_id == doc_id
+        )
+
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt)
+            return result.scalar() or 0
+
+    def documents(self) -> List[dict]:
+        stmt = select(
+            self.chunk_table.c.doc_id,
+            self.chunk_table.c.doc_version,
+            self.chunk_table.c.document,
+        ).distinct()
+
+        with self.engine.connect() as conn:
+            return [
+                {
+                    "doc_id": row.doc_id,
+                    "doc_version": row.doc_version,
+                    "document": row.document,
+                }
+                for row in conn.execute(stmt)
+            ]
+
+    def context(self, chunk: Chunk, radius: int) -> List[Chunk]:
+        stmt = select(self.chunk_table).where(
+            and_(
+                self.chunk_table.c.chunk_id >= (chunk.chunk_id - radius),
+                self.chunk_table.c.chunk_id <= (chunk.chunk_id + radius),
+                self.chunk_table.c.doc_id == chunk.doc_id,
+                self.chunk_table.c.doc_version == chunk.doc_version,
+            )
+        )
+
+        with self.engine.connect() as conn:
+            return [
+                Chunk(
+                    text=row.text,
+                    keywords=row.keywords,
+                    metadata=None,
+                    document=row.document,
+                    doc_id=row.doc_id,
+                    doc_version=row.doc_version,
+                    chunk_id=row.chunk_id,
+                )
+                for row in conn.execute(stmt).all()
+            ]
+
+    def save(self, path: str):
+        shutil.copyfile(self.db_name, path)
+
+    @classmethod
+    def load(cls, path: str, encryption_key: Optional[str] = None, **kwargs):
+        obj = cls.__new__(cls)
+
+        obj.db_name = path
+        obj.engine = create_engine_with_fk(f"sqlite:///{obj.db_name}")
+
+        obj.metadata = MetaData()
+        obj.metadata.reflect(bind=obj.engine)
+
+        if "neural_db_chunks" not in obj.metadata.tables:
+            raise ValueError("neural_db_chunks table is missing in the database.")
+
+        obj.chunk_table = obj.metadata.tables["neural_db_chunks"]
+
+        if encryption_key:
+            obj.chunk_table.columns["text"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["keywords"].type = encrypted_type(encryption_key)
+            obj.chunk_table.columns["document"].type = encrypted_type(encryption_key)
+
+        if "neural_db_metadata_type" in obj.metadata.tables:
+            obj.metadata_tables = {}
+            for metadata_type in sql_type_mapping:
+                metadata_table_name = f"neural_db_metadata_{metadata_type.value}"
+                if metadata_table_name in obj.metadata.tables:
+                    obj.metadata_tables[metadata_type] = obj.metadata.tables[
+                        metadata_table_name
+                    ]
+
+            if "neural_db_metadata_type" in obj.metadata.tables:
+                obj.metadata_type_table = obj.metadata.tables["neural_db_metadata_type"]
+
+            obj._create_metadata_tables()
+            obj.metadata.create_all(obj.engine)
+        else:
+            # Migrate deprecated metadata format
+
+            for name in obj.metadata.tables:
+                # Few people, if any, have used NDBv2 multivalue metadata columns,
+                # so we just throw an error if those tables exist, rather than trying
+                # to convert that metadata to the new format.
+                if name.startswith("multivalue_metadata_"):
+                    raise AttributeError(
+                        "Loading NeuralDB with multivalue metadata table is deprecated. Please downgrade thirdai to <= 0.9.20."
+                    )
+
+            obj._create_metadata_tables()
+            obj.metadata.create_all(obj.engine)
+
+            old_metadata_table = obj.metadata.tables["neural_db_metadata"]
+
+            with obj.engine.connect() as conn:
+                old_metadata_df = pd.read_sql(select(old_metadata_table), conn)
+                for col in old_metadata_df:
+                    if col == "chunk_id":
+                        continue
+                    obj._store_metadata(
+                        old_metadata_df[[col]], old_metadata_df["chunk_id"]
+                    )
+
+        with obj.engine.begin() as conn:
+            result = conn.execute(select(func.max(obj.chunk_table.c.chunk_id)))
+            max_id = result.scalar()
+            obj.next_id = (max_id or 0) + 1
+
+        return obj
