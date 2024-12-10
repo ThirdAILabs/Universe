@@ -189,7 +189,8 @@ std::shared_ptr<NerDyadicDataProcessor> NerDyadicDataProcessor::make(
 
 std::string NerDyadicDataProcessor::processToken(
     const std::vector<std::string>& tokens, uint32_t index,
-    const std::vector<std::string>& lower_cased_tokens) const {
+    const std::vector<std::string>& lower_cased_tokens, bool use_target,
+    bool use_context, bool use_extra_features, bool use_char_bins) const {
   /*
    * Returns a featurized string for the target token and it's context in the
    * sentence.
@@ -239,19 +240,24 @@ std::string NerDyadicDataProcessor::processToken(
    * Hence, same tokens can be appended to the string multiple times.
    */
   std::string repr;
-  for (const auto& tok : tokenized_target_token) {
-    repr += _target_prefix + tok + " ";
+
+  if (use_target) {
+    for (const auto& tok : tokenized_target_token) {
+      repr += _target_prefix + tok + " ";
+    }
   }
 
-  // to use lower cased tokenization for the context or any other modifications,
-  // change the first argument to the function here
-  repr += generateDyadicWindows(lower_cased_tokens, index);
+  if (use_context) {
+    // to use lower cased tokenization for the context or any other
+    // modifications, change the first argument to the function here
+    repr += generateDyadicWindows(lower_cased_tokens, index);
+  }
 
-  if (_feature_enhancement_config.has_value()) {
+  if (_feature_enhancement_config.has_value() && use_extra_features) {
     repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
-  if (n_digit > 0) {
+  if (n_digit > 0 && use_char_bins) {
     repr += " " + std::to_string(n_punct) + "_PUNCT";
     repr += " " + std::to_string(n_alpha) + "_ALPHA";
     repr += " " + std::to_string(n_digit) + "_DIGIT";

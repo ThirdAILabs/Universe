@@ -111,9 +111,11 @@ class NerDyadicDataProcessor
       std::optional<FeatureEnhancementConfig> feature_enhancement_config,
       bool for_inference);
 
-  std::string processToken(
-      const std::vector<std::string>& tokens, uint32_t index,
-      const std::vector<std::string>& lower_cased_tokens) const;
+  std::string processToken(const std::vector<std::string>& tokens,
+                           uint32_t index,
+                           const std::vector<std::string>& lower_cased_tokens,
+                           bool use_target, bool use_context,
+                           bool use_extra_features, bool use_char_bins) const;
 
   std::string generateDyadicWindows(std::vector<std::string> tokens,
                                     uint32_t index) const;

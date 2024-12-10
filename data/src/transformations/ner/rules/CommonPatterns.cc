@@ -135,7 +135,7 @@ RulePtr creditCardPattern() {
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
       R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
-      /*pattern_score=*/10,
+      /*pattern_score=*/2.5,
       /*context_keywords=*/
       {
           {"credit", 0.2},
