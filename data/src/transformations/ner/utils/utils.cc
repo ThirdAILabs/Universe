@@ -122,7 +122,7 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
 
   std::vector<std::string> left_window, right_window;
   for (int i = index - 1; i >= start; --i) {
-    if (isNumberWithPunct(v[index], {'e', 'x', 't'})) {
+    if (isNumberWithPunct(v[i], {'e', 'x', 't'})) {
       left_window.push_back(v[i]);
     } else {
       break;
@@ -132,7 +132,7 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
   std::reverse(left_window.begin(), left_window.end());
 
   for (int i = index + 1; i <= end; ++i) {
-    if (isNumberWithPunct(v[index], {'e', 'x', 't'})) {
+    if (isNumberWithPunct(v[i], {'e', 'x', 't'})) {
       right_window.push_back(v[i]);
     } else {
       break;

@@ -1,5 +1,6 @@
 #include "CommonPatterns.h"
 #include <data/src/transformations/ner/rules/Pattern.h>
+#include <data/src/transformations/ner/utils/utils.h>
 #include <utils/text/StringManipulation.h>
 #include <optional>
 #include <stdexcept>
@@ -107,6 +108,26 @@ std::optional<ValidatorSubMatch> ipAddressValidator(const std::string& addr) {
   return ValidatorSubMatch(0, addr.size());
 }
 
+std::optional<ValidatorSubMatch> phoneNumberValidator(
+    const std::string& number) {
+  std::string strippedNumber = ner::utils::stripNonDigits(number);
+
+  // less than 10 or more than 16 digits cannot be a phone number
+  if (strippedNumber.size() < 10) {
+    return std::nullopt;
+  }
+
+  // phone numbers cannot contain alphabets
+  std::string cleanedNumber =
+      text::stripWhitespace(ner::utils::trimPunctuation(number));
+  if (ner::utils::containsAlphabets(cleanedNumber,
+                                    /*excluded_alphas=*/{'e', 'x', 't'})) {
+    return std::nullopt;
+  }
+
+  return ValidatorSubMatch(0, number.size());
+}
+
 RulePtr creditCardPattern() {
   // https://baymard.com/checkout-usability/credit-card-patterns
   // https://en.wikipedia.org/wiki/Payment_card_number
@@ -114,7 +135,7 @@ RulePtr creditCardPattern() {
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
       R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
-      /*pattern_score=*/0.8,
+      /*pattern_score=*/10,
       /*context_keywords=*/
       {
           {"credit", 0.2},
@@ -148,8 +169,10 @@ RulePtr phonePattern() {
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      R"((([\+\b]\d{1,3}[\.\- \(]\(?)|\b|\()\d{3}\)?[\.\- ]?\d{3}[\.\- ]?\d{4}\b)",
-      /*pattern_score=*/0.6,
+      // R"((([\+\b]\d{1,3}[\.\- \(]\(?)|\b|\()\d{3}\)?[\.\- ]?\d{3}[\.\-
+      // ]?\d{4}\b)",
+      R"(\b\s*(?:\+?(\d{1,3}))?[-. (]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
+      /*pattern_score=*/0.5,
       /*context_keywords=*/
       {
           {"phone", 0.2},
@@ -160,7 +183,8 @@ RulePtr phonePattern() {
           {"call", 0.2},
           {"text", 0.1},
           {"contact", 0.1},
-      });
+      },
+      /*validator=*/phoneNumberValidator);
 }
 
 RulePtr phoneWithoutAreaCodePattern() {
@@ -226,14 +250,16 @@ RulePtr ssnPattern() {
   return Pattern::make(
       /*entity=*/"SSN",
       /*pattern=*/
-      R"(\b([0-9]{3})([- .]?)([0-9]{2})([- .]?)([0-9]{4})\b)",
-      /*pattern_score=*/0.4,
+      R"(\b\d{3}([- .])\d{2}\1\d{4}|\b\d{3}\d{2}\d{4}\b)",
+      /*pattern_score=*/0.6,
       /*context_keywords=*/
       {
           {"ssn", 0.6},
           {"social", 0.3},
           {"security", 0.2},
           {"ssid", 0.5},
+          {"number", 0.3},
+          {"id", 0.3},
       });
 }
 

@@ -503,9 +503,18 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
       }
 
       TokenTags tags;
+      TokenTags rule_tags;
+      std::unordered_map<std::string, float> tags_to_score;
+
       if (_rule && !rule_results.at(sentence_index).at(token_index).empty()) {
-        tags = rule_results.at(sentence_index).at(token_index);
-      } else {
+        rule_tags = rule_results.at(sentence_index).at(token_index);
+        for (const auto& [tag, score] : rule_tags) {
+          tags_to_score[tag] = score;
+        }
+      }
+      // this block generates the model tags
+      {
+        TokenTags model_tags;
         auto top_labels = scores->getVector(i).topKNeurons(top_k + 1);
 
         while (!top_labels.empty()) {
@@ -513,19 +522,48 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
 
           auto tag = _tag_tracker->labelToTag(top_labels.top().second);
           top_labels.pop();
-          tags.emplace_back(tag->tag(), score);
+          model_tags.emplace_back(tag->tag(), score);
         }
 
         bolt::NER::applyPunctAndStopWordFilter(
-            tokens[sentence_index][token_index], tags,
+            tokens[sentence_index][token_index], model_tags,
             _tag_tracker->labelToTag(0)->tag());
+
+        for (const auto& [tag, score] : model_tags) {
+          if (tag == _tag_tracker->labelToTag(0)->tag() &&
+              rule_tags.size() > 0 && score > 0.95) {
+            continue;
+          }
+          if (tags_to_score.find(tag) == tags_to_score.end()) {
+            tags_to_score[tag] = score;
+          } else {
+            tags_to_score[tag] += score;
+          }
+        }
+      }
+
+      // this block generates the final tags
+      {
+        for (const auto& [tag, score] : tags_to_score) {
+          tags.emplace_back(tag, score);
+        }
+
+        std::sort(tags.begin(), tags.end(), [](const auto& a, const auto& b) {
+          return b.second > a.second;
+        });
+
+        // std::cout << "tags after sorting: " << std::endl;
+        // for (const auto& [tag, score] : tags) {
+        //   std::cout << tag << " " << score << std::endl;
+        // }
 
         // if the number of labels in the model is 1, we do not have to
         // reverse
         if (tags.size() > 1) {
           // If the default tag is the top prediction but has a score <
           // 0.9 then using the next top prediction improves accuracy.
-          float second_highest_tag_act = top_k > 0 ? tags[top_k - 1].second : 0;
+          float second_highest_tag_act =
+              top_k > 0 ? tags[tags.size() - 2].second : 0;
 
           if (tags.back().first == _tag_tracker->labelToTag(0)->tag() &&
               tags.back().second < o_threshold &&
@@ -536,8 +574,15 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
             std::reverse(tags.begin(), tags.end());
             tags.pop_back();
           }
+          while (tags.size() > top_k) {
+            tags.pop_back();
+          }
         }
       }
+      // std::cout << "final tags: " << std::endl;
+      // for (const auto& [tag, score] : tags) {
+      //   std::cout << tag << " " << score << std::endl;
+      // }
       output_tags[sentence_index].push_back(tags);
 
       token_index++;

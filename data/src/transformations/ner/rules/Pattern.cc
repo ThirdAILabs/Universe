@@ -73,7 +73,7 @@ std::vector<MatchResult> Pattern::apply(const std::string& phrase) const {
     }
 
     if (score != 0) {
-      results.emplace_back(_entity, std::min(score, 1.F), match_start,
+      results.emplace_back(_entity, std::min(score, 10.F), match_start,
                            match_len);
     }
   }

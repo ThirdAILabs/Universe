@@ -93,6 +93,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
      */
     std::string surrounding_numbers = text::stripWhitespace(
         ner::utils::findContiguousNumbers(lower_cased_tokens, index));
+
     if (!surrounding_numbers.empty()) {
       auto numerical_features = getNumericalFeatures(surrounding_numbers);
       if (!numerical_features.empty()) {
@@ -200,6 +201,7 @@ std::string NerDyadicDataProcessor::processToken(
   uint32_t n_alpha = 0;
   uint32_t n_digit = 0;
   uint32_t n_punct = 0;
+
   std::string target_token = tokens[index];
   for (char& c : target_token) {
     if (std::isdigit(c)) {
@@ -249,9 +251,11 @@ std::string NerDyadicDataProcessor::processToken(
     repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
-  repr += " " + std::to_string(n_alpha) + "_ALPHA";
-  repr += " " + std::to_string(n_digit) + "_DIGIT";
-  repr += " " + std::to_string(n_punct) + "_PUNCT";
+  if (n_digit>0) {
+    repr += " " + std::to_string(n_punct) + "_PUNCT";
+    repr += " " + std::to_string(n_alpha) + "_ALPHA";
+    repr += " " + std::to_string(n_digit) + "_DIGIT";
+  }
 
   return repr;
 }
