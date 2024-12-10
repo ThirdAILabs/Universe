@@ -251,7 +251,7 @@ std::string NerDyadicDataProcessor::processToken(
     repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
-  if (n_digit>0) {
+  if (n_digit > 0) {
     repr += " " + std::to_string(n_punct) + "_PUNCT";
     repr += " " + std::to_string(n_alpha) + "_ALPHA";
     repr += " " + std::to_string(n_digit) + "_DIGIT";
