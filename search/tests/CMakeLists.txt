@@ -9,7 +9,7 @@ set(SEARCH_TESTS
     InvertedIndexTokenizerTests
     OnDiskIndexTests
     IdMapTests
-    OnDiskNeuralDbTests)
+    OnDiskNeuralDBTests)
 
 foreach(SEARCH_TEST IN LISTS SEARCH_TESTS)
   add_executable(${SEARCH_TEST} ${SEARCH_TEST}.cc)
