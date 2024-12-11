@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/access.hpp>
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -25,6 +26,8 @@ class MetadataValue {
 
   explicit MetadataValue(std::string value)
       : _type(MetadataType::Str), _value(std::move(value)) {}
+
+  MetadataType type() const { return _type; }
 
   bool asBool() const {
     checkType(MetadataType::Bool);
@@ -171,6 +174,24 @@ class EqualTo final : public Constraint {
 
  private:
   MetadataValue _value;
+};
+
+class AnyOf final : public Constraint {
+ public:
+  explicit AnyOf(std::vector<MetadataValue> values)
+      : _values(std::move(values)) {}
+
+  static std::shared_ptr<AnyOf> make(std::vector<MetadataValue> values) {
+    return std::make_shared<AnyOf>(std::move(values));
+  }
+
+  bool matches(const MetadataValue& value) const final {
+    return std::any_of(_values.begin(), _values.end(),
+                       [&value](const auto& v) { return value.equals(v); });
+  }
+
+ private:
+  std::vector<MetadataValue> _values;
 };
 
 class LessThan final : public Constraint {

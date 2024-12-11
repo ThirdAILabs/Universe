@@ -1,4 +1,4 @@
-#include "OnDiskNeuralDb.h"
+#include "OnDiskNeuralDB.h"
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
@@ -7,8 +7,8 @@
 #include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/neural_db/Constraints.h>
-#include <search/src/neural_db/Errors.h>
 #include <search/src/neural_db/on_disk/MergeOperators.h>
+#include <search/src/neural_db/on_disk/RocksDbError.h>
 #include <search/src/neural_db/on_disk/Serialization.h>
 #include <utils/UUID.h>
 #include <array>
@@ -103,9 +103,9 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
 }
 
 void OnDiskNeuralDB::insert(const std::string& document,
-                            const std::optional<std::string>& doc_id_opt,
                             const std::vector<std::string>& chunks,
-                            const std::vector<MetadataMap>& metadata) {
+                            const std::vector<MetadataMap>& metadata,
+                            const std::optional<std::string>& doc_id_opt) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
   }
@@ -475,8 +475,8 @@ std::vector<std::pair<ChunkId, float>> sortCandidates(
 }
 
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
-    const std::string& query, uint32_t top_k,
-    const QueryConstraints& constraints) {
+    const std::string& query, const QueryConstraints& constraints,
+    uint32_t top_k) {
   auto candidate_set = candidateSet(query);
 
   auto sorted_candidates = sortCandidates(candidate_set);

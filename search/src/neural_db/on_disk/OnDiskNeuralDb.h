@@ -6,7 +6,7 @@
 #include <rocksdb/utilities/transaction.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/IndexConfig.h>
-#include <search/src/neural_db/NeuralDb.h>
+#include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/TextProcessor.h>
 #include <search/src/neural_db/on_disk/ChunkCountView.h>
 #include <unordered_map>
@@ -22,16 +22,16 @@ class OnDiskNeuralDB final : public NeuralDB {
                           bool read_only = false);
 
   void insert(const std::string& document,
-              const std::optional<std::string>& doc_id,
               const std::vector<std::string>& chunks,
-              const std::vector<MetadataMap>& metadata) final;
+              const std::vector<MetadataMap>& metadata,
+              const std::optional<std::string>& doc_id) final;
 
   std::vector<std::pair<Chunk, float>> query(const std::string& query,
                                              uint32_t top_k) final;
 
-  std::vector<std::pair<Chunk, float>> rank(
-      const std::string& query, uint32_t top_k,
-      const QueryConstraints& constraints) final;
+  std::vector<std::pair<Chunk, float>> rank(const std::string& query,
+                                            const QueryConstraints& constraints,
+                                            uint32_t top_k) final;
 
   void deleteDoc(const DocId& doc, uint32_t version) final;
 

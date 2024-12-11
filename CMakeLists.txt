@@ -453,7 +453,7 @@ if(NOT WIN32)
       search/src/inverted_index/id_map/OnDiskIdMap.cc
       search/src/neural_db/Constraints.cc
       search/src/neural_db/TextProcessor.cc
-      search/src/neural_db/on_disk/OnDiskNeuralDb.cc)
+      search/src/neural_db/on_disk/OnDiskNeuralDB.cc)
 endif()
 
 # Only add the licensing subdirectory and licensing cc files if the
