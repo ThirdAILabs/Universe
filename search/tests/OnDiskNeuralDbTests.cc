@@ -48,22 +48,21 @@ void checkNdbRank(OnDiskNeuralDB& db, const std::string& query,
 TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
   OnDiskNeuralDB db(tmpDbName());
 
-  db.insert(
-      "doc", std::nullopt,
-      {"a b c d e g", "a b c d", "1 2 3", "x y z", "2 3", "c f", "f g d g",
-       "c d e f", "f t q v w", "f m n o p", "f g h i", "c 7 8 9 10 11"},
-      {{{"q1", MetadataValue(true)}},
-       {{"q2", MetadataValue(true)}},
-       {{"q1", MetadataValue(true)}},
-       {},
-       {{"q2", MetadataValue(true)}},
-       {{"q2", MetadataValue(true)}},
-       {{"q2", MetadataValue(true)}},
-       {{"q1", MetadataValue(true)}, {"q2", MetadataValue(true)}},
-       {},
-       {},
-       {},
-       {{"q1", MetadataValue(true)}}});
+  db.insert("doc1", std::nullopt, {"a b c d e g", "a b c d", "1 2 3"},
+            {{{"q1", MetadataValue(true)}},
+             {{"q2", MetadataValue(true)}},
+             {{"q1", MetadataValue(true)}}});
+
+  db.insert("doc2", std::nullopt, {"x y z", "2 3", "c f", "f g d g", "c d e f"},
+            {{},
+             {{"q2", MetadataValue(true)}},
+             {{"q2", MetadataValue(true)}},
+             {{"q2", MetadataValue(true)}},
+             {{"q1", MetadataValue(true)}, {"q2", MetadataValue(true)}}});
+
+  db.insert("doc3", std::nullopt,
+            {"f t q v w", "f m n o p", "f g h i", "c 7 8 9 10 11"},
+            {{}, {}, {}, {{"q1", MetadataValue(true)}}});
 
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it
   // ranks higher. Docs 6 and 8 both contain "c" but 6 is shorter so the

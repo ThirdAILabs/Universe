@@ -294,14 +294,12 @@ ChunkId OnDiskNeuralDB::reserveChunkIds(ChunkId n_ids) {
   int64_t next_id;
   auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _chunk_counters,
                                       NEXT_CHUNK_ID, &value);
-
   if (get_status.ok()) {
     if (value.size() != sizeof(int64_t)) {
       throw NeuralDbError(ErrorCode::MalformedData, "next id malformed");
     }
     next_id = *reinterpret_cast<int64_t*>(value.data());
-  }
-  if (get_status.IsNotFound()) {
+  } else if (get_status.IsNotFound()) {
     next_id = 0;
   } else {
     throw RocksdbError(get_status, "retrieving next available chunk id");
@@ -309,9 +307,14 @@ ChunkId OnDiskNeuralDB::reserveChunkIds(ChunkId n_ids) {
 
   int64_t new_next_id = next_id + n_ids;
   auto put_status =
-      txn->Put(_doc_version, NEXT_CHUNK_ID, asSlice<int64_t>(&new_next_id));
+      txn->Put(_chunk_counters, NEXT_CHUNK_ID, asSlice<int64_t>(&new_next_id));
   if (!put_status.ok()) {
     throw RocksdbError(put_status, "reserving chunk ids for doc");
+  }
+
+  auto commit = txn->Commit();
+  if (!commit.ok()) {
+    throw RocksdbError(commit, "committing chunk id reservation");
   }
 
   return next_id;
