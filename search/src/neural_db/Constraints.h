@@ -16,16 +16,21 @@ class MetadataValue {
  public:
   MetadataValue() : _type(MetadataType::Nil) {}
 
-  explicit MetadataValue(bool value)
-      : _type(MetadataType::Bool), _value(value) {}
+  static MetadataValue Bool(bool value) {
+    return MetadataValue(MetadataType::Bool, value);
+  }
 
-  explicit MetadataValue(int value) : _type(MetadataType::Int), _value(value) {}
+  static MetadataValue Int(int value) {
+    return MetadataValue(MetadataType::Int, value);
+  }
 
-  explicit MetadataValue(float value)
-      : _type(MetadataType::Float), _value(value) {}
+  static MetadataValue Float(float value) {
+    return MetadataValue(MetadataType::Float, value);
+  }
 
-  explicit MetadataValue(std::string value)
-      : _type(MetadataType::Str), _value(std::move(value)) {}
+  static MetadataValue Str(std::string value) {
+    return MetadataValue(MetadataType::Str, std::move(value));
+  }
 
   MetadataType type() const { return _type; }
 
@@ -62,6 +67,10 @@ class MetadataValue {
   }
 
  private:
+  MetadataValue(MetadataType type,
+                std::variant<bool, int, float, std::string> value)
+      : _type(type), _value(std::move(value)) {}
+
   friend class cereal::access;
 
   template <class Archive>
@@ -100,18 +109,23 @@ class MetadataValue {
         _value = i;
         break;
       case MetadataType::Float:
-        bool f;
+        float f;
         archive(f);
         _value = f;
         break;
       case MetadataType::Str:
-        bool s;
-        archive(s);
-        _value = s;
+        _value = loadStr(archive);
         break;
       case MetadataType::Nil:
         break;
     }
+  }
+
+  template <class Archive>
+  std::string loadStr(Archive& archive) {
+    std::string s;
+    archive(s);
+    return s;
   }
 
   void checkType(MetadataType expected) const {

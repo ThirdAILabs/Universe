@@ -26,16 +26,16 @@ std::string pyTypeStr(const py::handle& obj) {
 
 ndb::MetadataValue objToMetadataValue(const py::handle& obj) {
   if (py::isinstance<py::bool_>(obj)) {
-    return ndb::MetadataValue(obj.cast<bool>());
+    return ndb::MetadataValue::Bool(obj.cast<bool>());
   }
   if (py::isinstance<py::int_>(obj)) {
-    return ndb::MetadataValue(obj.cast<int>());
+    return ndb::MetadataValue::Int(obj.cast<int>());
   }
   if (py::isinstance<py::float_>(obj)) {
-    return ndb::MetadataValue(obj.cast<float>());
+    return ndb::MetadataValue::Float(obj.cast<float>());
   }
   if (py::isinstance<py::str>(obj)) {
-    return ndb::MetadataValue(obj.cast<std::string>());
+    return ndb::MetadataValue::Str(obj.cast<std::string>());
   }
   throw std::invalid_argument("invalid type " + pyTypeStr(obj) +
                               " expected bool, int, float, or str");

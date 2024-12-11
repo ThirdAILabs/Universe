@@ -501,6 +501,7 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
         loadChunkField<MetadataMap>(_chunk_metadata, chunk_ids);
 
     for (size_t i = 0; i < (end - start); i++) {
+      std::cerr << "chunk: " << chunk_ids[i] << std::endl;
       if (metadata[i] && matches(constraints, *metadata[i])) {
         topk_chunk_ids.push_back(sorted_candidates[start + i].first);
         topk_scores.push_back(sorted_candidates[start + i].second);

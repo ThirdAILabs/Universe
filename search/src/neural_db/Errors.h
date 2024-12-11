@@ -7,7 +7,13 @@
 
 namespace thirdai::search::ndb {
 
-enum class ErrorCode { DbError, DocNotFound, MalformedData, ReadOnly };
+enum class ErrorCode {
+  DbError,
+  DocNotFound,
+  MalformedData,
+  SerializationError,
+  ReadOnly
+};
 
 class NeuralDbError : public std::exception {
  public:
@@ -22,7 +28,5 @@ class NeuralDbError : public std::exception {
   ErrorCode _code;
   std::string _msg;
 };
-
-
 
 }  // namespace thirdai::search::ndb

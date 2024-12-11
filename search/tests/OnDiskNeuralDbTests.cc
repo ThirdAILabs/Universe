@@ -50,31 +50,32 @@ TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert("doc1", {"a b c d e g", "a b c d", "1 2 3"},
-            {{{"q1", MetadataValue(true)}},
-             {{"q2", MetadataValue(true)}},
-             {{"q1", MetadataValue(true)}}},
+            {{{"q1", MetadataValue::Bool(true)}},
+             {{"q2", MetadataValue::Bool(true)}},
+             {{"q1", MetadataValue::Bool(true)}}},
             std::nullopt);
 
-  db.insert("doc2", {"x y z", "2 3", "c f", "f g d g", "c d e f"},
-            {{},
-             {{"q2", MetadataValue(true)}},
-             {{"q2", MetadataValue(true)}},
-             {{"q2", MetadataValue(true)}},
-             {{"q1", MetadataValue(true)}, {"q2", MetadataValue(true)}}},
-            std::nullopt);
+  db.insert(
+      "doc2", {"x y z", "2 3", "c f", "f g d g", "c d e f"},
+      {{},
+       {{"q2", MetadataValue::Bool(true)}},
+       {{"q2", MetadataValue::Bool(true)}},
+       {{"q2", MetadataValue::Bool(true)}},
+       {{"q1", MetadataValue::Bool(true)}, {"q2", MetadataValue::Bool(true)}}},
+      std::nullopt);
 
   db.insert("doc3", {"f t q v w", "f m n o p", "f g h i", "c 7 8 9 10 11"},
-            {{}, {}, {}, {{"q1", MetadataValue(true)}}}, std::nullopt);
+            {{}, {}, {}, {{"q1", MetadataValue::Bool(true)}}}, std::nullopt);
 
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it
   // ranks higher. Docs 6 and 8 both contain "c" but 6 is shorter so the
   // query terms are more frequent within it.
-  checkNdbQuery(db, {"a b c"}, {1, 0, 5, 7});
+  checkNdbQuery(db, {"a & b c"}, {1, 0, 5, 7});
   // These candidates are a subset of the original results, plus 12 which
   // usually would score lower and not be returned, but is returned when we
   // restrict the candidates. Doc 3 is also added but scores 0.
-  checkNdbRank(db, {"a b c"}, {{"q1", EqualTo::make(MetadataValue(true))}},
-               {0, 7, 11});
+  checkNdbRank(db, {"a b c"},
+               {{"q1", EqualTo::make(MetadataValue::Bool(true))}}, {0, 7, 11});
 
   // Docs 7 and 11 contain the whole query, but 7 contains "g" repeated so it
   // scores higher. Docs 6, 8, 1 contain 1 term of the query. However 1 contains
@@ -83,7 +84,7 @@ TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
   checkNdbQuery(db, {"f g"}, {6, 10, 0, 5, 7});
   // These candidates are a subset of the original results plus docs 5 & 2 which
   // score 0 are added to test they are not returned.
-  checkNdbRank(db, {"f g"}, {{"q2", EqualTo::make(MetadataValue(true))}},
+  checkNdbRank(db, {"f g"}, {{"q2", EqualTo::make(MetadataValue::Bool(true))}},
                {6, 5, 7});
 }
 
@@ -142,6 +143,64 @@ TEST_F(OnDiskNeuralDbTests, ShorterDocsScoreHigherWithSameTokens) {
   // Both docs 2 and 3 contain 2 query tokens, but they form a higher fraction
   // within 2 than 3.
   checkNdbQuery(db, {"c a q"}, {1, 2});
+}
+
+TEST_F(OnDiskNeuralDbTests, ConstrainedSearch) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert("doc",
+            {"a", "a b", "a b c", "a b c d", "a b c d e", "w", "w x", "w x y",
+             "w x y z"},
+            {{
+                 {"k1", MetadataValue::Float(5.2)},
+                 {"k2", MetadataValue::Bool(false)},
+                 {"k3", MetadataValue::Int(7)},
+                 {"k4", MetadataValue::Str("apple")},
+             },
+             {
+                 // Eliminated by constraint 2
+                 {"k1", MetadataValue::Float(3.1)},
+                 {"k2", MetadataValue::Bool(true)},
+                 {"k3", MetadataValue::Int(22)},
+                 {"k4", MetadataValue::Str("banana")},
+             },
+             {
+                 // Eliminated by constraint 3
+                 {"k1", MetadataValue::Float(9.2)},
+                 {"k2", MetadataValue::Bool(false)},
+                 {"k3", MetadataValue::Int(11)},
+                 {"k4", MetadataValue::Str("kiwi")},
+             },
+             {
+                 // Eliminated by constraint 1
+                 {"k1", MetadataValue::Float(2.9)},
+                 {"k2", MetadataValue::Bool(false)},
+                 {"k3", MetadataValue::Int(7)},
+                 {"k4", MetadataValue::Str("grape")},
+             },
+             {
+                 // Eliminated by constraint 4
+                 {"k1", MetadataValue::Float(4.7)},
+                 {"k2", MetadataValue::Bool(false)},
+                 {"k3", MetadataValue::Int(22)},
+                 {"k4", MetadataValue::Str("pineapple")},
+             },
+             {},
+             {},
+             {},
+             {}},
+            std::nullopt);
+
+  checkNdbQuery(db, "a b c d e", {4, 3, 2, 1, 0});
+
+  QueryConstraints constraints = {
+      {"k1", GreaterThan::make(MetadataValue::Float(3))},
+      {"k2", EqualTo::make(MetadataValue::Bool(false))},
+      {"k3", AnyOf::make({MetadataValue::Int(7), MetadataValue::Int(22)})},
+      {"k4", LessThan::make(MetadataValue::Str("peach"))},
+  };
+
+  checkNdbRank(db, "a b c d e", constraints, {0});
 }
 
 std::vector<std::vector<std::pair<Chunk, float>>> queryDb(
