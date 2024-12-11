@@ -485,12 +485,13 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
   std::vector<ChunkId> topk_scores;
   std::vector<MetadataMap> topk_metadata;
 
-  for (size_t start = 0; start < sorted_candidates.size(); start += top_k) {
+  const size_t batch_size = 20;
+  for (size_t start = 0; start < sorted_candidates.size(); start += batch_size) {
     if (topk_chunk_ids.size() == top_k) {
       break;
     }
 
-    size_t end = std::min(start + top_k, sorted_candidates.size());
+    size_t end = std::min(start + batch_size, sorted_candidates.size());
 
     std::vector<ChunkId> chunk_ids(end - start);
     for (size_t i = start; i < end; i++) {
