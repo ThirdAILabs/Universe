@@ -8,7 +8,7 @@
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/neural_db/Constraints.h>
 #include <search/src/neural_db/on_disk/MergeOperators.h>
-#include <search/src/neural_db/on_disk/RocksDbError.h>
+#include <search/src/neural_db/on_disk/RocksDBError.h>
 #include <search/src/neural_db/on_disk/Serialization.h>
 #include <utils/UUID.h>
 #include <array>
