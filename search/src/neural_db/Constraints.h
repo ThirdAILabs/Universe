@@ -148,6 +148,8 @@ class MetadataValue {
         return "str";
       case MetadataType::Nil:
         return "nil";
+      default:
+        throw std::runtime_error("invalid type in ToString");
     }
   }
 
