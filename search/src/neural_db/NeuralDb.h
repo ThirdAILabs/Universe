@@ -21,6 +21,8 @@ class NeuralDB {
 
   virtual void deleteDoc(const DocId& doc, uint32_t version) = 0;
 
+  virtual void prune() = 0;
+
   virtual ~NeuralDB() = default;
 };
 

@@ -5,6 +5,8 @@
 
 namespace thirdai::search::ndb {
 
+static const ChunkCount PRUNED = ChunkCount{0xffffffffffffffff, 0xffffffff};
+
 class ChunkCountView {
  public:
   explicit ChunkCountView(const std::vector<ChunkCount>& counts)
@@ -24,8 +26,8 @@ class ChunkCountView {
   const auto* end() const { return _ptr + _size; }
 
   bool isPruned() const {
-    return _size == 1 && _ptr->chunk_id == 0xffffffffffffffff &&
-           _ptr->count == 0xffffffff;
+    return _size == 1 && _ptr->chunk_id == PRUNED.chunk_id &&
+           _ptr->count == PRUNED.count;
   }
 
   rocksdb::Slice slice() const {

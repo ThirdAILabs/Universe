@@ -35,6 +35,8 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   void deleteDoc(const DocId& doc, uint32_t version) final;
 
+  void prune() final;
+
   ~OnDiskNeuralDB() final;
 
  private:
