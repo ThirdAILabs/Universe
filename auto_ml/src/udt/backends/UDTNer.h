@@ -190,8 +190,7 @@ class UDTNer final : public UDTBackend {
   std::pair<std::vector<SentenceTags>,
             std::vector<std::vector<std::pair<size_t, size_t>>>>
   predictTags(const std::vector<std::string>& sentences, bool sparse_inference,
-              uint32_t top_k, float o_threshold, bool as_unicode,
-              const py::kwargs& kwargs);
+              uint32_t top_k, float o_threshold, bool as_unicode);
 
   struct NerOptions;
 

@@ -544,31 +544,7 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
            py::arg("feature_enhancement_config") = std::nullopt,
            py::arg("tag_tracker") = nullptr)
       .def("process_token", &NerTokenizerUnigram::processToken,
-           py::arg("tokens"), py::arg("index"))
-      .def(
-          "set_use_target",
-          [](NerTokenizerUnigram& self, bool use_target) {
-            self.useTarget() = use_target;
-          },
-          py::arg("use_target"))
-      .def(
-          "set_use_context",
-          [](NerTokenizerUnigram& self, bool use_context) {
-            self.useContext() = use_context;
-          },
-          py::arg("use_context"))
-      .def(
-          "set_use_extra_features",
-          [](NerTokenizerUnigram& self, bool use_extra_features) {
-            self.useExtraFeatures() = use_extra_features;
-          },
-          py::arg("use_extra_features"))
-      .def(
-          "set_use_char_bins",
-          [](NerTokenizerUnigram& self, bool use_char_bins) {
-            self.useCharBins() = use_char_bins;
-          },
-          py::arg("use_char_bins"));
+           py::arg("tokens"), py::arg("index"));
 
   py::class_<ner::utils::TagTracker, ner::utils::TagTrackerPtr>(
       transformations_submodule, "NerTagTracker")

@@ -385,7 +385,7 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
 
   auto [tags, offsets] =
       predictTags({sample.at(_tokens_column)}, sparse_inference,
-                  top_k.value_or(1), o_threshold, as_unicode, kwargs);
+                  top_k.value_or(1), o_threshold, as_unicode);
 
   if (kwargs.contains("return_offsets") &&
       py::cast<bool>(kwargs["return_offsets"])) {
@@ -419,9 +419,8 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
 
   bool as_unicode = boolArg(kwargs, "as_unicode").value_or(false);
 
-  auto [tags, offsets] =
-      predictTags(sentences, sparse_inference, top_k.value_or(1), o_threshold,
-                  as_unicode, kwargs);
+  auto [tags, offsets] = predictTags(
+      sentences, sparse_inference, top_k.value_or(1), o_threshold, as_unicode);
 
   if (kwargs.contains("return_offsets") &&
       py::cast<bool>(kwargs["return_offsets"])) {
@@ -442,23 +441,7 @@ std::pair<std::vector<SentenceTags>,
           std::vector<std::vector<std::pair<size_t, size_t>>>>
 UDTNer::predictTags(const std::vector<std::string>& sentences,
                     bool sparse_inference, uint32_t top_k, float o_threshold,
-                    bool as_unicode, const py::kwargs& kwargs) {
-  (void)kwargs;
-
-  bool use_rules = boolArg(kwargs, "use_rules").value_or(true);
-  bool use_target = boolArg(kwargs, "use_target").value_or(true);
-  bool use_context = boolArg(kwargs, "use_context").value_or(true);
-  bool use_extra_features =
-      boolArg(kwargs, "use_extra_features").value_or(true);
-  bool use_char_bins = boolArg(kwargs, "use_char_bins").value_or(true);
-  bool use_filters = boolArg(kwargs, "use_filters").value_or(true);
-
-  auto tokenizer = extractNerTokenizerTransform(_inference_transform, true);
-  tokenizer->useTarget() = use_target;
-  tokenizer->useContext() = use_context;
-  tokenizer->useExtraFeatures() = use_extra_features;
-  tokenizer->useCharBins() = use_char_bins;
-
+                    bool as_unicode) {
   std::vector<std::vector<std::string>> tokens;
   std::vector<SentenceTags> output_tags(sentences.size());
 
@@ -523,8 +506,7 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
       TokenTags rule_tags;
       std::unordered_map<std::string, float> tags_to_score;
 
-      if (_rule && use_rules &&
-          !rule_results.at(sentence_index).at(token_index).empty()) {
+      if (_rule && !rule_results.at(sentence_index).at(token_index).empty()) {
         rule_tags = rule_results.at(sentence_index).at(token_index);
         for (const auto& [tag, score] : rule_tags) {
           tags_to_score[tag] = score;
@@ -548,6 +530,8 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
             _tag_tracker->labelToTag(0)->tag());
 
         for (const auto& [tag, score] : model_tags) {
+          // if the default tag is the top prediction of the model but rules
+          // have predicted a tag, then we do not consider the model prediction
           if (tag == _tag_tracker->labelToTag(0)->tag() &&
               rule_tags.size() > 0 && score > 0.95) {
             continue;
@@ -569,11 +553,6 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         std::sort(tags.begin(), tags.end(), [](const auto& a, const auto& b) {
           return b.second > a.second;
         });
-
-        // std::cout << "tags after sorting: " << std::endl;
-        // for (const auto& [tag, score] : tags) {
-        //   std::cout << tag << " " << score << std::endl;
-        // }
 
         // if the number of labels in the model is 1, we do not have to
         // reverse
@@ -597,10 +576,6 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
           }
         }
       }
-      // std::cout << "final tags: " << std::endl;
-      // for (const auto& [tag, score] : tags) {
-      //   std::cout << tag << " " << score << std::endl;
-      // }
       output_tags[sentence_index].push_back(tags);
 
       token_index++;
@@ -608,14 +583,12 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
   }
 
   // apply processing for model predictions
-  if (use_filters) {
-    for (size_t sentence_index = 0; sentence_index < output_tags.size();
-         ++sentence_index) {
-      auto cleaned_tokens =
-          data::ner::utils::cleanAndLowerCase(tokens[sentence_index]);
-      for (const auto& learned_tag : _tag_tracker->modelTags()) {
-        learned_tag->processTags(output_tags[sentence_index], cleaned_tokens);
-      }
+  for (size_t sentence_index = 0; sentence_index < output_tags.size();
+       ++sentence_index) {
+    auto cleaned_tokens =
+        data::ner::utils::cleanAndLowerCase(tokens[sentence_index]);
+    for (const auto& learned_tag : _tag_tracker->modelTags()) {
+      learned_tag->processTags(output_tags[sentence_index], cleaned_tokens);
     }
   }
 

@@ -37,9 +37,8 @@ class NerTokenizerUnigram final : public Transformation {
 
   std::string processToken(const std::vector<std::string>& tokens,
                            uint32_t index) const {
-    return _processor.processToken(
-        tokens, index, ner::utils::cleanAndLowerCase(tokens), _use_target,
-        _use_context, _use_extra_features, _use_char_bins);
+    return _processor.processToken(tokens, index,
+                                   ner::utils::cleanAndLowerCase(tokens));
   }
 
   uint32_t findTagValueForString(const std::string& tag) const {
@@ -54,11 +53,6 @@ class NerTokenizerUnigram final : public Transformation {
   void setTagTracker(ner::utils::TagTrackerPtr tag_tracker) {
     _tag_tracker = std::move(tag_tracker);
   }
-
-  bool& useTarget() { return _use_target; }
-  bool& useContext() { return _use_context; }
-  bool& useExtraFeatures() { return _use_extra_features; }
-  bool& useCharBins() { return _use_char_bins; }
 
  private:
   void updateTokenTagCounter(
@@ -89,11 +83,6 @@ class NerTokenizerUnigram final : public Transformation {
   NerDyadicDataProcessor _processor;
 
   ner::utils::TagTrackerPtr _tag_tracker;
-
-  bool _use_target = true;
-  bool _use_context = true;
-  bool _use_extra_features = true;
-  bool _use_char_bins = true;
 };
 
 }  // namespace thirdai::data
