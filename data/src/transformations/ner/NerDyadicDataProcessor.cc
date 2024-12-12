@@ -255,6 +255,16 @@ std::string NerDyadicDataProcessor::processToken(
   }
 
   if (n_digit > 0) {
+    /*
+     * For a token without any digits, model predictions vary wildly depending
+     * on the number of punctuations.
+     *
+     * Example : token = "Shubh" vs "Shubh."
+     * Model predictions : [NAME] vs [O]
+     *
+     * Removing punctuations from the non-numeric tokens makes the model
+     * prediction more consistent.
+     */
     repr += " " + std::to_string(n_punct) + "_PUNCT";
     repr += " " + std::to_string(n_alpha) + "_ALPHA";
     repr += " " + std::to_string(n_digit) + "_DIGIT";
