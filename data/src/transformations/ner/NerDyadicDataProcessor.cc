@@ -221,7 +221,9 @@ std::string NerDyadicDataProcessor::processToken(
   // context and does not overfit just on the tokens
 
   // TODO(@shubh3ai) : make the dropout ratio configurable
-  if (_for_inference || rand() % 2 == 0) {
+  // if number of tokens is 1 or if in inference mode, do not drop the target
+  // token
+  if (_for_inference || rand() % 2 == 0 || tokens.size() == 1) {
     for (const auto& tokenizer : _target_word_tokenizers) {
       // to change the target token tokenization, change the first argument of
       // toStrings here. example, if you want to remove punct from target token,
