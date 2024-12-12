@@ -532,7 +532,7 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         for (const auto& [tag, score] : model_tags) {
           // if the default tag is the top prediction of the model but rules
           // have predicted a tag, then we do not consider the model prediction
-          if (tag == _tag_tracker->labelToTag(0)->tag() && score > 0.95 &&
+          if (tag == _tag_tracker->labelToTag(0)->tag() && score < 0.95 &&
               !rule_tags.empty()) {
             continue;
           }
@@ -549,6 +549,8 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         for (const auto& [tag, score] : tags_to_score) {
           tags.emplace_back(tag, score);
         }
+
+        assert(tags.size() >= 1);
 
         std::sort(tags.begin(), tags.end(), [](const auto& a, const auto& b) {
           return b.second > a.second;
@@ -576,6 +578,12 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
           }
         }
       }
+
+      for (auto& [tag, score] : tags) {
+        // normalize the score by the top score
+        score = tags[0].second > 1e-6 ? score / tags[0].second : 0.0;
+      }
+
       output_tags[sentence_index].push_back(tags);
 
       token_index++;

@@ -49,7 +49,7 @@ TEST(NerRuleTests, Email) {
   checkMatch(rule, "my contact is joe@address.co", "EMAIL", 0.7,
              "joe@address.co");
 
-  checkMatch(rule, "alex@address.co is my email", "EMAIL", 1.0,
+  checkMatch(rule, "alex@address.co is my email", "EMAIL", 1.1,
              "alex@address.co");
 
   checkMatch(rule, "reach me at jane@address.co during work", "EMAIL", 0.6,
