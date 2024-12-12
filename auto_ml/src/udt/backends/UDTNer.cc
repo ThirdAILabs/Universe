@@ -532,8 +532,8 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         for (const auto& [tag, score] : model_tags) {
           // if the default tag is the top prediction of the model but rules
           // have predicted a tag, then we do not consider the model prediction
-          if (tag == _tag_tracker->labelToTag(0)->tag() &&
-              rule_tags.size() > 0 && score > 0.95) {
+          if (tag == _tag_tracker->labelToTag(0)->tag() && score > 0.95 &&
+              !rule_tags.empty()) {
             continue;
           }
           if (tags_to_score.find(tag) == tags_to_score.end()) {

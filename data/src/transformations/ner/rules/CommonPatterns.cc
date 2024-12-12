@@ -135,7 +135,7 @@ RulePtr creditCardPattern() {
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
       R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
-      /*pattern_score=*/2.0,
+      /*pattern_score=*/1.8,
       /*context_keywords=*/
       {
           {"credit", 0.2},
@@ -171,7 +171,7 @@ RulePtr phonePattern() {
       /*pattern=*/
       // R"((([\+\b]\d{1,3}[\.\- \(]\(?)|\b|\()\d{3}\)?[\.\- ]?\d{3}[\.\-
       // ]?\d{4}\b)",
-      R"(\b\s*(?:\+?(\d{1,3}))?[-. (]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
+      R"(\b(?:\+?(\d{1,3}))?[-. (]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
       /*pattern_score=*/0.5,
       /*context_keywords=*/
       {
