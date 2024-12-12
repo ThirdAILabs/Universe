@@ -9,7 +9,6 @@
 #include <search/src/neural_db/Constraints.h>
 #include <search/src/neural_db/on_disk/MergeOperators.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
-#include <search/src/neural_db/on_disk/Serialization.h>
 #include <utils/UUID.h>
 #include <array>
 #include <memory>
@@ -20,6 +19,11 @@
 #include <unordered_map>
 
 namespace thirdai::search::ndb {
+
+// Finetuning parameters
+constexpr size_t QUERY_INDEX_THRESHOLD = 10;
+constexpr size_t TOP_QUERIES = 10;
+constexpr float LAMBDA = 0.6;
 
 std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
   return doc_id + "_" + std::to_string(doc_version);
@@ -77,13 +81,16 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   _default = columns.at(0);
   _chunk_index = std::make_unique<InvertedIndex>(
       _db, columns.at(1), columns.at(2), config, read_only);
-  _chunk_data = columns.at(3);
-  _chunk_metadata = columns.at(4);
+
+  _chunk_data =
+      std::make_unique<ChunkDataColumn<ChunkData>>(_db, columns.at(3));
+  _chunk_metadata =
+      std::make_unique<ChunkDataColumn<MetadataMap>>(_db, columns.at(4));
   _doc_chunks = columns.at(5);
   _doc_version = columns.at(6);
   _query_index = std::make_unique<InvertedIndex>(
       _db, columns.at(7), columns.at(8), config, read_only);
-  _query_to_chunks = columns.at(9);
+  _query_to_chunks = std::make_unique<QueryToChunks>(_db, columns.at(9));
 }
 
 void OnDiskNeuralDB::insert(const std::string& document,
@@ -112,25 +119,15 @@ void OnDiskNeuralDB::insert(const std::string& document,
     doc_version = 1;
   }
 
-  for (size_t i = 0; i < chunks.size(); i++) {
-    const ChunkId chunk_id = start_id + i;
-    const auto chunk_key = asSlice<ChunkId>(&chunk_id);
-
-    ChunkData data{chunks.at(i), document, doc_id, doc_version};
-    std::string chunk_data = serialize(data);
-
-    std::string chunk_metadata = serialize(metadata.at(i));
-
-    std::array<rocksdb::Status, 2> statuses;
-    statuses[0] = txn->Put(_chunk_data, chunk_key, chunk_data);
-    statuses[1] = txn->Put(_chunk_metadata, chunk_key, chunk_metadata);
-
-    for (auto& status : statuses) {
-      if (!status.ok()) {
-        throw RocksdbError(status, "storing chunk metadata");
-      }
-    }
+  std::vector<ChunkData> chunk_data;
+  chunk_data.reserve(chunks.size());
+  for (const auto& chunk : chunks) {
+    chunk_data.emplace_back(chunk, document, doc_id, doc_version);
   }
+
+  _chunk_data->write(txn, start_id, chunk_data);
+
+  _chunk_metadata->write(txn, start_id, metadata);
 
   _chunk_index->insert(txn, start_id, token_counts, chunk_lens);
 
@@ -176,41 +173,6 @@ uint32_t OnDiskNeuralDB::getDocVersion(TxnPtr& txn, const std::string& doc_id) {
   return version;
 }
 
-template <typename T>
-std::vector<std::optional<T>> OnDiskNeuralDB::loadChunkField(
-    rocksdb::ColumnFamilyHandle* column,
-    const std::vector<ChunkId>& chunk_ids) {
-  std::vector<rocksdb::Slice> keys;
-  keys.reserve(chunk_ids.size());
-
-  for (const auto& id : chunk_ids) {
-    keys.emplace_back(asSlice<ChunkId>(&id));
-  }
-
-  std::vector<rocksdb::PinnableSlice> values(keys.size());
-  std::vector<rocksdb::Status> statuses(keys.size());
-
-  _db->MultiGet(rocksdb::ReadOptions(), column, keys.size(), keys.data(),
-                values.data(), statuses.data());
-
-  std::vector<std::optional<T>> result;
-  result.reserve(chunk_ids.size());
-
-  for (size_t i = 0; i < chunk_ids.size(); i++) {
-    if (statuses[i].ok()) {
-      result.emplace_back(deserialize<T>(values[i]));
-    } else if (statuses[i].IsNotFound()) {
-      // This could happen if chunks are deleted between the first and second
-      // phase of a query.
-      result.emplace_back(std::nullopt);
-    } else {
-      throw RocksdbError(statuses[i], "retrieving chunk data");
-    }
-  }
-
-  return result;
-}
-
 std::vector<std::pair<ChunkId, float>> topkCandidates(
     const std::unordered_map<ChunkId, float>& candidate_set, uint32_t top_k) {
   std::vector<std::pair<ChunkId, float>> heap;
@@ -234,10 +196,35 @@ std::vector<std::pair<ChunkId, float>> topkCandidates(
   return heap;
 }
 
+std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
+    const std::string& query) {
+  const auto query_tokens = _text_processor.tokenize(query);
+
+  auto candidate_set = _chunk_index->candidateSet(query_tokens);
+
+  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
+    return candidate_set;
+  }
+
+  for (auto& [_, score] : candidate_set) {
+    score *= LAMBDA;
+  }
+
+  auto top_queries =
+      topkCandidates(_query_index->candidateSet(query_tokens), TOP_QUERIES);
+
+  for (const auto& [query_id, score] : top_queries) {
+    for (const ChunkId chunk_id : _query_to_chunks->getChunks(query_id)) {
+      candidate_set[chunk_id] += (1 - LAMBDA) * score;
+    }
+  }
+
+  return candidate_set;
+}
+
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::query(
     const std::string& query, uint32_t top_k) {
-  auto candidate_set =
-      _chunk_index->candidateSet(_text_processor.tokenize(query));
+  auto candidate_set = candidateSet(query);
 
   const auto top_candidates = topkCandidates(candidate_set, top_k);
 
@@ -247,8 +234,8 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::query(
     chunk_ids.push_back(chunk_id);
   }
 
-  const auto chunk_data = loadChunkField<ChunkData>(_chunk_data, chunk_ids);
-  const auto metadata = loadChunkField<MetadataMap>(_chunk_metadata, chunk_ids);
+  const auto chunk_data = _chunk_data->get(chunk_ids);
+  const auto metadata = _chunk_metadata->get(chunk_ids);
 
   std::vector<std::pair<Chunk, float>> results;
   results.reserve(top_candidates.size());
@@ -281,8 +268,7 @@ std::vector<std::pair<ChunkId, float>> sortCandidates(
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
     const std::string& query, const QueryConstraints& constraints,
     uint32_t top_k) {
-  auto candidate_set =
-      _chunk_index->candidateSet(_text_processor.tokenize(query));
+  auto candidate_set = candidateSet(query);
 
   auto sorted_candidates = sortCandidates(candidate_set);
 
@@ -304,8 +290,7 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
       chunk_ids[i - start] = sorted_candidates[i].first;
     }
 
-    const auto metadata =
-        loadChunkField<MetadataMap>(_chunk_metadata, chunk_ids);
+    const auto metadata = _chunk_metadata->get(chunk_ids);
 
     for (size_t i = 0; i < (end - start); i++) {
       if (metadata[i] && matches(constraints, *metadata[i])) {
@@ -319,8 +304,7 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
     }
   }
 
-  const auto chunk_data =
-      loadChunkField<ChunkData>(_chunk_data, topk_chunk_ids);
+  const auto chunk_data = _chunk_data->get(topk_chunk_ids);
 
   std::vector<std::pair<Chunk, float>> results;
   results.reserve(topk_chunk_ids.size());
@@ -359,6 +343,8 @@ void OnDiskNeuralDB::finetune(
 
   _query_index->insert(txn, start_id, token_counts, chunk_lens);
 
+  _query_to_chunks->addQueries(txn, start_id, chunk_ids);
+
   auto commit = txn->Commit();
   if (!commit.ok()) {
     throw RocksdbError(commit, "committing insertion");
@@ -373,8 +359,8 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   std::vector<ChunkId> chunk_ids(doc_chunks.end - doc_chunks.start);
   std::iota(chunk_ids.begin(), chunk_ids.end(), doc_chunks.start);
 
-  deleteChunkField(txn, _chunk_metadata, chunk_ids);
-  deleteChunkField(txn, _chunk_data, chunk_ids);
+  _chunk_data->remove(txn, chunk_ids);
+  _chunk_metadata->remove(txn, chunk_ids);
 
   _chunk_index->deleteChunks(txn, {chunk_ids.begin(), chunk_ids.end()});
 
@@ -403,17 +389,6 @@ OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
   return chunk_range;
 }
 
-void OnDiskNeuralDB::deleteChunkField(TxnPtr& txn,
-                                      rocksdb::ColumnFamilyHandle* column,
-                                      const std::vector<ChunkId>& chunk_ids) {
-  for (const auto& chunk_id : chunk_ids) {
-    auto status = txn->Delete(column, asSlice<ChunkId>(&chunk_id));
-    if (!status.ok()) {
-      throw RocksdbError(status, "removing doc chunk metadata");
-    }
-  }
-}
-
 void OnDiskNeuralDB::prune() {
   auto txn = newTxn();
   _chunk_index->prune(txn);  // txn is commit by index
@@ -429,12 +404,14 @@ TxnPtr OnDiskNeuralDB::newTxn() {
 }
 
 OnDiskNeuralDB::~OnDiskNeuralDB() {
-  _chunk_index.reset();  // force destructor to run before db is closed here.
-  _query_index.reset();  // force destructor to run before db is closed here.
+  // These are to force the destructors to run before db is closed here.
+  _chunk_index.reset();
+  _query_index.reset();
+  _chunk_data.reset();
+  _chunk_metadata.reset();
+  _query_to_chunks.reset();
 
   _db->DestroyColumnFamilyHandle(_default);
-  _db->DestroyColumnFamilyHandle(_chunk_data);
-  _db->DestroyColumnFamilyHandle(_chunk_metadata);
   _db->DestroyColumnFamilyHandle(_doc_chunks);
   _db->DestroyColumnFamilyHandle(_doc_version);
 

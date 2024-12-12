@@ -454,6 +454,8 @@ if(NOT WIN32)
       search/src/neural_db/Constraints.cc
       search/src/neural_db/TextProcessor.cc
       search/src/neural_db/on_disk/InvertedIndex.cc
+      search/src/neural_db/on_disk/QueryToChunks.cc
+      search/src/neural_db/on_disk/ChunkDataColumn.cc
       search/src/neural_db/on_disk/OnDiskNeuralDB.cc)
 endif()
 

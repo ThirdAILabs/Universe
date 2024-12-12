@@ -279,6 +279,8 @@ void InvertedIndex::prune(TxnPtr& txn) {
   }
 }
 
+size_t InvertedIndex::size() { return getCounter(N_CHUNKS); }
+
 void InvertedIndex::initCounter(const std::string& key, int64_t value) {
   auto status = _db->Put(rocksdb::WriteOptions(), _counters, key,
                          asSlice<int64_t>(&value));

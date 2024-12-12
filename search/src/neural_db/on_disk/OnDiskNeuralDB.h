@@ -9,7 +9,9 @@
 #include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/TextProcessor.h>
 #include <search/src/neural_db/on_disk/ChunkCountView.h>
+#include <search/src/neural_db/on_disk/ChunkDataColumn.h>
 #include <search/src/neural_db/on_disk/InvertedIndex.h>
+#include <search/src/neural_db/on_disk/QueryToChunks.h>
 #include <search/src/neural_db/on_disk/Utils.h>
 #include <memory>
 #include <unordered_map>
@@ -46,12 +48,9 @@ class OnDiskNeuralDB final : public NeuralDB {
  private:
   TxnPtr newTxn();
 
-  uint32_t getDocVersion(TxnPtr& txn, const std::string& doc_id);
+  std::unordered_map<ChunkId, float> candidateSet(const std::string& query);
 
-  template <typename T>
-  std::vector<std::optional<T>> loadChunkField(
-      rocksdb::ColumnFamilyHandle* column,
-      const std::vector<ChunkId>& chunk_ids);
+  uint32_t getDocVersion(TxnPtr& txn, const std::string& doc_id);
 
   struct DocChunkRange {
     ChunkId start;
@@ -60,9 +59,6 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   DocChunkRange deleteDocChunkRange(TxnPtr& txn, const DocId& doc_id,
                                     uint32_t version);
-
-  static void deleteChunkField(TxnPtr& txn, rocksdb::ColumnFamilyHandle* column,
-                               const std::vector<ChunkId>& chunk_ids);
 
   std::string _save_path;
 
@@ -73,14 +69,14 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   std::unique_ptr<InvertedIndex> _chunk_index;
 
-  rocksdb::ColumnFamilyHandle* _chunk_data;
-  rocksdb::ColumnFamilyHandle* _chunk_metadata;
+  std::unique_ptr<ChunkDataColumn<ChunkData>> _chunk_data;
+  std::unique_ptr<ChunkDataColumn<MetadataMap>> _chunk_metadata;
 
   rocksdb::ColumnFamilyHandle* _doc_chunks;
   rocksdb::ColumnFamilyHandle* _doc_version;
 
   std::unique_ptr<InvertedIndex> _query_index;
-  rocksdb::ColumnFamilyHandle* _query_to_chunks;
+  std::unique_ptr<QueryToChunks> _query_to_chunks;
 
   TextProcessor _text_processor;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <rocksdb/slice.h>
 #include <search/src/neural_db/Errors.h>

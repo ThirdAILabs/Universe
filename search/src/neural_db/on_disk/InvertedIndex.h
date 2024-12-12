@@ -28,6 +28,8 @@ class InvertedIndex {
 
   void prune(TxnPtr& txn);
 
+  size_t size();
+
   ~InvertedIndex() {
     _db->DestroyColumnFamilyHandle(_counters);
     _db->DestroyColumnFamilyHandle(_token_index);

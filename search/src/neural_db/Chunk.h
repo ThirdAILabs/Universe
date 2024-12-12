@@ -33,6 +33,15 @@ struct Chunk {
 };
 
 struct ChunkData {
+  ChunkData() {}
+
+  ChunkData(std::string text, std::string document, DocId doc_id,
+            uint32_t doc_version)
+      : text(std::move(text)),
+        document(std::move(document)),
+        doc_id(std::move(doc_id)),
+        doc_version(doc_version) {}
+
   std::string text;
 
   std::string document;
