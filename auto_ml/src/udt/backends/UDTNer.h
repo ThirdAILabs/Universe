@@ -92,8 +92,8 @@ class UDTNer final : public UDTBackend {
 
   void editNerLearnedTag(const data::ner::NerLearnedTagPtr& tag) final {
     if (!_tag_tracker->tagExists(tag->tag())) {
-      throw std::logic_error("Cannot edit tag " + tag->tag() +
-                             " as it does not exist");
+      throw std::logic_error("Tag does not exist. Cannot edit tag " +
+                             tag->tag());
     }
     _tag_tracker->editTag(tag);
   }

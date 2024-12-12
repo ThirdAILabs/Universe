@@ -112,7 +112,7 @@ std::optional<ValidatorSubMatch> phoneNumberValidator(
     const std::string& number) {
   std::string strippedNumber = ner::utils::stripNonDigits(number);
 
-  // less than 10 or more than 16 digits cannot be a phone number
+  // less than 10 digits cannot be a phone number
   if (strippedNumber.size() < 10) {
     return std::nullopt;
   }

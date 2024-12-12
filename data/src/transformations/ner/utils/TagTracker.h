@@ -108,8 +108,8 @@ class TagTracker {
 
   void editTag(const data::ner::NerTagPtr& tag) {
     if (!tagExists(tag->tag())) {
-      throw std::logic_error("Cannot edit tag " + tag->tag() +
-                             " as it does not exist");
+      throw std::logic_error("Tag does not exist. Cannot edit tag " +
+                             tag->tag());
     }
     if (_tag_to_label[tag->tag()] == 0) {
       throw std::logic_error(
