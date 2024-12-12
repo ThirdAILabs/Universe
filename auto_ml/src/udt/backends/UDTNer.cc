@@ -180,6 +180,21 @@ std::shared_ptr<data::NerTokenizerUnigram> extractNerTokenizerTransform(
   return nullptr;
 }
 
+void normalizeScores(TokenTags& tags) {
+  float squared_sum = 0.0;
+  for (const auto& [_, score] : tags) {
+    squared_sum += score * score;
+  }
+
+  // avoid division by zero
+  const float epsilon = 1e-10;
+  float norm = std::sqrt(std::max(squared_sum, epsilon));
+
+  for (auto& [_, score] : tags) {
+    score /= norm;
+  }
+}
+
 struct UDTNer::NerOptions {
   uint32_t input_dim;
   int32_t emb_dim;
@@ -532,8 +547,7 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         for (const auto& [tag, score] : model_tags) {
           // if the default tag is the top prediction of the model but rules
           // have predicted a tag, then we do not consider the model prediction
-          if (tag == _tag_tracker->labelToTag(0)->tag() && score < 0.95 &&
-              !rule_tags.empty()) {
+          if (tag == _tag_tracker->labelToTag(0)->tag() && !rule_tags.empty()) {
             continue;
           }
           if (tags_to_score.find(tag) == tags_to_score.end()) {
@@ -579,10 +593,8 @@ UDTNer::predictTags(const std::vector<std::string>& sentences,
         }
       }
 
-      for (auto& [tag, score] : tags) {
-        // normalize the score by the top score
-        score = tags[0].second > 1e-6 ? score / tags[0].second : 0.0;
-      }
+      // l2 normalize the scores
+      normalizeScores(tags);
 
       output_tags[sentence_index].push_back(tags);
 
