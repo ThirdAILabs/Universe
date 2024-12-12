@@ -111,10 +111,10 @@ class TagTracker {
       throw std::logic_error("Tag does not exist. Cannot edit tag " +
                              tag->tag());
     }
-    if (_tag_to_label[tag->tag()] == 0) {
+    if (tagToLabel(tag->tag()) == 0) {
       throw std::logic_error(
-          "Can only edit learnable tags. Label found for the model: " +
-          std::to_string(_tag_to_label[tag->tag()]));
+          "Can only edit learnable tags. Tag has the following label in the "
+          "model: 0");
     }
     _label_to_tag[tagToLabel(tag->tag())] = tag;
   }
