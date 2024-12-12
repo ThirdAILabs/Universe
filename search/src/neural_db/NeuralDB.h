@@ -19,6 +19,9 @@ class NeuralDB {
       const std::string& query, const QueryConstraints& constraints,
       uint32_t top_k) = 0;
 
+  virtual void finetune(const std::vector<std::vector<ChunkId>>& chunk_ids,
+                        const std::vector<std::string>& queries) = 0;
+
   virtual void deleteDoc(const DocId& doc, uint32_t version) = 0;
 
   virtual void prune() = 0;

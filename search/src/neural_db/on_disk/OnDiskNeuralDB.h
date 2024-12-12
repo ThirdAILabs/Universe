@@ -9,11 +9,12 @@
 #include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/TextProcessor.h>
 #include <search/src/neural_db/on_disk/ChunkCountView.h>
+#include <search/src/neural_db/on_disk/InvertedIndex.h>
+#include <search/src/neural_db/on_disk/Utils.h>
+#include <memory>
 #include <unordered_map>
 
 namespace thirdai::search::ndb {
-
-using TxnPtr = std::unique_ptr<rocksdb::Transaction>;
 
 class OnDiskNeuralDB final : public NeuralDB {
  public:
@@ -33,6 +34,9 @@ class OnDiskNeuralDB final : public NeuralDB {
                                             const QueryConstraints& constraints,
                                             uint32_t top_k) final;
 
+  void finetune(const std::vector<std::vector<ChunkId>>& chunk_ids,
+                const std::vector<std::string>& queries) final;
+
   void deleteDoc(const DocId& doc, uint32_t version) final;
 
   void prune() final;
@@ -42,22 +46,7 @@ class OnDiskNeuralDB final : public NeuralDB {
  private:
   TxnPtr newTxn();
 
-  ChunkId reserveChunkIds(ChunkId n_ids);
-
   uint32_t getDocVersion(TxnPtr& txn, const std::string& doc_id);
-
-  void incrementCounter(TxnPtr& txn, const std::string& key, int64_t value);
-
-  int64_t getCounter(const rocksdb::Slice& key);
-
-  std::vector<rocksdb::PinnableSlice> mapTokensToChunks(
-      const std::vector<HashedToken>& query_tokens);
-
-  std::vector<std::pair<size_t, float>> rankByIdf(
-      const std::vector<ChunkCountView>& token_to_chunks,
-      int64_t n_chunks) const;
-
-  std::unordered_map<ChunkId, float> candidateSet(const std::string& query);
 
   template <typename T>
   std::vector<std::optional<T>> loadChunkField(
@@ -72,10 +61,6 @@ class OnDiskNeuralDB final : public NeuralDB {
   DocChunkRange deleteDocChunkRange(TxnPtr& txn, const DocId& doc_id,
                                     uint32_t version);
 
-  void removeChunksFromIndex(TxnPtr& txn, ChunkId start, ChunkId end);
-
-  int64_t deleteChunkLens(TxnPtr& txn, const std::vector<ChunkId>& chunk_ids);
-
   static void deleteChunkField(TxnPtr& txn, rocksdb::ColumnFamilyHandle* column,
                                const std::vector<ChunkId>& chunk_ids);
 
@@ -85,17 +70,17 @@ class OnDiskNeuralDB final : public NeuralDB {
   rocksdb::DB* _db;
 
   rocksdb::ColumnFamilyHandle* _default;
-  rocksdb::ColumnFamilyHandle* _chunk_counters;
+
+  std::unique_ptr<InvertedIndex> _chunk_index;
+
   rocksdb::ColumnFamilyHandle* _chunk_data;
   rocksdb::ColumnFamilyHandle* _chunk_metadata;
-  rocksdb::ColumnFamilyHandle* _chunk_token_index;
+
   rocksdb::ColumnFamilyHandle* _doc_chunks;
   rocksdb::ColumnFamilyHandle* _doc_version;
 
-  uint64_t _max_docs_to_score;
-  float _max_token_occurrence_frac;
-  float _k1;
-  float _b;
+  std::unique_ptr<InvertedIndex> _query_index;
+  rocksdb::ColumnFamilyHandle* _query_to_chunks;
 
   TextProcessor _text_processor;
 };

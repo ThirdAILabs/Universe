@@ -82,6 +82,29 @@ class ConcatChunkCounts : public rocksdb::AssociativeMergeOperator {
   const char* Name() const override { return "ConcatChunkCounts"; }
 };
 
+class Concat : public rocksdb::AssociativeMergeOperator {
+ public:
+  bool Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
+             const rocksdb::Slice& value, std::string* new_value,
+             rocksdb::Logger* logger) const override {
+    (void)key;
+    (void)logger;
+
+    if (existing_value) {
+      *new_value = std::string();
+      new_value->reserve(existing_value->size() + value.size());
+      new_value->append(existing_value->data(), existing_value->size());
+      new_value->append(value.data(), value.size());
+    } else {
+      *new_value = value.ToString();
+    }
+
+    return true;
+  }
+
+  const char* Name() const override { return "Append"; }
+};
+
 class IncrementCounter : public rocksdb::AssociativeMergeOperator {
   /**
    * This merge operator is a simple counter operator, that will add the new

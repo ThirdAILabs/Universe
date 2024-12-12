@@ -21,27 +21,13 @@
 
 namespace thirdai::search::ndb {
 
-const std::string N_CHUNKS = "n_chunks";
-const std::string TOTAL_CHUNK_LEN = "total_chunk_len";
-const std::string NEXT_CHUNK_ID = "next_chunk_id";
-
 std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
   return doc_id + "_" + std::to_string(doc_version);
 }
 
-template <typename T>
-inline rocksdb::Slice asSlice(const T* item) {
-  return rocksdb::Slice(reinterpret_cast<const char*>(item), sizeof(T));
-}
-
 OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
                                const IndexConfig& config, bool read_only)
-    : _save_path(save_path),
-      _max_docs_to_score(config.max_docs_to_score),
-      _max_token_occurrence_frac(config.max_token_occurrence_frac),
-      _k1(config.k1),
-      _b(config.b),
-      _text_processor(config.tokenizer) {
+    : _save_path(save_path), _text_processor(config.tokenizer) {
   licensing::checkLicense();
 
   createDirectory(save_path);
@@ -53,18 +39,23 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   rocksdb::ColumnFamilyOptions counter_options;
   counter_options.merge_operator = std::make_shared<IncrementCounter>();
 
+  rocksdb::ColumnFamilyOptions concat_counts_options;
+  concat_counts_options.merge_operator = std::make_shared<ConcatChunkCounts>();
+
   rocksdb::ColumnFamilyOptions concat_options;
-  concat_options.merge_operator = std::make_shared<ConcatChunkCounts>();
+  concat_options.merge_operator = std::make_shared<Concat>();
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
       {rocksdb::kDefaultColumnFamilyName, {}},
       {"chunk_counters", counter_options},
+      {"chunk_index", concat_counts_options},
       {"chunk_data", {}},
       {"chunk_metadata", {}},
-      {"chunk_index", concat_options},
       {"doc_chunks", {}},
       {"doc_version", {}},
-  };
+      {"query_counters", counter_options},
+      {"query_index", concat_counts_options},
+      {"id_map", concat_options}};
 
   std::vector<rocksdb::ColumnFamilyHandle*> columns;
 
@@ -84,22 +75,15 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   }
 
   _default = columns.at(0);
-  _chunk_counters = columns.at(1);
-  _chunk_data = columns.at(2);
-  _chunk_metadata = columns.at(3);
-  _chunk_token_index = columns.at(4);
+  _chunk_index = std::make_unique<InvertedIndex>(
+      _db, columns.at(1), columns.at(2), config, read_only);
+  _chunk_data = columns.at(3);
+  _chunk_metadata = columns.at(4);
   _doc_chunks = columns.at(5);
   _doc_version = columns.at(6);
-
-  if (!read_only) {
-    auto txn = newTxn();
-    incrementCounter(txn, N_CHUNKS, 0);
-    incrementCounter(txn, TOTAL_CHUNK_LEN, 0);
-    auto status = txn->Commit();
-    if (!status.ok()) {
-      throw RocksdbError(status, "initializing db");
-    }
-  }
+  _query_index = std::make_unique<InvertedIndex>(
+      _db, columns.at(7), columns.at(8), config, read_only);
+  _query_to_chunks = columns.at(9);
 }
 
 void OnDiskNeuralDB::insert(const std::string& document,
@@ -110,7 +94,9 @@ void OnDiskNeuralDB::insert(const std::string& document,
     throw std::invalid_argument("length of metadata and chunks must match");
   }
 
-  const ChunkId start_id = reserveChunkIds(chunks.size());
+  auto initTxn = newTxn();  // this will be committed when by the index
+  const ChunkId start_id =
+      _chunk_index->reserveChunkIds(initTxn, chunks.size());
 
   auto [token_counts, chunk_lens] = _text_processor.process(start_id, chunks);
 
@@ -126,25 +112,18 @@ void OnDiskNeuralDB::insert(const std::string& document,
     doc_version = 1;
   }
 
-  int64_t total_len_inc = 0;
-
   for (size_t i = 0; i < chunks.size(); i++) {
     const ChunkId chunk_id = start_id + i;
-    const int64_t chunk_len = chunk_lens.at(i);
-    total_len_inc += chunk_len;
+    const auto chunk_key = asSlice<ChunkId>(&chunk_id);
 
     ChunkData data{chunks.at(i), document, doc_id, doc_version};
     std::string chunk_data = serialize(data);
 
     std::string chunk_metadata = serialize(metadata.at(i));
 
-    auto chunk_key = asSlice<ChunkId>(&chunk_id);
-
-    std::array<rocksdb::Status, 3> statuses;
-    statuses[0] =
-        txn->Put(_chunk_counters, chunk_key, asSlice<int64_t>(&chunk_len));
-    statuses[1] = txn->Put(_chunk_data, chunk_key, chunk_data);
-    statuses[2] = txn->Put(_chunk_metadata, chunk_key, chunk_metadata);
+    std::array<rocksdb::Status, 2> statuses;
+    statuses[0] = txn->Put(_chunk_data, chunk_key, chunk_data);
+    statuses[1] = txn->Put(_chunk_metadata, chunk_key, chunk_metadata);
 
     for (auto& status : statuses) {
       if (!status.ok()) {
@@ -153,20 +132,7 @@ void OnDiskNeuralDB::insert(const std::string& document,
     }
   }
 
-  for (const auto& [token, chunk_counts] : token_counts) {
-    const HashedToken token_value = token;
-    const auto token_key = asSlice<HashedToken>(&token_value);
-    const ChunkCountView view(chunk_counts);
-
-    auto status = txn->Merge(_chunk_token_index, token_key, view.slice());
-    if (!status.ok()) {
-      throw RocksdbError(status, "inserting doc chunks");
-    }
-  }
-
-  incrementCounter(txn, N_CHUNKS, chunks.size());
-
-  incrementCounter(txn, TOTAL_CHUNK_LEN, total_len_inc);
+  _chunk_index->insert(txn, start_id, token_counts, chunk_lens);
 
   DocChunkRange doc_chunks{start_id, start_id + chunks.size()};
   auto status = txn->Put(_doc_chunks, docVersionKey(doc_id, doc_version),
@@ -177,42 +143,8 @@ void OnDiskNeuralDB::insert(const std::string& document,
 
   auto commit = txn->Commit();
   if (!commit.ok()) {
-    throw RocksdbError(status, "committing insertion");
+    throw RocksdbError(commit, "committing insertion");
   }
-}
-
-ChunkId OnDiskNeuralDB::reserveChunkIds(ChunkId n_ids) {
-  auto txn = newTxn();
-
-  std::string value;
-
-  int64_t next_id;
-  auto get_status = txn->GetForUpdate(rocksdb::ReadOptions(), _chunk_counters,
-                                      NEXT_CHUNK_ID, &value);
-  if (get_status.ok()) {
-    if (value.size() != sizeof(int64_t)) {
-      throw NeuralDbError(ErrorCode::MalformedData, "next id malformed");
-    }
-    next_id = *reinterpret_cast<int64_t*>(value.data());
-  } else if (get_status.IsNotFound()) {
-    next_id = 0;
-  } else {
-    throw RocksdbError(get_status, "retrieving next available chunk id");
-  }
-
-  int64_t new_next_id = next_id + n_ids;
-  auto put_status =
-      txn->Put(_chunk_counters, NEXT_CHUNK_ID, asSlice<int64_t>(&new_next_id));
-  if (!put_status.ok()) {
-    throw RocksdbError(put_status, "reserving chunk ids for doc");
-  }
-
-  auto commit = txn->Commit();
-  if (!commit.ok()) {
-    throw RocksdbError(commit, "committing chunk id reservation");
-  }
-
-  return next_id;
 }
 
 uint32_t OnDiskNeuralDB::getDocVersion(TxnPtr& txn, const std::string& doc_id) {
@@ -242,30 +174,6 @@ uint32_t OnDiskNeuralDB::getDocVersion(TxnPtr& txn, const std::string& doc_id) {
   }
 
   return version;
-}
-
-void OnDiskNeuralDB::incrementCounter(TxnPtr& txn, const std::string& key,
-                                      int64_t value) {
-  auto status = txn->Merge(_chunk_counters, key, asSlice<int64_t>(&value));
-  if (!status.ok()) {
-    throw RocksdbError(status, "incrementing counter");
-  }
-}
-
-int64_t OnDiskNeuralDB::getCounter(const rocksdb::Slice& key) {
-  std::string value;
-
-  auto status = _db->Get(rocksdb::ReadOptions(), _chunk_counters, key, &value);
-  if (!status.ok()) {
-    throw RocksdbError(status, "retrieving counter");
-  }
-
-  if (value.size() != sizeof(int64_t)) {
-    throw NeuralDbError(ErrorCode::MalformedData, "counter value malformed");
-  }
-
-  int64_t counter = *reinterpret_cast<int64_t*>(value.data());
-  return counter;
 }
 
 template <typename T>
@@ -303,111 +211,6 @@ std::vector<std::optional<T>> OnDiskNeuralDB::loadChunkField(
   return result;
 }
 
-std::vector<rocksdb::PinnableSlice> OnDiskNeuralDB::mapTokensToChunks(
-    const std::vector<HashedToken>& query_tokens) {
-  std::vector<rocksdb::Slice> keys;
-  keys.reserve(query_tokens.size());
-
-  for (const HashedToken& token : query_tokens) {
-    keys.emplace_back(asSlice<HashedToken>(&token));
-  }
-  std::vector<rocksdb::PinnableSlice> values(keys.size());
-  std::vector<rocksdb::Status> statuses(keys.size());
-
-  _db->MultiGet(rocksdb::ReadOptions(), _chunk_token_index, keys.size(),
-                keys.data(), values.data(), statuses.data());
-
-  std::vector<rocksdb::PinnableSlice> found;
-  found.reserve(query_tokens.size());
-
-  for (size_t i = 0; i < query_tokens.size(); i++) {
-    if (statuses[i].IsNotFound()) {
-      continue;
-    }
-    if (!statuses[i].ok()) {
-      throw RocksdbError(statuses[i], "retrieving chunk data");
-    }
-
-    found.push_back(std::move(values[i]));
-  }
-
-  return found;
-}
-
-std::vector<std::pair<size_t, float>> OnDiskNeuralDB::rankByIdf(
-    const std::vector<ChunkCountView>& token_to_chunks,
-    int64_t n_chunks) const {
-  const int64_t max_chunks_with_token =
-      std::max<int64_t>(_max_token_occurrence_frac * n_chunks, 1000);
-
-  std::vector<std::pair<size_t, float>> token_idx_to_idf;
-  for (size_t i = 0; i < token_to_chunks.size(); i++) {
-    if (!token_to_chunks[i].isPruned()) {
-      const int64_t n_chunks_w_token = token_to_chunks[i].size();
-      if (n_chunks_w_token < max_chunks_with_token) {
-        token_idx_to_idf.emplace_back(i, idf(n_chunks, n_chunks_w_token));
-      }
-    }
-  }
-
-  std::sort(token_idx_to_idf.begin(), token_idx_to_idf.end(),
-            HighestScore<size_t>{});
-
-  return token_idx_to_idf;
-}
-
-std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
-    const std::string& query) {
-  const auto query_tokens = _text_processor.tokenize(query);
-
-  const auto token_to_chunk_bytes = mapTokensToChunks(query_tokens);
-
-  std::vector<ChunkCountView> token_to_chunks;
-  token_to_chunks.reserve(token_to_chunk_bytes.size());
-  for (const auto& chunks : token_to_chunk_bytes) {
-    token_to_chunks.emplace_back(chunks);
-  }
-
-  const int64_t n_chunks = getCounter(N_CHUNKS);
-  const int64_t total_chunk_len = getCounter(TOTAL_CHUNK_LEN);
-
-  const auto token_to_idf = rankByIdf(token_to_chunks, n_chunks);
-
-  const float avg_chunk_len = static_cast<float>(total_chunk_len) / n_chunks;
-
-  std::unordered_map<ChunkId, float> chunk_scores;
-
-  // This is used to cache the lens for docs that have already been seen to
-  // avoid the DB lookup. This speeds up query processing.
-  std::unordered_map<ChunkId, uint32_t> chunk_len_cache;
-
-  const uint64_t query_len = query_tokens.size();
-
-  for (const auto& [token_index, token_idf] : token_to_idf) {
-    for (const auto& count : token_to_chunks[token_index]) {
-      const ChunkId chunk_id = count.chunk_id;
-      if (chunk_scores.size() < _max_docs_to_score ||
-          chunk_scores.count(chunk_id)) {
-        uint32_t chunk_len;
-        if (chunk_len_cache.count(chunk_id)) {
-          chunk_len = chunk_len_cache.at(chunk_id);
-        } else {
-          chunk_len = getCounter(asSlice<uint64_t>(&chunk_id));
-          chunk_len_cache[chunk_id] = chunk_len;
-        }
-
-        const float score =
-            bm25(/*idf=*/token_idf, /*cnt_in_doc=*/count.count,
-                 /*doc_len=*/chunk_len, /*avg_doc_len=*/avg_chunk_len,
-                 /*query_len=*/query_len, /*k1=*/_k1, /*b=*/_b);
-        chunk_scores[chunk_id] += score;
-      }
-    }
-  }
-
-  return chunk_scores;
-}
-
 std::vector<std::pair<ChunkId, float>> topkCandidates(
     const std::unordered_map<ChunkId, float>& candidate_set, uint32_t top_k) {
   std::vector<std::pair<ChunkId, float>> heap;
@@ -433,7 +236,8 @@ std::vector<std::pair<ChunkId, float>> topkCandidates(
 
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::query(
     const std::string& query, uint32_t top_k) {
-  auto candidate_set = candidateSet(query);
+  auto candidate_set =
+      _chunk_index->candidateSet(_text_processor.tokenize(query));
 
   const auto top_candidates = topkCandidates(candidate_set, top_k);
 
@@ -477,7 +281,8 @@ std::vector<std::pair<ChunkId, float>> sortCandidates(
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
     const std::string& query, const QueryConstraints& constraints,
     uint32_t top_k) {
-  auto candidate_set = candidateSet(query);
+  auto candidate_set =
+      _chunk_index->candidateSet(_text_processor.tokenize(query));
 
   auto sorted_candidates = sortCandidates(candidate_set);
 
@@ -486,7 +291,8 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
   std::vector<MetadataMap> topk_metadata;
 
   const size_t batch_size = 20;
-  for (size_t start = 0; start < sorted_candidates.size(); start += batch_size) {
+  for (size_t start = 0; start < sorted_candidates.size();
+       start += batch_size) {
     if (topk_chunk_ids.size() == top_k) {
       break;
     }
@@ -535,6 +341,30 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
   return results;
 }
 
+void OnDiskNeuralDB::finetune(
+    const std::vector<std::vector<ChunkId>>& chunk_ids,
+    const std::vector<std::string>& queries) {
+  if (chunk_ids.size() != queries.size()) {
+    throw std::invalid_argument(
+        "number of labels must match number of queries for finetuning.");
+  }
+
+  auto initTxn = newTxn();  // this will be committed when by the index
+  const ChunkId start_id =
+      _query_index->reserveChunkIds(initTxn, queries.size());
+
+  auto [token_counts, chunk_lens] = _text_processor.process(start_id, queries);
+
+  auto txn = newTxn();
+
+  _query_index->insert(txn, start_id, token_counts, chunk_lens);
+
+  auto commit = txn->Commit();
+  if (!commit.ok()) {
+    throw RocksdbError(commit, "committing insertion");
+  }
+}
+
 void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   auto txn = newTxn();
 
@@ -546,12 +376,12 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   deleteChunkField(txn, _chunk_metadata, chunk_ids);
   deleteChunkField(txn, _chunk_data, chunk_ids);
 
-  removeChunksFromIndex(txn, doc_chunks.start, doc_chunks.end);
+  _chunk_index->deleteChunks(txn, {chunk_ids.begin(), chunk_ids.end()});
 
-  const int64_t deleted_len = deleteChunkLens(txn, chunk_ids);
-  int64_t n_chunks = chunk_ids.size();
-  incrementCounter(txn, N_CHUNKS, -n_chunks);
-  incrementCounter(txn, TOTAL_CHUNK_LEN, -deleted_len);
+  auto commit = txn->Commit();
+  if (!commit.ok()) {
+    throw RocksdbError(commit, "deleting doc");
+  }
 }
 
 OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
@@ -573,61 +403,6 @@ OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
   return chunk_range;
 }
 
-void OnDiskNeuralDB::removeChunksFromIndex(TxnPtr& txn, ChunkId start,
-                                           ChunkId end) {
-  auto iter = std::unique_ptr<rocksdb::Iterator>(
-      txn->GetIterator(rocksdb::ReadOptions(), _chunk_token_index));
-
-  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-    ChunkCountView curr_value(iter->value());
-
-    std::vector<ChunkCount> new_value;
-    new_value.reserve(curr_value.size());
-
-    for (const auto& count : curr_value) {
-      if (count.chunk_id < start || end <= count.chunk_id) {
-        new_value.push_back(count);
-      }
-    }
-
-    if (new_value.size() < curr_value.size()) {
-      ChunkCountView view(new_value);
-      auto put_status = txn->Put(_chunk_token_index, iter->key(), view.slice());
-      if (!put_status.ok()) {
-        throw RocksdbError(put_status, "removing doc chunks");
-      }
-    }
-  }
-}
-
-int64_t OnDiskNeuralDB::deleteChunkLens(TxnPtr& txn,
-                                        const std::vector<ChunkId>& chunk_ids) {
-  int64_t deleted_len = 0;
-
-  for (const auto& chunk_id : chunk_ids) {
-    const auto key = asSlice<ChunkId>(&chunk_id);
-    std::string value;
-    auto get_status =
-        txn->GetForUpdate(rocksdb::ReadOptions(), _chunk_counters, key, &value);
-    if (!get_status.ok()) {
-      throw RocksdbError(get_status, "removing doc chunk data");
-    }
-
-    if (value.size() != sizeof(int64_t)) {
-      throw NeuralDbError(ErrorCode::MalformedData, "counter is malformed");
-    }
-
-    deleted_len += *reinterpret_cast<int64_t*>(value.data());
-
-    auto del_status = txn->Delete(_chunk_counters, key);
-    if (!del_status.ok()) {
-      throw RocksdbError(get_status, "removing doc chunk data");
-    }
-  }
-
-  return deleted_len;
-}
-
 void OnDiskNeuralDB::deleteChunkField(TxnPtr& txn,
                                       rocksdb::ColumnFamilyHandle* column,
                                       const std::vector<ChunkId>& chunk_ids) {
@@ -640,37 +415,8 @@ void OnDiskNeuralDB::deleteChunkField(TxnPtr& txn,
 }
 
 void OnDiskNeuralDB::prune() {
-  const int64_t n_chunks = getCounter(N_CHUNKS);
-
-  const size_t max_chunks_with_token =
-      std::max<size_t>(_max_token_occurrence_frac * n_chunks, 1000);
-
   auto txn = newTxn();
-
-  auto iter = std::unique_ptr<rocksdb::Iterator>(
-      txn->GetIterator(rocksdb::ReadOptions(), _chunk_token_index));
-
-  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-    ChunkCountView chunks(iter->value());
-    if (chunks.size() > max_chunks_with_token) {
-      auto status = txn->Put(_chunk_token_index, iter->key(),
-                             asSlice<ChunkCount>(&PRUNED));
-      if (!status.ok()) {
-        throw RocksdbError(status, "pruning db");
-      }
-    }
-  }
-
-  auto commit = txn->Commit();
-  if (!commit.ok()) {
-    throw RocksdbError(commit, "committing prune");
-  }
-
-  auto compact = _db->CompactRange(rocksdb::CompactRangeOptions(),
-                                   _chunk_token_index, nullptr, nullptr);
-  if (!compact.ok()) {
-    throw RocksdbError(compact, "compacting db");
-  }
+  _chunk_index->prune(txn);  // txn is commit by index
 }
 
 TxnPtr OnDiskNeuralDB::newTxn() {
@@ -683,13 +429,15 @@ TxnPtr OnDiskNeuralDB::newTxn() {
 }
 
 OnDiskNeuralDB::~OnDiskNeuralDB() {
+  _chunk_index.reset();  // force destructor to run before db is closed here.
+  _query_index.reset();  // force destructor to run before db is closed here.
+
   _db->DestroyColumnFamilyHandle(_default);
-  _db->DestroyColumnFamilyHandle(_chunk_counters);
   _db->DestroyColumnFamilyHandle(_chunk_data);
   _db->DestroyColumnFamilyHandle(_chunk_metadata);
-  _db->DestroyColumnFamilyHandle(_chunk_token_index);
   _db->DestroyColumnFamilyHandle(_doc_chunks);
   _db->DestroyColumnFamilyHandle(_doc_version);
+
   _db->Close();
   delete _db;
 }
