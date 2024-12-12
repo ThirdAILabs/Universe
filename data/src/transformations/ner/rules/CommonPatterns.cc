@@ -169,8 +169,6 @@ RulePtr phonePattern() {
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      // R"((([\+\b]\d{1,3}[\.\- \(]\(?)|\b|\()\d{3}\)?[\.\- ]?\d{3}[\.\-
-      // ]?\d{4}\b)",
       R"((?:\+?(\d{1,3}[ ]?))?[-.(]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
       /*pattern_score=*/0.5,
       /*context_keywords=*/
