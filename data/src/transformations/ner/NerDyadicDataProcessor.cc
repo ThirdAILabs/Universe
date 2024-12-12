@@ -227,8 +227,8 @@ std::string NerDyadicDataProcessor::processToken(
       // to change the target token tokenization, change the first argument of
       // toStrings here. example, if you want to remove punct from target token,
       // call the remove punct func and pass the value here
-      auto tokens =
-          tokenizer->toStrings(ner::utils::trimPunctuation(target_token));
+      auto tokens = tokenizer->toStrings(
+          ner::utils::trimPunctuation(lower_cased_tokens[index]));
       tokenized_target_token.reserve(tokenized_target_token.size() +
                                      tokens.size());
       tokenized_target_token.insert(tokenized_target_token.end(),

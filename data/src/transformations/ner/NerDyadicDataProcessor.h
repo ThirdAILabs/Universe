@@ -17,7 +17,7 @@ struct FeatureEnhancementConfig {
   bool enhance_names = true;
   bool enhance_location_features = true;
   bool enhance_organization_features = true;
-  bool enhance_case_features = true;
+  bool enhance_case_features = false;
   bool enhance_numerical_features = true;
   bool find_emails = true;
   bool find_phonenumbers = true;
