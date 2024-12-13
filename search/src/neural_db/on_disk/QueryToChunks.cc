@@ -43,7 +43,7 @@ std::vector<ChunkId> QueryToChunks::getChunks(ChunkId query_id) {
 void QueryToChunks::deleteChunks(TxnPtr& txn,
                                  const std::unordered_set<ChunkId>& chunks) {
   auto iter = std::unique_ptr<rocksdb::Iterator>(
-      txn->GetIterator(rocksdb::ReadOptions()));
+      txn->GetIterator(rocksdb::ReadOptions(), _column));
 
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     const auto value = iter->value();

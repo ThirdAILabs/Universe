@@ -22,7 +22,8 @@ class InvertedIndex {
   ChunkId reserveChunkIds(TxnPtr& txn, ChunkId n_ids);
 
   std::unordered_map<ChunkId, float> candidateSet(
-      const std::vector<HashedToken>& query_tokens);
+      const std::vector<HashedToken>& query_tokens,
+      int64_t min_chunks_for_idf = 0);
 
   void deleteChunks(TxnPtr& txn, const std::unordered_set<ChunkId>& chunk_ids);
 

@@ -30,20 +30,26 @@ class OnDiskNeuralDbTests : public ::testing::Test {
 void checkNdbQuery(OnDiskNeuralDB& db, const std::string& query,
                    const std::vector<ChunkId>& expected_ids) {
   auto results = db.query(query, expected_ids.size());
-  ASSERT_EQ(results.size(), expected_ids.size());
-  for (size_t i = 0; i < expected_ids.size(); i++) {
-    ASSERT_EQ(results.at(i).first.id, expected_ids.at(i));
+
+  std::vector<ChunkId> returned_ids;
+  returned_ids.reserve(results.size());
+  for (const auto& res : results) {
+    returned_ids.push_back(res.first.id);
   }
+  ASSERT_EQ(returned_ids, expected_ids);
 }
 
 void checkNdbRank(OnDiskNeuralDB& db, const std::string& query,
                   const QueryConstraints& constraints,
                   const std::vector<ChunkId>& expected_ids) {
   auto results = db.rank(query, constraints, expected_ids.size());
-  ASSERT_EQ(results.size(), expected_ids.size());
-  for (size_t i = 0; i < expected_ids.size(); i++) {
-    ASSERT_EQ(results.at(i).first.id, expected_ids.at(i));
+
+  std::vector<ChunkId> returned_ids;
+  returned_ids.reserve(results.size());
+  for (const auto& res : results) {
+    returned_ids.push_back(res.first.id);
   }
+  ASSERT_EQ(returned_ids, expected_ids);
 }
 
 TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
@@ -203,6 +209,113 @@ TEST_F(OnDiskNeuralDbTests, ConstrainedSearch) {
   checkNdbRank(db, "a b c d e", constraints, {0});
 }
 
+std::string intString(int start, int end) {
+  std::string s;
+  for (int n = start; n < end; n++) {
+    s += std::to_string(n) + " ";
+  }
+  return s;
+}
+
+TEST_F(OnDiskNeuralDbTests, ReturnsCorrectChunkData) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  for (int i = 0; i < 20; i++) {
+    std::string doc_id = std::to_string(i);
+    std::string document = "document_" + doc_id;
+
+    MetadataMap metadata1{{"id", MetadataValue::Int(i)},
+                          {"type", MetadataValue::Str("first")}};
+    MetadataMap metadata2{{"id", MetadataValue::Int(i)},
+                          {"type", MetadataValue::Str("second")}};
+
+    db.insert(document,
+              {intString(i * 10, (i + 1) * 10), intString(i * 10, i * 10 + 5)},
+              {metadata1, metadata2}, doc_id);
+  }
+
+  for (int i = 0; i < 20; i++) {
+    std::string query = intString(i * 10, (i + 1) * 10);
+    auto results = db.query(query, 5);
+    ASSERT_EQ(results.size(), 2);
+
+    std::string doc_id = std::to_string(i);
+    std::string document = "document_" + doc_id;
+
+    ASSERT_EQ(results[0].first.id, 2 * i);
+    ASSERT_EQ(results[1].first.id, 2 * i + 1);
+
+    ASSERT_EQ(results[0].first.text, query);
+    ASSERT_EQ(results[1].first.text, intString(i * 10, i * 10 + 5));
+
+    ASSERT_EQ(results[0].first.document, document);
+    ASSERT_EQ(results[1].first.document, document);
+
+    ASSERT_EQ(results[0].first.doc_id, doc_id);
+    ASSERT_EQ(results[1].first.doc_id, doc_id);
+
+    ASSERT_EQ(results[0].first.doc_version, 1);
+    ASSERT_EQ(results[1].first.doc_version, 1);
+
+    ASSERT_EQ(results[0].first.metadata.size(), 2);
+    ASSERT_EQ(results[1].first.metadata.size(), 2);
+    ASSERT_EQ(results[0].first.metadata.at("id").asInt(), i);
+    ASSERT_EQ(results[1].first.metadata.at("id").asInt(), i);
+    ASSERT_EQ(results[0].first.metadata.at("type").asStr(), "first");
+    ASSERT_EQ(results[1].first.metadata.at("type").asStr(), "second");
+
+    auto constrained_results = db.rank(
+        query, {{"type", EqualTo::make(MetadataValue::Str("second"))}}, 5);
+    ASSERT_EQ(constrained_results.size(), 1);
+    ASSERT_EQ(constrained_results[0].first.id, 2 * i + 1);
+  }
+}
+
+TEST_F(OnDiskNeuralDbTests, Finetuning) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  MetadataMap constraint{{"key", MetadataValue::Bool(true)}};
+  db.insert("doc",
+            {intString(0, 10), intString(0, 9), intString(0, 8),
+             intString(10, 20), intString(20, 30), intString(30, 40)},
+            {{}, constraint, constraint, {}, {}, {}}, std::nullopt);
+
+  QueryConstraints constraints = {
+      {"key", EqualTo::make(MetadataValue::Bool(true))}};
+
+  std::string query = intString(0, 10) + "x y z";
+  checkNdbQuery(db, query, {0, 1, 2});
+  checkNdbRank(db, query, constraints, {1, 2});
+
+  db.finetune({{4}, {2}, {3}}, {"o p", "x y z", "t q v"});
+
+  checkNdbQuery(db, query, {2, 0, 1});
+  checkNdbRank(db, query, constraints, {2, 1});
+}
+
+TEST_F(OnDiskNeuralDbTests, Deletion) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert("doc_1", {intString(0, 10), intString(30, 40)}, {{}, {}}, "11");
+  db.insert("doc_2", {intString(0, 8), intString(10, 20), intString(20, 30)},
+            {{}, {}, {}}, "22");
+  db.insert("3", {intString(0, 9)}, {{}}, "33");
+
+  std::string query = intString(0, 10) + "x y z";
+
+  checkNdbQuery(db, query, {0, 5, 2});
+
+  db.finetune({{4}, {2}, {3}}, {"o p", "x y z", "t q v"});
+
+  checkNdbQuery(db, query, {2, 0, 5});
+
+  db.deleteDoc("11", 1);
+  checkNdbQuery(db, query, {2, 5});
+
+  db.deleteDoc("22", 1);
+  checkNdbQuery(db, query, {5});
+}
+
 std::vector<std::vector<std::pair<Chunk, float>>> queryDb(
     OnDiskNeuralDB& db, const std::vector<std::string>& queries,
     uint32_t topk) {
@@ -294,5 +407,7 @@ TEST_F(OnDiskNeuralDbTests, SyntheticDataset) {
     compareResults(results[i], incremental_results[i]);
   }
 }
+
+TEST_F(OnDiskNeuralDbTests, SaveLoad) {}
 
 }  // namespace thirdai::search::ndb::tests

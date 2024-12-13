@@ -202,7 +202,7 @@ std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
 
   auto candidate_set = _chunk_index->candidateSet(query_tokens);
 
-  if (_query_index->size() < QUERY_INDEX_THRESHOLD) {
+  if (_query_index->size() == 0) {
     return candidate_set;
   }
 
@@ -210,8 +210,9 @@ std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
     score *= LAMBDA;
   }
 
-  auto top_queries =
-      topkCandidates(_query_index->candidateSet(query_tokens), TOP_QUERIES);
+  auto top_queries = topkCandidates(
+      _query_index->candidateSet(query_tokens, QUERY_INDEX_THRESHOLD),
+      TOP_QUERIES);
 
   for (const auto& [query_id, score] : top_queries) {
     for (const ChunkId chunk_id : _query_to_chunks->getChunks(query_id)) {
@@ -362,7 +363,9 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   _chunk_data->remove(txn, chunk_ids);
   _chunk_metadata->remove(txn, chunk_ids);
 
-  _chunk_index->deleteChunks(txn, {chunk_ids.begin(), chunk_ids.end()});
+  std::unordered_set<ChunkId> chunk_id_set(chunk_ids.begin(), chunk_ids.end());
+  _chunk_index->deleteChunks(txn, chunk_id_set);
+  _query_to_chunks->deleteChunks(txn, chunk_id_set);
 
   auto commit = txn->Commit();
   if (!commit.ok()) {

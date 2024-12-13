@@ -2,6 +2,7 @@
 #include <rocksdb/options.h>
 #include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/Utils.h>
+#include <search/src/neural_db/on_disk/ChunkCountView.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 
 namespace thirdai::search::ndb {
@@ -91,7 +92,7 @@ ChunkId InvertedIndex::reserveChunkIds(TxnPtr& txn, ChunkId n_ids) {
 }
 
 std::unordered_map<ChunkId, float> InvertedIndex::candidateSet(
-    const std::vector<HashedToken>& query_tokens) {
+    const std::vector<HashedToken>& query_tokens, int64_t min_chunks_for_idf) {
   const auto token_to_chunk_bytes = mapTokensToChunks(query_tokens);
 
   std::vector<ChunkCountView> token_to_chunks;
@@ -103,7 +104,8 @@ std::unordered_map<ChunkId, float> InvertedIndex::candidateSet(
   const int64_t n_chunks = getCounter(N_CHUNKS);
   const int64_t total_chunk_len = getCounter(TOTAL_CHUNK_LEN);
 
-  const auto token_to_idf = rankByIdf(token_to_chunks, n_chunks);
+  const auto token_to_idf =
+      rankByIdf(token_to_chunks, std::max(n_chunks, min_chunks_for_idf));
 
   const float avg_chunk_len = static_cast<float>(total_chunk_len) / n_chunks;
 
@@ -205,7 +207,7 @@ void InvertedIndex::deleteChunks(TxnPtr& txn,
     new_value.reserve(curr_value.size());
 
     for (const auto& count : curr_value) {
-      if (chunk_ids.count(count.chunk_id)) {
+      if (!chunk_ids.count(count.chunk_id)) {
         new_value.push_back(count);
       }
     }
