@@ -408,6 +408,54 @@ TEST_F(OnDiskNeuralDbTests, SyntheticDataset) {
   }
 }
 
-TEST_F(OnDiskNeuralDbTests, SaveLoad) {}
+void compareQueryResults(
+    const std::vector<std::vector<std::pair<Chunk, float>>>& a,
+    const std::vector<std::vector<std::pair<Chunk, float>>>& b) {
+  ASSERT_EQ(a.size(), b.size());
+
+  for (size_t i = 0; i < a.size(); i++) {
+    ASSERT_EQ(a[i].size(), b[i].size());
+
+    for (size_t j = 0; j < a[i].size(); j++) {
+      ASSERT_EQ(a.at(i).at(j).first.id, b.at(i).at(j).first.id);
+      ASSERT_FLOAT_EQ(a[i][j].second, b[i][j].second);
+    }
+  }
+}
+
+TEST_F(OnDiskNeuralDbTests, SaveLoad) {
+  size_t vocab_size = 1000;
+  size_t n_docs = 10;
+
+  auto [_, docs, queries] =
+      search::tests::makeDocsAndQueries(vocab_size, n_docs);
+
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert("doc", {docs.begin(), docs.begin() + n_docs / 2},
+            std::vector<MetadataMap>(n_docs / 2, MetadataMap()), std::nullopt);
+
+  auto original_partial_results = queryDb(db, queries, 5);
+
+  std::string save_path = tmpDbName();
+  db.save(save_path);
+
+  db.insert("doc2", {docs.begin() + n_docs / 2, docs.end()},
+            std::vector<MetadataMap>(n_docs / 2, MetadataMap()), std::nullopt);
+
+  auto original_full_results = queryDb(db, queries, 5);
+
+  auto loaded_db = OnDiskNeuralDB::load(save_path, false);
+
+  auto loaded_partial_results = queryDb(*loaded_db, queries, 5);
+  compareQueryResults(original_partial_results, loaded_partial_results);
+
+  loaded_db->insert("doc2", {docs.begin() + n_docs / 2, docs.end()},
+                    std::vector<MetadataMap>(n_docs / 2, MetadataMap()),
+                    std::nullopt);
+
+  auto loaded_full_results = queryDb(*loaded_db, queries, 5);
+  compareQueryResults(original_full_results, loaded_full_results);
+}
 
 }  // namespace thirdai::search::ndb::tests

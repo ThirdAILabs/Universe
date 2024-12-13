@@ -1,4 +1,5 @@
 #include "OnDiskNeuralDB.h"
+#include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
@@ -11,6 +12,7 @@
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 #include <utils/UUID.h>
 #include <array>
+#include <filesystem>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -25,6 +27,14 @@ constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 constexpr size_t TOP_QUERIES = 10;
 constexpr float LAMBDA = 0.6;
 
+static std::string dbPath(const std::string& base) {
+  return (std::filesystem::path(base) / "model").string();
+}
+
+static std::string metadataPath(const std::string& base) {
+  return (std::filesystem::path(base) / "metadata").string();
+}
+
 std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
   return doc_id + "_" + std::to_string(doc_version);
 }
@@ -34,7 +44,16 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
     : _save_path(save_path), _text_processor(config.tokenizer) {
   licensing::checkLicense();
 
-  createDirectory(save_path);
+  std::string db_path = dbPath(save_path);
+  createDirectory(db_path);
+
+  if (!std::filesystem::exists(metadataPath(save_path))) {
+    auto metadata = ar::Map::make();
+    metadata->set("config", config.toArchive());
+
+    auto metadata_file = dataset::SafeFileIO::ofstream(metadataPath(save_path));
+    ar::serialize(metadata, metadata_file);
+  }
 
   rocksdb::Options options;
   options.create_if_missing = true;
@@ -66,11 +85,11 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   rocksdb::Status open_status;
   if (!read_only) {
     open_status = rocksdb::TransactionDB::Open(
-        options, rocksdb::TransactionDBOptions(), save_path, column_families,
+        options, rocksdb::TransactionDBOptions(), db_path, column_families,
         &columns, &_transaction_db);
     _db = _transaction_db;
   } else {
-    open_status = rocksdb::DB::OpenForReadOnly(options, save_path,
+    open_status = rocksdb::DB::OpenForReadOnly(options, db_path,
                                                column_families, &columns, &_db);
     _transaction_db = nullptr;
   }
@@ -395,6 +414,27 @@ OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
 void OnDiskNeuralDB::prune() {
   auto txn = newTxn();
   _chunk_index->prune(txn);  // txn is commit by index
+}
+
+void OnDiskNeuralDB::save(const std::string& save_path) const {
+  licensing::entitlements().verifySaveLoad();
+
+  createDirectory(save_path);
+
+  std::filesystem::copy(_save_path, save_path,
+                        std::filesystem::copy_options::recursive);
+}
+
+std::shared_ptr<OnDiskNeuralDB> OnDiskNeuralDB::load(
+    const std::string& save_path, bool read_only) {
+  licensing::entitlements().verifySaveLoad();
+
+  auto metadata_file = dataset::SafeFileIO::ifstream(metadataPath(save_path));
+  auto metadata = ar::deserialize(metadata_file);
+
+  auto config = IndexConfig::fromArchive(*metadata->get("config"));
+
+  return std::make_shared<OnDiskNeuralDB>(save_path, config, read_only);
 }
 
 TxnPtr OnDiskNeuralDB::newTxn() {
