@@ -11,4 +11,3 @@ from .documents import (
 )
 from .neural_db import NeuralDB
 from .supervised import CsvSupervised, InMemorySupervised
-from .fast_db import FastDB
