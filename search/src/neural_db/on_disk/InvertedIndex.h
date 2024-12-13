@@ -4,7 +4,7 @@
 #include <rocksdb/utilities/transaction.h>
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/neural_db/TextProcessor.h>
-#include <search/src/neural_db/on_disk/ChunkCountView.h>
+#include <search/src/neural_db/on_disk/DataView.h>
 #include <search/src/neural_db/on_disk/Utils.h>
 #include <unordered_set>
 

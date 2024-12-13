@@ -6,9 +6,9 @@
 #include <rocksdb/utilities/transaction.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/IndexConfig.h>
+#include <search/src/neural_db/Chunk.h>
 #include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/TextProcessor.h>
-#include <search/src/neural_db/on_disk/ChunkCountView.h>
 #include <search/src/neural_db/on_disk/ChunkDataColumn.h>
 #include <search/src/neural_db/on_disk/InvertedIndex.h>
 #include <search/src/neural_db/on_disk/QueryToChunks.h>
@@ -24,10 +24,10 @@ class OnDiskNeuralDB final : public NeuralDB {
                           const IndexConfig& config = IndexConfig(),
                           bool read_only = false);
 
-  void insert(const std::string& document,
-              const std::vector<std::string>& chunks,
+  void insert(const std::vector<std::string>& chunks,
               const std::vector<MetadataMap>& metadata,
-              const std::optional<std::string>& doc_id) final;
+              const std::string& document, const DocId& doc_id,
+              std::optional<uint32_t> doc_version) final;
 
   std::vector<std::pair<Chunk, float>> query(const std::string& query,
                                              uint32_t top_k) final;
@@ -62,8 +62,9 @@ class OnDiskNeuralDB final : public NeuralDB {
     ChunkId end;
   };
 
-  DocChunkRange deleteDocChunkRange(TxnPtr& txn, const DocId& doc_id,
-                                    uint32_t version);
+  std::unordered_set<ChunkId> deleteDocChunkRangesAndName(TxnPtr& txn,
+                                                          const DocId& doc_id,
+                                                          uint32_t version);
 
   std::string _save_path;
 
@@ -79,6 +80,7 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   rocksdb::ColumnFamilyHandle* _doc_chunks;
   rocksdb::ColumnFamilyHandle* _doc_version;
+  rocksdb::ColumnFamilyHandle* _doc_id_to_name;
 
   std::unique_ptr<InvertedIndex> _query_index;
   std::unique_ptr<QueryToChunks> _query_to_chunks;

@@ -2,6 +2,8 @@
 #include <rocksdb/iterator.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <search/src/neural_db/Chunk.h>
+#include <search/src/neural_db/on_disk/DataView.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 #include <stdexcept>
 
@@ -35,9 +37,8 @@ std::vector<ChunkId> QueryToChunks::getChunks(ChunkId query_id) {
     throw RocksdbError(status, "querying ndb");
   }
 
-  const ChunkId* data = reinterpret_cast<const ChunkId*>(value.data());
-  const size_t size = value.size() / sizeof(ChunkId);
-  return {data, data + size};
+  DataView<ChunkId> view(value);
+  return view.toVector();
 }
 
 void QueryToChunks::deleteChunks(TxnPtr& txn,
@@ -48,18 +49,17 @@ void QueryToChunks::deleteChunks(TxnPtr& txn,
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     const auto value = iter->value();
 
-    const ChunkId* data = reinterpret_cast<const ChunkId*>(value.data());
-    const size_t size = value.size() / sizeof(ChunkId);
+    DataView<ChunkId> view(value);
 
     std::vector<ChunkId> new_value;
-    new_value.reserve(size);
-    for (size_t i = 0; i < size; i++) {
-      if (!chunks.count(data[i])) {
-        new_value.push_back(data[i]);
+    new_value.reserve(view.size());
+    for (const auto& id : view) {
+      if (!chunks.count(id)) {
+        new_value.push_back(id);
       }
     }
 
-    if (new_value.size() != size) {
+    if (new_value.size() != view.size()) {
       auto put_status = txn->Put(_column, iter->key(), vecToSlice(new_value));
       if (!put_status.ok()) {
         throw RocksdbError(put_status, "removing doc chunk refs");

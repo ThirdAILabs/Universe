@@ -58,7 +58,7 @@ std::vector<std::optional<T>> ChunkDataColumn<T>::get(
 
 template <typename T>
 void ChunkDataColumn<T>::remove(TxnPtr& txn,
-                                const std::vector<ChunkId>& chunk_ids) {
+                                const std::unordered_set<ChunkId>& chunk_ids) {
   for (const auto& chunk_id : chunk_ids) {
     auto status = txn->Delete(_column, asSlice<ChunkId>(&chunk_id));
     if (!status.ok()) {

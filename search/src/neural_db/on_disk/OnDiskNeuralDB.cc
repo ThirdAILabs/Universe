@@ -7,11 +7,11 @@
 #include <rocksdb/status.h>
 #include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/Utils.h>
+#include <search/src/neural_db/Chunk.h>
 #include <search/src/neural_db/Constraints.h>
+#include <search/src/neural_db/on_disk/DataView.h>
 #include <search/src/neural_db/on_disk/MergeOperators.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
-#include <utils/UUID.h>
-#include <array>
 #include <filesystem>
 #include <memory>
 #include <numeric>
@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::search::ndb {
 
@@ -74,8 +75,9 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
       {"chunk_index", concat_counts_options},
       {"chunk_data", {}},
       {"chunk_metadata", {}},
-      {"doc_chunks", {}},
+      {"doc_chunks", concat_options},
       {"doc_version", {}},
+      {"doc_id_to_name", {}},
       {"query_counters", counter_options},
       {"query_index", concat_counts_options},
       {"id_map", concat_options}};
@@ -107,15 +109,16 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
       std::make_unique<ChunkDataColumn<MetadataMap>>(_db, columns.at(4));
   _doc_chunks = columns.at(5);
   _doc_version = columns.at(6);
+  _doc_id_to_name = columns.at(7);
   _query_index = std::make_unique<InvertedIndex>(
-      _db, columns.at(7), columns.at(8), config, read_only);
-  _query_to_chunks = std::make_unique<QueryToChunks>(_db, columns.at(9));
+      _db, columns.at(8), columns.at(9), config, read_only);
+  _query_to_chunks = std::make_unique<QueryToChunks>(_db, columns.at(10));
 }
 
-void OnDiskNeuralDB::insert(const std::string& document,
-                            const std::vector<std::string>& chunks,
+void OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
                             const std::vector<MetadataMap>& metadata,
-                            const std::optional<std::string>& doc_id_opt) {
+                            const std::string& document, const DocId& doc_id,
+                            std::optional<uint32_t> doc_version_opt) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
   }
@@ -128,15 +131,8 @@ void OnDiskNeuralDB::insert(const std::string& document,
 
   auto txn = newTxn();
 
-  std::string doc_id;
-  uint32_t doc_version;
-  if (doc_id_opt) {
-    doc_id = *doc_id_opt;
-    doc_version = getDocVersion(txn, doc_id);
-  } else {
-    doc_id = utils::uuid::getRandomHexString(10);
-    doc_version = 1;
-  }
+  uint32_t doc_version =
+      doc_version_opt ? *doc_version_opt : getDocVersion(txn, doc_id);
 
   std::vector<ChunkData> chunk_data;
   chunk_data.reserve(chunks.size());
@@ -150,11 +146,18 @@ void OnDiskNeuralDB::insert(const std::string& document,
 
   _chunk_index->insert(txn, start_id, token_counts, chunk_lens);
 
+  const auto doc_ver_key = docVersionKey(doc_id, doc_version);
+
   DocChunkRange doc_chunks{start_id, start_id + chunks.size()};
-  auto status = txn->Put(_doc_chunks, docVersionKey(doc_id, doc_version),
-                         asSlice<DocChunkRange>(&doc_chunks));
-  if (!status.ok()) {
-    throw RocksdbError(status, "storing doc metadata");
+  auto chunk_range_status =
+      txn->Merge(_doc_chunks, doc_ver_key, asSlice<DocChunkRange>(&doc_chunks));
+  if (!chunk_range_status.ok()) {
+    throw RocksdbError(chunk_range_status, "updating doc chunk mapping");
+  }
+
+  auto doc_name_status = txn->Put(_doc_id_to_name, doc_ver_key, document);
+  if (!doc_name_status.ok()) {
+    throw RocksdbError(doc_name_status, "updating doc name mapping");
   }
 
   auto commit = txn->Commit();
@@ -175,8 +178,7 @@ uint32_t OnDiskNeuralDB::getDocVersion(TxnPtr& txn, const std::string& doc_id) {
       throw NeuralDbError(ErrorCode::MalformedData, "doc version malformed");
     }
     version = *reinterpret_cast<uint32_t*>(value.data());
-  }
-  if (get_status.IsNotFound()) {
+  } else if (get_status.IsNotFound()) {
     version = 0;
   } else {
     throw RocksdbError(get_status, "retrieving doc version");
@@ -374,17 +376,13 @@ void OnDiskNeuralDB::finetune(
 void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   auto txn = newTxn();
 
-  const auto doc_chunks = deleteDocChunkRange(txn, doc, version);
+  const auto doc_chunks = deleteDocChunkRangesAndName(txn, doc, version);
 
-  std::vector<ChunkId> chunk_ids(doc_chunks.end - doc_chunks.start);
-  std::iota(chunk_ids.begin(), chunk_ids.end(), doc_chunks.start);
+  _chunk_data->remove(txn, doc_chunks);
+  _chunk_metadata->remove(txn, doc_chunks);
 
-  _chunk_data->remove(txn, chunk_ids);
-  _chunk_metadata->remove(txn, chunk_ids);
-
-  std::unordered_set<ChunkId> chunk_id_set(chunk_ids.begin(), chunk_ids.end());
-  _chunk_index->deleteChunks(txn, chunk_id_set);
-  _query_to_chunks->deleteChunks(txn, chunk_id_set);
+  _chunk_index->deleteChunks(txn, doc_chunks);
+  _query_to_chunks->deleteChunks(txn, doc_chunks);
 
   auto commit = txn->Commit();
   if (!commit.ok()) {
@@ -392,11 +390,12 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
   }
 }
 
-OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
+std::unordered_set<ChunkId> OnDiskNeuralDB::deleteDocChunkRangesAndName(
     TxnPtr& txn, const DocId& doc_id, uint32_t version) {
+  const auto doc_ver_key = docVersionKey(doc_id, version);
   std::string value;
   auto status = txn->GetForUpdate(rocksdb::ReadOptions(), _doc_chunks,
-                                  docVersionKey(doc_id, version), &value);
+                                  doc_ver_key, &value);
   if (status.IsNotFound()) {
     throw NeuralDbError(ErrorCode::DocNotFound,
                         "document '" + doc_id + "' version " +
@@ -406,9 +405,26 @@ OnDiskNeuralDB::DocChunkRange OnDiskNeuralDB::deleteDocChunkRange(
     throw RocksdbError(status, "retrieving doc chunks");
   }
 
-  DocChunkRange chunk_range = *reinterpret_cast<DocChunkRange*>(value.data());
+  DataView<DocChunkRange> ranges(value);
 
-  return chunk_range;
+  std::unordered_set<ChunkId> deleted_ids;
+  for (const auto& range : ranges) {
+    for (ChunkId i = range.start; i < range.end; i++) {
+      deleted_ids.insert(i);
+    }
+  }
+
+  auto del_ranges = txn->Delete(_doc_chunks, doc_ver_key);
+  if (!del_ranges.ok()) {
+    throw RocksdbError(del_ranges, "deleting entry from doc chunks mapping");
+  }
+
+  auto del_name = txn->Delete(_doc_id_to_name, doc_ver_key);
+  if (!del_name.ok()) {
+    throw RocksdbError(del_name, "deleting entry from doc name mapping");
+  }
+
+  return deleted_ids;
 }
 
 void OnDiskNeuralDB::prune() {
@@ -457,6 +473,7 @@ OnDiskNeuralDB::~OnDiskNeuralDB() {
   _db->DestroyColumnFamilyHandle(_default);
   _db->DestroyColumnFamilyHandle(_doc_chunks);
   _db->DestroyColumnFamilyHandle(_doc_version);
+  _db->DestroyColumnFamilyHandle(_doc_id_to_name);
 
   _db->Close();
   delete _db;

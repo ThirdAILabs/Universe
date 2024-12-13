@@ -7,10 +7,10 @@ namespace thirdai::search::ndb {
 
 class NeuralDB {
  public:
-  virtual void insert(const std::string& document,
-                      const std::vector<std::string>& chunks,
+  virtual void insert(const std::vector<std::string>& chunks,
                       const std::vector<MetadataMap>& metadata,
-                      const std::optional<std::string>& doc_id) = 0;
+                      const std::string& document, const DocId& doc_id,
+                      std::optional<uint32_t> doc_version) = 0;
 
   virtual std::vector<std::pair<Chunk, float>> query(const std::string& query,
                                                      uint32_t top_k) = 0;

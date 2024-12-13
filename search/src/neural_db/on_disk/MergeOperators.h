@@ -1,7 +1,7 @@
 #pragma once
 
 #include <rocksdb/merge_operator.h>
-#include <search/src/neural_db/on_disk/ChunkCountView.h>
+#include <search/src/neural_db/on_disk/DataView.h>
 
 namespace thirdai::search::ndb {
 

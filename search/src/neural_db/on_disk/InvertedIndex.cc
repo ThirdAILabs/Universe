@@ -2,7 +2,6 @@
 #include <rocksdb/options.h>
 #include <search/src/inverted_index/BM25.h>
 #include <search/src/inverted_index/Utils.h>
-#include <search/src/neural_db/on_disk/ChunkCountView.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 
 namespace thirdai::search::ndb {
