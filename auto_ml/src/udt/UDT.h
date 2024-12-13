@@ -523,6 +523,10 @@ class UDT {
     _backend->addNerRule(rule_name);
   }
 
+  void editNerLearnedTag(const data::ner::NerLearnedTagPtr& tag) {
+    _backend->editNerLearnedTag(tag);
+  }
+
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
           entities) {

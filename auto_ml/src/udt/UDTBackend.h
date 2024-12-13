@@ -415,6 +415,11 @@ class UDTBackend {
     throw notSupported("add_new_rule");
   }
 
+  virtual void editNerLearnedTag(const data::ner::NerLearnedTagPtr& tag) {
+    (void)tag;
+    throw notSupported("edit_ner_learned_tag");
+  }
+
   virtual void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
           entities) {

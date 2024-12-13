@@ -19,7 +19,10 @@ void applyPunctAndStopWordFilter(const std::string& token,
                                  const std::string& default_tag) {
   // assumes that the highest activation vector is at the end
 
-  if (isAllPunctuation(token)) {
+  auto cleaned_token = text::stripWhitespace(token);
+
+  if (isAllPunctuation(cleaned_token) ||
+      text::stop_words.count(cleaned_token)) {
     for (int i = predicted_tags.size() - 1; i >= 0; --i) {
       if (predicted_tags[i].first == default_tag) {
         predicted_tags[i].second = 1;

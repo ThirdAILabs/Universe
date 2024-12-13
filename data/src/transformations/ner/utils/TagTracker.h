@@ -106,6 +106,19 @@ class TagTracker {
     return tags;
   }
 
+  void editTag(const data::ner::NerTagPtr& tag) {
+    if (!tagExists(tag->tag())) {
+      throw std::logic_error("Tag does not exist. Cannot edit tag " +
+                             tag->tag());
+    }
+    if (tagToLabel(tag->tag()) == 0) {
+      throw std::logic_error(
+          "Can only edit learnable tags. Tag has the following label in the "
+          "model: 0");
+    }
+    _label_to_tag[tagToLabel(tag->tag())] = tag;
+  }
+
   std::string getTokenEncoding(const std::string& token) const;
 
  private:

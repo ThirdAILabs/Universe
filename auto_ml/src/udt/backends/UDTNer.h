@@ -90,6 +90,10 @@ class UDTNer final : public UDTBackend {
     }
   }
 
+  void editNerLearnedTag(const data::ner::NerLearnedTagPtr& tag) final {
+    _tag_tracker->editTag(tag);
+  }
+
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
           entities) final {

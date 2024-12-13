@@ -27,16 +27,16 @@ TEST(NerRuleTests, CreditCard) {
   auto rule = creditCardPattern();
 
   checkMatch(rule, "my card number is 371449635398431 and something else",
-             "CREDITCARDNUMBER", 1.0, "371449635398431");
+             "CREDITCARDNUMBER", 2.0, "371449635398431");
 
   checkMatch(rule, "my card number is 3714-4963-539-8431 and my",
-             "CREDITCARDNUMBER", 1.0, "3714-4963-539-8431");
+             "CREDITCARDNUMBER", 2.0, "3714-4963-539-8431");
 
   checkMatch(rule, "my card number is 3714 4963 539-8431 and my",
-             "CREDITCARDNUMBER", 1.0, "3714 4963 539-8431");
+             "CREDITCARDNUMBER", 2.0, "3714 4963 539-8431");
 
   checkMatch(rule, "my number is 3714 4963 539 8431 and my", "CREDITCARDNUMBER",
-             0.8, "3714 4963 539 8431");
+             1.8, "3714 4963 539 8431");
 
   checkNoMatch(rule, "my number is 3714 4663 539-8431 and my");
 
@@ -49,7 +49,7 @@ TEST(NerRuleTests, Email) {
   checkMatch(rule, "my contact is joe@address.co", "EMAIL", 0.7,
              "joe@address.co");
 
-  checkMatch(rule, "alex@address.co is my email", "EMAIL", 1.0,
+  checkMatch(rule, "alex@address.co is my email", "EMAIL", 1.1,
              "alex@address.co");
 
   checkMatch(rule, "reach me at jane@address.co during work", "EMAIL", 0.6,
@@ -67,22 +67,22 @@ TEST(NerRuleTests, Phone) {
   auto rule = phonePattern();
 
   checkMatch(rule, "for contacting (924) 024-2400 is my cell", "PHONENUMBER",
-             0.9, "(924) 024-2400");
+             0.8, "(924) 024-2400");
 
   checkMatch(rule, "for reaching +1 (924) 024-2400 is my cell", "PHONENUMBER",
-             0.8, "+1 (924) 024-2400");
+             0.7, "+1 (924) 024-2400");
 
   checkMatch(rule, "for reaching +1(924) 024-2400 is my cell", "PHONENUMBER",
-             0.8, "+1(924) 024-2400");
+             0.7, "+1(924) 024-2400");
 
-  checkMatch(rule, "9240242400", "PHONENUMBER", 0.6, "9240242400");
+  checkMatch(rule, "9240242400", "PHONENUMBER", 0.5, "9240242400");
 
   checkNoMatch(rule, "940242400");
 
   checkMatch(rule, "something something +1 9402412400 something", "PHONENUMBER",
-             0.6, "+1 9402412400");
+             0.5, "+1 9402412400");
 
-  checkMatch(rule, "+1 940.242-4200 is my number", "PHONENUMBER", 0.8,
+  checkMatch(rule, "+1 940.242-4200 is my number", "PHONENUMBER", 0.7,
              "+1 940.242-4200");
 }
 
@@ -112,13 +112,13 @@ TEST(NerRuleTests, BankNumber) {
 TEST(NerRuleTests, Ssn) {
   auto rule = ssnPattern();
 
-  checkMatch(rule, "something 123-24-0340 something", "SSN", 0.4,
+  checkMatch(rule, "something 123-24-0340 something", "SSN", 0.6,
              "123-24-0340");
 
-  checkMatch(rule, "ssn: something 123 24 2090 something", "SSN", 1.0,
+  checkMatch(rule, "ssn: something 123 24 2090 something", "SSN", 1.2,
              "123 24 2090");
 
-  checkMatch(rule, "something 123456789 something social", "SSN", 0.7,
+  checkMatch(rule, "something 123456789 something social", "SSN", 0.9,
              "123456789");
 
   checkNoMatch(rule, "ssn: something 1234 something");

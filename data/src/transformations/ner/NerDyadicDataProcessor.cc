@@ -93,6 +93,7 @@ std::string NerDyadicDataProcessor::getExtraFeatures(
      */
     std::string surrounding_numbers = text::stripWhitespace(
         ner::utils::findContiguousNumbers(lower_cased_tokens, index));
+
     if (!surrounding_numbers.empty()) {
       auto numerical_features = getNumericalFeatures(surrounding_numbers);
       if (!numerical_features.empty()) {
@@ -200,6 +201,7 @@ std::string NerDyadicDataProcessor::processToken(
   uint32_t n_alpha = 0;
   uint32_t n_digit = 0;
   uint32_t n_punct = 0;
+
   std::string target_token = tokens[index];
   for (char& c : target_token) {
     if (std::isdigit(c)) {
@@ -218,13 +220,15 @@ std::string NerDyadicDataProcessor::processToken(
   // context and does not overfit just on the tokens
 
   // TODO(@shubh3ai) : make the dropout ratio configurable
-  if (_for_inference || rand() % 2 == 0) {
+  // if number of tokens is 1 or if in inference mode, do not drop the target
+  // token
+  if (_for_inference || rand() % 2 == 0 || tokens.size() == 1) {
     for (const auto& tokenizer : _target_word_tokenizers) {
       // to change the target token tokenization, change the first argument of
       // toStrings here. example, if you want to remove punct from target token,
       // call the remove punct func and pass the value here
-      auto tokens =
-          tokenizer->toStrings(ner::utils::trimPunctuation(target_token));
+      auto tokens = tokenizer->toStrings(
+          ner::utils::trimPunctuation(lower_cased_tokens[index]));
       tokenized_target_token.reserve(tokenized_target_token.size() +
                                      tokens.size());
       tokenized_target_token.insert(tokenized_target_token.end(),
@@ -237,21 +241,34 @@ std::string NerDyadicDataProcessor::processToken(
    * Hence, same tokens can be appended to the string multiple times.
    */
   std::string repr;
+
   for (const auto& tok : tokenized_target_token) {
     repr += _target_prefix + tok + " ";
   }
 
-  // to use lower cased tokenization for the context or any other modifications,
-  // change the first argument to the function here
+  // to use lower cased tokenization for the context or any other
+  // modifications, change the first argument to the function here
   repr += generateDyadicWindows(lower_cased_tokens, index);
 
   if (_feature_enhancement_config.has_value()) {
     repr += " " + getExtraFeatures(tokens, index, lower_cased_tokens);
   }
 
-  repr += " " + std::to_string(n_alpha) + "_ALPHA";
-  repr += " " + std::to_string(n_digit) + "_DIGIT";
-  repr += " " + std::to_string(n_punct) + "_PUNCT";
+  if (n_digit > 0) {
+    /*
+     * For a token without any digits, model predictions vary wildly depending
+     * on the number of punctuations.
+     *
+     * Example : token = "Shubh" vs "Shubh."
+     * Model predictions : [NAME] vs [O]
+     *
+     * Removing punctuations from the non-numeric tokens makes the model
+     * prediction more consistent.
+     */
+    repr += " " + std::to_string(n_punct) + "_PUNCT";
+    repr += " " + std::to_string(n_alpha) + "_ALPHA";
+    repr += " " + std::to_string(n_digit) + "_DIGIT";
+  }
 
   return repr;
 }

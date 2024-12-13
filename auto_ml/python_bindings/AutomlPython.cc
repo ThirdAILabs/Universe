@@ -272,6 +272,7 @@ void defineAutomlInModule(py::module_& module) {
       .def_static("estimate_hash_table_size", &udt::UDT::estimateHashTableSize,
                   py::arg("output_dim"), py::arg("sparsity") = std::nullopt)
       .def("add_ner_rule", &udt::UDT::addNerRule, py::arg("rule_name"))
+      .def("edit_ner_learned_tag", &udt::UDT::editNerLearnedTag, py::arg("tag"))
       .def("add_ner_entities", &udt::UDT::addNerEntitiesToModel,
            py::arg("entities"))
       .def("source_target_columns", &udt::UDT::sourceTargetCols);

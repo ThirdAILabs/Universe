@@ -19,7 +19,7 @@ inline NerTagPtr getSSNTag() {
       /*consecutive_tags_required=*/1,
       /*special_characters=*/{}, /*invalid_sizes=*/{1, 6, 8},
       /*validation_pattern=*/
-      R"(\b([0-9]{3})([- .]+)([0-9]{2})([- .]+)([0-9]{4})\b)");
+      R"(\b\d{3}([- .])\d{2}\1\d{4}|\b\d{3}\d{2}\d{4}\b)");
 }
 
 inline NerTagPtr getNameTag() {
