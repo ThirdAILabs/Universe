@@ -78,10 +78,10 @@ py::dict metadataToDict(const ndb::MetadataMap& map) {
 }
 
 void wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
-                   const std::string& document,
                    const std::vector<std::string>& chunks,
                    const std::vector<py::dict>& py_metadata,
-                   const std::optional<std::string>& doc_id) {
+                   const std::string& document, const std::string& doc_id,
+                   std::optional<uint32_t> doc_version) {
   std::vector<ndb::MetadataMap> metadata;
   if (!py_metadata.empty()) {
     metadata.reserve(py_metadata.size());
@@ -92,7 +92,7 @@ void wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
     metadata.resize(chunks.size());
   }
 
-  ndb->insert(document, chunks, metadata, doc_id);
+  ndb->insert(chunks, metadata, document, doc_id, doc_version);
 }
 
 void createSearchSubmodule(py::module_& module) {
@@ -329,9 +329,9 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<ndb::NeuralDB, std::shared_ptr<ndb::NeuralDB>>(search_submodule,
                                                             "NeuralDB")
-      .def("insert", &wrappedInsert, py::arg("document"), py::arg("chunks"),
-           py::arg("metadata") = std::vector<py::dict>{},
-           py::arg("doc_id") = std::nullopt)
+      .def("insert", &wrappedInsert, py::arg("chunks"),
+           py::arg("metadata") = std::vector<py::dict>{}, py::arg("document"),
+           py::arg("doc_id"), py::arg("doc_verison") = std::nullopt)
       .def("query", &ndb::NeuralDB::query, py::arg("query"),
            py::arg("top_k") = 5)
       .def("rank", &ndb::NeuralDB::rank, py::arg("query"),
@@ -344,7 +344,10 @@ void createSearchSubmodule(py::module_& module) {
                                                    "OnDiskNeuralDB")
       .def(py::init<const std::string&, const IndexConfig&, bool>(),
            py::arg("save_path"), py::arg("config") = IndexConfig(),
-           py::arg("read_only") = false);
+           py::arg("read_only") = false)
+      .def("save", &ndb::OnDiskNeuralDB::save, py::arg("save_path"))
+      .def_static("load", &ndb::OnDiskNeuralDB::load, py::arg("save_path"),
+                  py::arg("read_only"));
 #endif
 }
 
