@@ -2,6 +2,7 @@
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/db.h>
+#include <rocksdb/iterator.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 #include <rocksdb/status.h>
@@ -9,9 +10,11 @@
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/neural_db/Chunk.h>
 #include <search/src/neural_db/Constraints.h>
+#include <search/src/neural_db/Errors.h>
 #include <search/src/neural_db/on_disk/DataView.h>
 #include <search/src/neural_db/on_disk/MergeOperators.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
+#include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <numeric>
@@ -430,6 +433,28 @@ std::unordered_set<ChunkId> OnDiskNeuralDB::deleteDocChunkRangesAndName(
 void OnDiskNeuralDB::prune() {
   auto txn = newTxn();
   _chunk_index->prune(txn);  // txn is commit by index
+}
+
+std::vector<Source> OnDiskNeuralDB::sources() {
+  auto iter = std::unique_ptr<rocksdb::Iterator>(
+      _db->NewIterator(rocksdb::ReadOptions(), _doc_id_to_name));
+
+  std::vector<Source> sources;
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    auto key = iter->key().ToString();
+    auto loc = key.find_last_of('_');
+    if (loc == std::string::npos) {
+      throw NeuralDbError(ErrorCode::MalformedData,
+                          "invalid document version key");
+    }
+
+    const std::string doc_id = key.substr(0, loc);
+    const uint32_t version = std::stoul(key.substr(loc + 1));
+
+    sources.emplace_back(iter->value().ToString(), doc_id, version);
+  }
+
+  return sources;
 }
 
 void OnDiskNeuralDB::save(const std::string& save_path) const {

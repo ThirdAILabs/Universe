@@ -5,6 +5,17 @@
 
 namespace thirdai::search::ndb {
 
+struct Source {
+  std::string document;
+  DocId doc_id;
+  uint32_t doc_version;
+
+  Source(std::string document, DocId doc_id, uint32_t doc_version)
+      : document(std::move(document)),
+        doc_id(std::move(doc_id)),
+        doc_version(doc_version) {}
+};
+
 class NeuralDB {
  public:
   virtual void insert(const std::vector<std::string>& chunks,
@@ -25,6 +36,8 @@ class NeuralDB {
   virtual void deleteDoc(const DocId& doc, uint32_t version) = 0;
 
   virtual void prune() = 0;
+
+  virtual std::vector<Source> sources() = 0;
 
   virtual ~NeuralDB() = default;
 };

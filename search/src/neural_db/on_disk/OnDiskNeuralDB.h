@@ -43,6 +43,8 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   void prune() final;
 
+  std::vector<Source> sources() final;
+
   void save(const std::string& save_path) const;
 
   static std::shared_ptr<OnDiskNeuralDB> load(const std::string& save_path,

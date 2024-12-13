@@ -1,8 +1,10 @@
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
 #include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
+#include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <string>
 
 namespace thirdai::search::ndb::tests {
 
@@ -268,6 +270,19 @@ TEST_F(OnDiskNeuralDbTests, ReturnsCorrectChunkData) {
     ASSERT_EQ(constrained_results.size(), 1);
     ASSERT_EQ(constrained_results[0].first.id, 2 * i + 1);
   }
+
+  auto sources = db.sources();
+  std::sort(sources.begin(), sources.end(),
+            [](const Source& a, const Source& b) {
+              return std::stoi(a.doc_id) < std::stoi(b.doc_id);
+            });
+
+  ASSERT_EQ(sources.size(), 20);
+  for (int i = 0; i < 20; i++) {
+    ASSERT_EQ(sources[i].doc_id, std::to_string(i));
+    ASSERT_EQ(sources[i].document, "document_" + std::to_string(i));
+    ASSERT_EQ(sources[i].doc_version, 1);
+  }
 }
 
 TEST_F(OnDiskNeuralDbTests, Finetuning) {
@@ -314,6 +329,51 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
 
   db.deleteDoc("22", 1);
   checkNdbQuery(db, query, {5});
+}
+
+TEST_F(OnDiskNeuralDbTests, DocVersioning) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 4; j++) {
+      db.insert({"a chunk"}, {{}}, std::to_string(i) + "_" + std::to_string(j),
+                std::to_string(i), std::nullopt);
+    }
+  }
+
+  auto sources = db.sources();
+  std::sort(
+      sources.begin(), sources.end(),
+      [](const Source& a, const Source& b) { return a.document < b.document; });
+
+  ASSERT_EQ(sources.size(), 20);
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 4; j++) {
+      const auto& source = sources.at(i * 4 + j);
+      ASSERT_EQ(source.document, std::to_string(i) + "_" + std::to_string(j));
+      ASSERT_EQ(source.doc_id, std::to_string(i));
+      ASSERT_EQ(source.doc_version, j + 1);
+    }
+  }
+
+  for (int i = 0; i < 5; i++) {
+    for (int j = 1; j < 4; j++) {
+      db.deleteDoc(std::to_string(i), j);
+    }
+  }
+
+  sources = db.sources();
+  std::sort(
+      sources.begin(), sources.end(),
+      [](const Source& a, const Source& b) { return a.document < b.document; });
+
+  ASSERT_EQ(sources.size(), 5);
+  for (int i = 0; i < 5; i++) {
+    const auto& source = sources.at(i);
+    ASSERT_EQ(source.document, std::to_string(i) + "_" + std::to_string(3));
+    ASSERT_EQ(source.doc_id, std::to_string(i));
+    ASSERT_EQ(source.doc_version, 4);
+  }
 }
 
 std::vector<std::vector<std::pair<Chunk, float>>> queryDb(
