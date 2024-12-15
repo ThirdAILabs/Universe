@@ -405,10 +405,10 @@ void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
   finetune(sources, labels);
 }
 
-void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {
+void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, uint32_t doc_version) {
   auto txn = newTxn();
 
-  const auto doc_chunks = deleteDocChunkRangesAndName(txn, doc, version);
+  const auto doc_chunks = deleteDocChunkRangesAndName(txn, doc_id, doc_version);
 
   _chunk_data->remove(txn, doc_chunks);
   _chunk_metadata->remove(txn, doc_chunks);

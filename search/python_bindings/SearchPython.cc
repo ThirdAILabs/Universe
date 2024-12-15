@@ -300,6 +300,11 @@ void createSearchSubmodule(py::module_& module) {
       .def_readonly("start", &ndb::InsertMetadata::start)
       .def_readonly("end", &ndb::InsertMetadata::end);
 
+  py::class_<ndb::Source>(search_submodule, "Source")
+      .def_readonly("document", &ndb::Source::document)
+      .def_readonly("doc_id", &ndb::Source::doc_id)
+      .def_readonly("doc_version", &ndb::Source::doc_version);
+
   // NOLINTNEXTLINE (temporary object warning)
   py::class_<ndb::Constraint, std::shared_ptr<ndb::Constraint>>(
       search_submodule, "Constraint");
@@ -347,6 +352,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("chunk_ids"))
       .def("associate", &ndb::NeuralDB::associate, py::arg("sources"),
            py::arg("targets"), py::arg("strength") = 4)
+      .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
+           py::arg("doc_version"))
       .def("sources", &ndb::NeuralDB::sources);
 
 #if !_WIN32

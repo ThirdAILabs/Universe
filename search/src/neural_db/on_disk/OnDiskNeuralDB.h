@@ -43,7 +43,7 @@ class OnDiskNeuralDB final : public NeuralDB {
                  const std::vector<std::string>& targets,
                  uint32_t strength) final;
 
-  void deleteDoc(const DocId& doc, uint32_t version) final;
+  void deleteDoc(const DocId& doc_id, uint32_t doc_version) final;
 
   void prune() final;
 

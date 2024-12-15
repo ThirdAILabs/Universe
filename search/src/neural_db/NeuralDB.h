@@ -51,7 +51,7 @@ class NeuralDB {
                          const std::vector<std::string>& targets,
                          uint32_t strength) = 0;
 
-  virtual void deleteDoc(const DocId& doc, uint32_t version) = 0;
+  virtual void deleteDoc(const DocId& doc_id, uint32_t doc_version) = 0;
 
   virtual void prune() = 0;
 
