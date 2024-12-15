@@ -24,10 +24,10 @@ class OnDiskNeuralDB final : public NeuralDB {
                           const IndexConfig& config = IndexConfig(),
                           bool read_only = false);
 
-  void insert(const std::vector<std::string>& chunks,
-              const std::vector<MetadataMap>& metadata,
-              const std::string& document, const DocId& doc_id,
-              std::optional<uint32_t> doc_version) final;
+  InsertMetadata insert(const std::vector<std::string>& chunks,
+                        const std::vector<MetadataMap>& metadata,
+                        const std::string& document, const DocId& doc_id,
+                        std::optional<uint32_t> doc_version) final;
 
   std::vector<std::pair<Chunk, float>> query(const std::string& query,
                                              uint32_t top_k) final;
@@ -36,8 +36,12 @@ class OnDiskNeuralDB final : public NeuralDB {
                                             const QueryConstraints& constraints,
                                             uint32_t top_k) final;
 
-  void finetune(const std::vector<std::vector<ChunkId>>& chunk_ids,
-                const std::vector<std::string>& queries) final;
+  void finetune(const std::vector<std::string>& queries,
+                const std::vector<std::vector<ChunkId>>& chunk_ids) final;
+
+  void associate(const std::vector<std::string>& sources,
+                 const std::vector<std::string>& targets,
+                 uint32_t strength) final;
 
   void deleteDoc(const DocId& doc, uint32_t version) final;
 

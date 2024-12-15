@@ -294,6 +294,12 @@ void createSearchSubmodule(py::module_& module) {
         return metadataToDict(chunk.metadata);
       });
 
+  py::class_<ndb::InsertMetadata>(search_submodule, "InsertMetadata")
+      .def_readonly("doc_id", &ndb::InsertMetadata::doc_id)
+      .def_readonly("doc_version", &ndb::InsertMetadata::doc_version)
+      .def_readonly("start", &ndb::InsertMetadata::start)
+      .def_readonly("end", &ndb::InsertMetadata::end);
+
   // NOLINTNEXTLINE (temporary object warning)
   py::class_<ndb::Constraint, std::shared_ptr<ndb::Constraint>>(
       search_submodule, "Constraint");
@@ -336,7 +342,12 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("top_k") = 5)
       .def("rank", &ndb::NeuralDB::rank, py::arg("query"),
            py::arg("constraints"), py::arg("top_k") = 5)
-      .def("prune", &ndb::NeuralDB::prune);
+      .def("prune", &ndb::NeuralDB::prune)
+      .def("finetune", &ndb::NeuralDB::finetune, py::arg("queries"),
+           py::arg("chunk_ids"))
+      .def("associate", &ndb::NeuralDB::associate, py::arg("sources"),
+           py::arg("targets"), py::arg("strength") = 4)
+      .def("sources", &ndb::NeuralDB::sources);
 
 #if !_WIN32
   py::class_<ndb::OnDiskNeuralDB, ndb::NeuralDB,

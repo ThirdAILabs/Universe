@@ -23,6 +23,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace thirdai::search::ndb {
 
@@ -118,10 +119,11 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   _query_to_chunks = std::make_unique<QueryToChunks>(_db, columns.at(10));
 }
 
-void OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
-                            const std::vector<MetadataMap>& metadata,
-                            const std::string& document, const DocId& doc_id,
-                            std::optional<uint32_t> doc_version_opt) {
+InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
+                                      const std::vector<MetadataMap>& metadata,
+                                      const std::string& document,
+                                      const DocId& doc_id,
+                                      std::optional<uint32_t> doc_version_opt) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
   }
@@ -167,6 +169,9 @@ void OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
   if (!commit.ok()) {
     throw RocksdbError(commit, "committing insertion");
   }
+
+  return InsertMetadata(doc_id, doc_version, start_id,
+                        start_id + chunks.size());
 }
 
 uint32_t OnDiskNeuralDB::getDocVersion(TxnPtr& txn, const std::string& doc_id) {
@@ -351,8 +356,8 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
 }
 
 void OnDiskNeuralDB::finetune(
-    const std::vector<std::vector<ChunkId>>& chunk_ids,
-    const std::vector<std::string>& queries) {
+    const std::vector<std::string>& queries,
+    const std::vector<std::vector<ChunkId>>& chunk_ids) {
   if (chunk_ids.size() != queries.size()) {
     throw std::invalid_argument(
         "number of labels must match number of queries for finetuning.");
@@ -374,6 +379,30 @@ void OnDiskNeuralDB::finetune(
   if (!commit.ok()) {
     throw RocksdbError(commit, "committing insertion");
   }
+}
+
+void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
+                               const std::vector<std::string>& targets,
+                               uint32_t strength) {
+  if (sources.size() != targets.size()) {
+    throw std::invalid_argument(
+        "number of sources must match number of targets for associate.");
+  }
+
+  std::vector<std::vector<ChunkId>> labels;
+  labels.reserve(sources.size());
+
+  for (const auto& target : targets) {
+    auto results = query(target, strength);
+    std::vector<ChunkId> ids;
+    ids.reserve(results.size());
+    for (const auto& res : results) {
+      ids.push_back(res.first.id);
+    }
+    labels.push_back(std::move(ids));
+  }
+
+  finetune(sources, labels);
 }
 
 void OnDiskNeuralDB::deleteDoc(const DocId& doc, uint32_t version) {

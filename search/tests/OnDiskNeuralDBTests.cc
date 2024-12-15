@@ -301,7 +301,7 @@ TEST_F(OnDiskNeuralDbTests, Finetuning) {
   checkNdbQuery(db, query, {0, 1, 2});
   checkNdbRank(db, query, constraints, {1, 2});
 
-  db.finetune({{4}, {2}, {3}}, {"o p", "x y z", "t q v"});
+  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}});
 
   checkNdbQuery(db, query, {2, 0, 1});
   checkNdbRank(db, query, constraints, {2, 1});
@@ -320,7 +320,7 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
 
   checkNdbQuery(db, query, {0, 5, 2});
 
-  db.finetune({{4}, {2}, {3}}, {"o p", "x y z", "t q v"});
+  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}});
 
   checkNdbQuery(db, query, {2, 0, 5});
 
