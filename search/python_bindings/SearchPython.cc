@@ -77,11 +77,12 @@ py::dict metadataToDict(const ndb::MetadataMap& map) {
   return dict;
 }
 
-void wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
-                   const std::vector<std::string>& chunks,
-                   const std::vector<py::dict>& py_metadata,
-                   const std::string& document, const std::string& doc_id,
-                   std::optional<uint32_t> doc_version) {
+ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
+                                  const std::vector<std::string>& chunks,
+                                  const std::vector<py::dict>& py_metadata,
+                                  const std::string& document,
+                                  const std::string& doc_id,
+                                  std::optional<uint32_t> doc_version) {
   std::vector<ndb::MetadataMap> metadata;
   if (!py_metadata.empty()) {
     metadata.reserve(py_metadata.size());
@@ -92,7 +93,7 @@ void wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
     metadata.resize(chunks.size());
   }
 
-  ndb->insert(chunks, metadata, document, doc_id, doc_version);
+  return ndb->insert(chunks, metadata, document, doc_id, doc_version);
 }
 
 void createSearchSubmodule(py::module_& module) {
@@ -342,7 +343,7 @@ void createSearchSubmodule(py::module_& module) {
                                                             "NeuralDB")
       .def("insert", &wrappedInsert, py::arg("chunks"),
            py::arg("metadata") = std::vector<py::dict>{}, py::arg("document"),
-           py::arg("doc_id"), py::arg("doc_verison") = std::nullopt)
+           py::arg("doc_id"), py::arg("doc_version") = std::nullopt)
       .def("query", &ndb::NeuralDB::query, py::arg("query"),
            py::arg("top_k") = 5)
       .def("rank", &ndb::NeuralDB::rank, py::arg("query"),
@@ -351,7 +352,8 @@ void createSearchSubmodule(py::module_& module) {
       .def("finetune", &ndb::NeuralDB::finetune, py::arg("queries"),
            py::arg("chunk_ids"))
       .def("associate", &ndb::NeuralDB::associate, py::arg("sources"),
-           py::arg("targets"), py::arg("strength") = 4)
+           // arg is 'associate_strength' for compatability with regular ndbv2
+           py::arg("targets"), py::arg("associate_strength") = 4)
       .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
            py::arg("doc_version"))
       .def("sources", &ndb::NeuralDB::sources);

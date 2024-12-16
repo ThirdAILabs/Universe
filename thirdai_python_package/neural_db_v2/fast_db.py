@@ -1,14 +1,16 @@
 import json
 import os
-from typing import Dict, List, Optional, Tuple, Union, Any
-from thirdai import search
-from .core.documents import Document
-from .documents import document_by_name
-from .core.types import Chunk, Score, ChunkId
-from .core.reranker import Reranker
-from .rerankers.pretrained_reranker import PretrainedReranker
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import pandas as pd
+from thirdai import search
+
+from .core.documents import Document
+from .core.reranker import Reranker
 from .core.supervised import SupervisedDataset
+from .core.types import Chunk, ChunkId, Score
+from .documents import document_by_name
+from .rerankers.pretrained_reranker import PretrainedReranker
 from .retrievers.finetunable_retriever import Splade
 
 
@@ -41,10 +43,13 @@ class FastDB:
 
             doc_version = None
             for batch in doc.chunks():
-                metadata = batch.metadata.to_dict(orient="records")
+                if batch.metadata is not None:
+                    metadata = batch.metadata.to_dict(orient="records")
+                else:
+                    metadata = [{}] * len(batch)
 
                 if self.splade:
-                    text = pd.Seriess([self.splade.augment(t) for t in batch.text])
+                    text = pd.Series([self.splade.augment(t) for t in batch.text])
                 else:
                     text = batch.text
 
@@ -142,7 +147,7 @@ class FastDB:
 
     def supervised_train(self, supervised: SupervisedDataset, **kwargs):
         for batch in supervised.samples():
-            self.retriever.finetune(
+            self.db.finetune(
                 queries=batch.query.to_list(), chunk_ids=batch.chunk_id.to_list()
             )
 
@@ -172,8 +177,8 @@ class FastDB:
         else:
             os.makedirs(path)
 
-        self.save_config(path, splade=self.splade is not None)
         self.db.save(path)
+        self.save_config(path, splade=self.splade is not None)
 
     @staticmethod
     def load(path: str):

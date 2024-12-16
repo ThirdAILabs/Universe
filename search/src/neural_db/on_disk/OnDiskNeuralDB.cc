@@ -128,7 +128,7 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
     throw std::invalid_argument("length of metadata and chunks must match");
   }
 
-  auto initTxn = newTxn();  // this will be committed when by the index
+  auto initTxn = newTxn();  // this will be committed by the index
   const ChunkId start_id =
       _chunk_index->reserveChunkIds(initTxn, chunks.size());
 
@@ -363,7 +363,7 @@ void OnDiskNeuralDB::finetune(
         "number of labels must match number of queries for finetuning.");
   }
 
-  auto initTxn = newTxn();  // this will be committed when by the index
+  auto initTxn = newTxn();  // this will be committed by the index
   const ChunkId start_id =
       _query_index->reserveChunkIds(initTxn, queries.size());
 
