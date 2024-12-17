@@ -33,7 +33,12 @@ class FastDB:
         else:
             self.splade = None
 
-    def insert(self, docs: List[Union[str, Document]], **kwargs) -> List[Any]:
+    def insert(
+        self,
+        docs: List[Union[str, Document]],
+        partition: Optional[str] = None,
+        **kwargs,
+    ) -> List[Any]:
         docs = [
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
@@ -60,6 +65,7 @@ class FastDB:
                     document=batch.document[0],  # This is repeated for all chunks.
                     doc_id=doc_id,
                     doc_version=doc_version,
+                    partition=partition,
                 )
                 # Ensures that if the doc has multiple batches they all have the same version.
                 doc_version = meta.doc_version
@@ -72,15 +78,18 @@ class FastDB:
         top_k: int = 5,
         constraints: dict = None,
         rerank: bool = False,
+        partition: Optional[str] = None,
         **kwargs,
     ) -> List[Tuple[Chunk, Score]]:
         if self.splade:
             query = self.splade.augment(query)
 
         if constraints:
-            results = self.db.rank(query=query, constraints=constraints, top_k=top_k)
+            results = self.db.rank(
+                query=query, constraints=constraints, top_k=top_k, partition=partition
+            )
         else:
-            results = self.db.query(query=query, top_k=top_k)
+            results = self.db.query(query=query, top_k=top_k, partition=partition)
 
         results = [
             (
@@ -108,10 +117,17 @@ class FastDB:
         top_k: int,
         constraints: dict = None,
         rerank: bool = False,
+        partition: Optional[str] = None,
         **kwargs,
     ) -> List[List[Tuple[Chunk, Score]]]:
         return [
-            self.search(q, top_k=top_k, constraints=constraints, rerank=rerank)
+            self.search(
+                q,
+                top_k=top_k,
+                constraints=constraints,
+                rerank=rerank,
+                partition=partition,
+            )
             for q in queries
         ]
 
@@ -139,16 +155,39 @@ class FastDB:
 
             self.db.delete_doc(doc_id=doc_id, doc_version=version)
 
-    def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
-        self.db.finetune(queries, [[chunk_id] for chunk_id in chunk_ids], **kwargs)
+    def upvote(
+        self,
+        queries: List[str],
+        chunk_ids: List[ChunkId],
+        partition: Optional[str] = None,
+        **kwargs,
+    ):
+        self.db.finetune(
+            queries,
+            [[chunk_id] for chunk_id in chunk_ids],
+            partition=partition,
+            **kwargs,
+        )
 
-    def associate(self, sources: List[str], targets: List[str], **kwargs):
-        self.db.associate(sources=sources, targets=targets, **kwargs)
+    def associate(
+        self,
+        sources: List[str],
+        targets: List[str],
+        partition: Optional[str] = None,
+        **kwargs,
+    ):
+        self.db.associate(
+            sources=sources, targets=targets, partition=partition, **kwargs
+        )
 
-    def supervised_train(self, supervised: SupervisedDataset, **kwargs):
+    def supervised_train(
+        self, supervised: SupervisedDataset, partition: Optional[str] = None, **kwargs
+    ):
         for batch in supervised.samples():
             self.db.finetune(
-                queries=batch.query.to_list(), chunk_ids=batch.chunk_id.to_list()
+                queries=batch.query.to_list(),
+                chunk_ids=batch.chunk_id.to_list(),
+                partition=partition,
             )
 
     def documents(self) -> List[dict]:

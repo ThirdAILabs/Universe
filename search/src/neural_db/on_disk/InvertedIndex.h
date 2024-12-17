@@ -22,7 +22,7 @@ class InvertedIndex {
   ChunkId reserveChunkIds(TxnPtr& txn, ChunkId n_ids);
 
   std::unordered_map<ChunkId, float> candidateSet(
-      const std::vector<HashedToken>& query_tokens,
+      const std::vector<std::string>& query_tokens,
       int64_t min_chunks_for_idf = 0);
 
   void deleteChunks(TxnPtr& txn, const std::unordered_set<ChunkId>& chunk_ids);
@@ -38,7 +38,7 @@ class InvertedIndex {
 
  private:
   std::vector<rocksdb::PinnableSlice> mapTokensToChunks(
-      const std::vector<HashedToken>& query_tokens);
+      const std::vector<std::string>& query_tokens);
 
   std::vector<std::pair<size_t, float>> rankByIdf(
       const std::vector<ChunkCountView>& token_to_chunks,

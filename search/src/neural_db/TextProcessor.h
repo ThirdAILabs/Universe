@@ -8,7 +8,7 @@ namespace thirdai::search::ndb {
 
 using HashedToken = uint32_t;
 
-using BatchTokens = std::unordered_map<HashedToken, std::vector<ChunkCount>>;
+using BatchTokens = std::unordered_map<std::string, std::vector<ChunkCount>>;
 
 class TextProcessor {
  public:
@@ -16,9 +16,12 @@ class TextProcessor {
       : _tokenizer(std::move(tokenizer)) {}
 
   std::pair<BatchTokens, std::vector<uint32_t>> process(
-      ChunkId start_id, const std::vector<std::string>& chunks) const;
+      ChunkId start_id, const std::vector<std::string>& chunks,
+      const std::optional<std::string>& partition) const;
 
-  std::vector<HashedToken> tokenize(const std::string& text) const;
+  std::vector<std::string> tokenize(
+      const std::string& text,
+      const std::optional<std::string>& partition) const;
 
  private:
   TokenizerPtr _tokenizer;

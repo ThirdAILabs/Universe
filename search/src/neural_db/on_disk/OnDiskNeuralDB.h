@@ -27,21 +27,24 @@ class OnDiskNeuralDB final : public NeuralDB {
   InsertMetadata insert(const std::vector<std::string>& chunks,
                         const std::vector<MetadataMap>& metadata,
                         const std::string& document, const DocId& doc_id,
-                        std::optional<uint32_t> doc_version) final;
+                        std::optional<uint32_t> doc_version,
+                        const std::optional<std::string>& partition) final;
 
-  std::vector<std::pair<Chunk, float>> query(const std::string& query,
-                                             uint32_t top_k) final;
+  std::vector<std::pair<Chunk, float>> query(
+      const std::string& query, uint32_t top_k,
+      const std::optional<std::string>& partition) final;
 
-  std::vector<std::pair<Chunk, float>> rank(const std::string& query,
-                                            const QueryConstraints& constraints,
-                                            uint32_t top_k) final;
+  std::vector<std::pair<Chunk, float>> rank(
+      const std::string& query, const QueryConstraints& constraints,
+      uint32_t top_k, const std::optional<std::string>& partition) final;
 
   void finetune(const std::vector<std::string>& queries,
-                const std::vector<std::vector<ChunkId>>& chunk_ids) final;
+                const std::vector<std::vector<ChunkId>>& chunk_ids,
+                const std::optional<std::string>& partition) final;
 
   void associate(const std::vector<std::string>& sources,
-                 const std::vector<std::string>& targets,
-                 uint32_t strength) final;
+                 const std::vector<std::string>& targets, uint32_t strength,
+                 const std::optional<std::string>& partition) final;
 
   void deleteDoc(const DocId& doc_id, uint32_t doc_version) final;
 
@@ -59,7 +62,8 @@ class OnDiskNeuralDB final : public NeuralDB {
  private:
   TxnPtr newTxn();
 
-  std::unordered_map<ChunkId, float> candidateSet(const std::string& query);
+  std::unordered_map<ChunkId, float> candidateSet(
+      const std::string& query, const std::optional<std::string>& partition);
 
   uint32_t getDocVersion(TxnPtr& txn, const std::string& doc_id);
 

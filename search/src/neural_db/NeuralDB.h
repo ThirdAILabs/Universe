@@ -31,25 +31,28 @@ struct InsertMetadata {
 
 class NeuralDB {
  public:
-  virtual InsertMetadata insert(const std::vector<std::string>& chunks,
-                                const std::vector<MetadataMap>& metadata,
-                                const std::string& document,
-                                const DocId& doc_id,
-                                std::optional<uint32_t> doc_version) = 0;
+  virtual InsertMetadata insert(
+      const std::vector<std::string>& chunks,
+      const std::vector<MetadataMap>& metadata, const std::string& document,
+      const DocId& doc_id, std::optional<uint32_t> doc_version,
+      const std::optional<std::string>& partition) = 0;
 
-  virtual std::vector<std::pair<Chunk, float>> query(const std::string& query,
-                                                     uint32_t top_k) = 0;
+  virtual std::vector<std::pair<Chunk, float>> query(
+      const std::string& query, uint32_t top_k,
+      const std::optional<std::string>& partition) = 0;
 
   virtual std::vector<std::pair<Chunk, float>> rank(
       const std::string& query, const QueryConstraints& constraints,
-      uint32_t top_k) = 0;
+      uint32_t top_k, const std::optional<std::string>& partition) = 0;
 
   virtual void finetune(const std::vector<std::string>& queries,
-                        const std::vector<std::vector<ChunkId>>& chunk_ids) = 0;
+                        const std::vector<std::vector<ChunkId>>& chunk_ids,
+                        const std::optional<std::string>& partition) = 0;
 
   virtual void associate(const std::vector<std::string>& sources,
                          const std::vector<std::string>& targets,
-                         uint32_t strength) = 0;
+                         uint32_t strength,
+                         const std::optional<std::string>& partition) = 0;
 
   virtual void deleteDoc(const DocId& doc_id, uint32_t doc_version) = 0;
 

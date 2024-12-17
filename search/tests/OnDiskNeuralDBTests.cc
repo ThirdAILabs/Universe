@@ -31,7 +31,7 @@ class OnDiskNeuralDbTests : public ::testing::Test {
 
 void checkNdbQuery(OnDiskNeuralDB& db, const std::string& query,
                    const std::vector<ChunkId>& expected_ids) {
-  auto results = db.query(query, expected_ids.size());
+  auto results = db.query(query, expected_ids.size(), std::nullopt);
 
   std::vector<ChunkId> returned_ids;
   returned_ids.reserve(results.size());
@@ -44,7 +44,7 @@ void checkNdbQuery(OnDiskNeuralDB& db, const std::string& query,
 void checkNdbRank(OnDiskNeuralDB& db, const std::string& query,
                   const QueryConstraints& constraints,
                   const std::vector<ChunkId>& expected_ids) {
-  auto results = db.rank(query, constraints, expected_ids.size());
+  auto results = db.rank(query, constraints, expected_ids.size(), std::nullopt);
 
   std::vector<ChunkId> returned_ids;
   returned_ids.reserve(results.size());
@@ -61,7 +61,7 @@ TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
             {{{"q1", MetadataValue::Bool(true)}},
              {{"q2", MetadataValue::Bool(true)}},
              {{"q1", MetadataValue::Bool(true)}}},
-            "doc_1", "id_1", std::nullopt);
+            "doc_1", "id_1", std::nullopt, std::nullopt);
 
   db.insert(
       {"x y z", "2 3", "c f", "f g d g", "c d e f"},
@@ -70,11 +70,11 @@ TEST_F(OnDiskNeuralDbTests, BasicRetrieval) {
        {{"q2", MetadataValue::Bool(true)}},
        {{"q2", MetadataValue::Bool(true)}},
        {{"q1", MetadataValue::Bool(true)}, {"q2", MetadataValue::Bool(true)}}},
-      "doc_2", "id_2", std::nullopt);
+      "doc_2", "id_2", std::nullopt, std::nullopt);
 
   db.insert({"f t q v w", "f m n o p", "f g h i", "c 7 8 9 10 11"},
             {{}, {}, {}, {{"q1", MetadataValue::Bool(true)}}}, "doc_3", "id_3",
-            std::nullopt);
+            std::nullopt, std::nullopt);
 
   // Docs 2 and 1 both contain the whole query, but doc 2 is shorter so it
   // ranks higher. Docs 6 and 8 both contain "c" but 6 is shorter so the
@@ -110,7 +110,7 @@ TEST_F(OnDiskNeuralDbTests, LessFrequentTokensScoreHigher) {
           "h j f e",  // 2 query tokens
           "w k z m",  // 0 query token
       },
-      {{}, {}, {}, {}, {}, {}, {}}, "doc", "id", std::nullopt);
+      {{}, {}, {}, {}, {}, {}, {}}, "doc", "id", std::nullopt, std::nullopt);
 
   // "a" and "b" occur 4 times, "h" occurs twice, and "j" occurs once.
   // No doc contains more than 2 tokens of the query. Since doc 6 contains "h"
@@ -124,7 +124,7 @@ TEST_F(OnDiskNeuralDbTests, RepeatedTokensInDocs) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert({"c a z a", "y r q z", "e c c m", "l b f h", "a b q d"},
-            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt);
+            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt, std::nullopt);
 
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
@@ -136,7 +136,7 @@ TEST_F(OnDiskNeuralDbTests, RepeatedTokensInQuery) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert({"y r q z", "c a z m", "e c c m", "a b q d", "l b f h q"},
-            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt);
+            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt, std::nullopt);
 
   // All of the tokens in the query occur in 2 docs. Doc 4 has tokens "a" and
   // "q" from the query, doc 2 has tokens "a m" from the query. Doc 4 scores
@@ -148,7 +148,7 @@ TEST_F(OnDiskNeuralDbTests, ShorterDocsScoreHigherWithSameTokens) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert({"x w z k", "e c a", "a b c d", "l b f h", "y r s"},
-            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt);
+            {{}, {}, {}, {}, {}}, "doc", "id", std::nullopt, std::nullopt);
   // Both docs 2 and 3 contain 2 query tokens, but they form a higher fraction
   // within 2 than 3.
   checkNdbQuery(db, {"c a q"}, {1, 2});
@@ -197,7 +197,7 @@ TEST_F(OnDiskNeuralDbTests, ConstrainedSearch) {
              {},
              {},
              {}},
-            "doc", "id", std::nullopt);
+            "doc", "id", std::nullopt, std::nullopt);
 
   checkNdbQuery(db, "a b c d e", {4, 3, 2, 1, 0});
 
@@ -232,12 +232,13 @@ TEST_F(OnDiskNeuralDbTests, ReturnsCorrectChunkData) {
                           {"type", MetadataValue::Str("second")}};
 
     db.insert({intString(i * 10, (i + 1) * 10), intString(i * 10, i * 10 + 5)},
-              {metadata1, metadata2}, document, doc_id, std::nullopt);
+              {metadata1, metadata2}, document, doc_id, std::nullopt,
+              std::nullopt);
   }
 
   for (int i = 0; i < 20; i++) {
     std::string query = intString(i * 10, (i + 1) * 10);
-    auto results = db.query(query, 5);
+    auto results = db.query(query, 5, std::nullopt);
     ASSERT_EQ(results.size(), 2);
 
     std::string doc_id = std::to_string(i);
@@ -265,8 +266,9 @@ TEST_F(OnDiskNeuralDbTests, ReturnsCorrectChunkData) {
     ASSERT_EQ(results[0].first.metadata.at("type").asStr(), "first");
     ASSERT_EQ(results[1].first.metadata.at("type").asStr(), "second");
 
-    auto constrained_results = db.rank(
-        query, {{"type", EqualTo::make(MetadataValue::Str("second"))}}, 5);
+    auto constrained_results =
+        db.rank(query, {{"type", EqualTo::make(MetadataValue::Str("second"))}},
+                5, std::nullopt);
     ASSERT_EQ(constrained_results.size(), 1);
     ASSERT_EQ(constrained_results[0].first.id, 2 * i + 1);
   }
@@ -291,7 +293,7 @@ TEST_F(OnDiskNeuralDbTests, Finetuning) {
   MetadataMap constraint{{"key", MetadataValue::Bool(true)}};
   db.insert({intString(0, 10), intString(0, 9), intString(0, 8),
              intString(10, 20), intString(20, 30), intString(30, 40)},
-            {{}, constraint, constraint, {}, {}, {}}, "doc", "id",
+            {{}, constraint, constraint, {}, {}, {}}, "doc", "id", std::nullopt,
             std::nullopt);
 
   QueryConstraints constraints = {
@@ -301,7 +303,7 @@ TEST_F(OnDiskNeuralDbTests, Finetuning) {
   checkNdbQuery(db, query, {0, 1, 2});
   checkNdbRank(db, query, constraints, {1, 2});
 
-  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}});
+  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}}, std::nullopt);
 
   checkNdbQuery(db, query, {2, 0, 1});
   checkNdbRank(db, query, constraints, {2, 1});
@@ -311,16 +313,16 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert({intString(0, 10), intString(30, 40)}, {{}, {}}, "doc_1", "11",
-            std::nullopt);
+            std::nullopt, std::nullopt);
   db.insert({intString(0, 8), intString(10, 20), intString(20, 30)},
-            {{}, {}, {}}, "doc_2", "22", std::nullopt);
-  db.insert({intString(0, 9)}, {{}}, "doc_3", "33", std::nullopt);
+            {{}, {}, {}}, "doc_2", "22", std::nullopt, std::nullopt);
+  db.insert({intString(0, 9)}, {{}}, "doc_3", "33", std::nullopt, std::nullopt);
 
   std::string query = intString(0, 10) + "x y z";
 
   checkNdbQuery(db, query, {0, 5, 2});
 
-  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}});
+  db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}}, std::nullopt);
 
   checkNdbQuery(db, query, {2, 0, 5});
 
@@ -337,7 +339,7 @@ TEST_F(OnDiskNeuralDbTests, DocVersioning) {
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 4; j++) {
       db.insert({"a chunk"}, {{}}, std::to_string(i) + "_" + std::to_string(j),
-                std::to_string(i), std::nullopt);
+                std::to_string(i), std::nullopt, std::nullopt);
     }
   }
 
@@ -381,7 +383,7 @@ std::vector<std::vector<std::pair<Chunk, float>>> queryDb(
     uint32_t topk) {
   std::vector<std::vector<std::pair<Chunk, float>>> results;
   for (const auto& query : queries) {
-    auto chunks = db.query(query, topk);
+    auto chunks = db.query(query, topk, std::nullopt);
     results.push_back(chunks);
   }
   return results;
@@ -436,7 +438,7 @@ TEST_F(OnDiskNeuralDbTests, SyntheticDataset) {
   OnDiskNeuralDB db(tmpDbName());
 
   db.insert(docs, std::vector<MetadataMap>(docs.size(), MetadataMap()), "doc",
-            "id", std::nullopt);
+            "id", std::nullopt, std::nullopt);
 
   const auto results = queryDb(db, queries, topk);
 
@@ -444,7 +446,8 @@ TEST_F(OnDiskNeuralDbTests, SyntheticDataset) {
     // i-th query goes to i-th doc.
     ASSERT_EQ(results[i][0].first.id, i);
     // Check single query vs batch query consistency.
-    compareChunkLists(db.query(queries[i], /*top_k=*/topk), results[i]);
+    compareChunkLists(db.query(queries[i], /*top_k=*/topk, std::nullopt),
+                      results[i]);
   }
 
   OnDiskNeuralDB incremental_db(tmpDbName());
@@ -458,7 +461,7 @@ TEST_F(OnDiskNeuralDbTests, SyntheticDataset) {
     incremental_db.insert({docs.begin() + start, docs.begin() + end},
                           std::vector<MetadataMap>(end - start, MetadataMap()),
                           "doc" + std::to_string(i), "id" + std::to_string(i),
-                          std::nullopt);
+                          std::nullopt, std::nullopt);
   }
 
   auto incremental_results = queryDb(incremental_db, queries, topk);
@@ -495,7 +498,7 @@ TEST_F(OnDiskNeuralDbTests, SaveLoad) {
 
   db.insert({docs.begin(), docs.begin() + n_docs / 2},
             std::vector<MetadataMap>(n_docs / 2, MetadataMap()), "doc", "id",
-            std::nullopt);
+            std::nullopt, std::nullopt);
 
   auto original_partial_results = queryDb(db, queries, 5);
 
@@ -504,7 +507,7 @@ TEST_F(OnDiskNeuralDbTests, SaveLoad) {
 
   db.insert({docs.begin() + n_docs / 2, docs.end()},
             std::vector<MetadataMap>(n_docs / 2, MetadataMap()), "doc", "id",
-            std::nullopt);
+            std::nullopt, std::nullopt);
 
   auto original_full_results = queryDb(db, queries, 5);
 
@@ -515,7 +518,7 @@ TEST_F(OnDiskNeuralDbTests, SaveLoad) {
 
   loaded_db->insert({docs.begin() + n_docs / 2, docs.end()},
                     std::vector<MetadataMap>(n_docs / 2, MetadataMap()), "doc",
-                    "id", std::nullopt);
+                    "id", std::nullopt, std::nullopt);
 
   auto loaded_full_results = queryDb(*loaded_db, queries, 5);
   compareQueryResults(original_full_results, loaded_full_results);

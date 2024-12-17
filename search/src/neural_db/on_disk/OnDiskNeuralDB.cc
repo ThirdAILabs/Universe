@@ -119,11 +119,11 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
   _query_to_chunks = std::make_unique<QueryToChunks>(_db, columns.at(10));
 }
 
-InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
-                                      const std::vector<MetadataMap>& metadata,
-                                      const std::string& document,
-                                      const DocId& doc_id,
-                                      std::optional<uint32_t> doc_version_opt) {
+InsertMetadata OnDiskNeuralDB::insert(
+    const std::vector<std::string>& chunks,
+    const std::vector<MetadataMap>& metadata, const std::string& document,
+    const DocId& doc_id, std::optional<uint32_t> doc_version_opt,
+    const std::optional<std::string>& partition) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
   }
@@ -132,7 +132,8 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
   const ChunkId start_id =
       _chunk_index->reserveChunkIds(initTxn, chunks.size());
 
-  auto [token_counts, chunk_lens] = _text_processor.process(start_id, chunks);
+  auto [token_counts, chunk_lens] =
+      _text_processor.process(start_id, chunks, partition);
 
   auto txn = newTxn();
 
@@ -226,8 +227,8 @@ std::vector<std::pair<ChunkId, float>> topkCandidates(
 }
 
 std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
-    const std::string& query) {
-  const auto query_tokens = _text_processor.tokenize(query);
+    const std::string& query, const std::optional<std::string>& partition) {
+  const auto query_tokens = _text_processor.tokenize(query, partition);
 
   auto candidate_set = _chunk_index->candidateSet(query_tokens);
 
@@ -253,8 +254,9 @@ std::unordered_map<ChunkId, float> OnDiskNeuralDB::candidateSet(
 }
 
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::query(
-    const std::string& query, uint32_t top_k) {
-  auto candidate_set = candidateSet(query);
+    const std::string& query, uint32_t top_k,
+    const std::optional<std::string>& partition) {
+  auto candidate_set = candidateSet(query, partition);
 
   const auto top_candidates = topkCandidates(candidate_set, top_k);
 
@@ -297,8 +299,8 @@ std::vector<std::pair<ChunkId, float>> sortCandidates(
 
 std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
     const std::string& query, const QueryConstraints& constraints,
-    uint32_t top_k) {
-  auto candidate_set = candidateSet(query);
+    uint32_t top_k, const std::optional<std::string>& partition) {
+  auto candidate_set = candidateSet(query, partition);
 
   auto sorted_candidates = sortCandidates(candidate_set);
 
@@ -357,7 +359,8 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
 
 void OnDiskNeuralDB::finetune(
     const std::vector<std::string>& queries,
-    const std::vector<std::vector<ChunkId>>& chunk_ids) {
+    const std::vector<std::vector<ChunkId>>& chunk_ids,
+    const std::optional<std::string>& partition) {
   if (chunk_ids.size() != queries.size()) {
     throw std::invalid_argument(
         "number of labels must match number of queries for finetuning.");
@@ -367,7 +370,8 @@ void OnDiskNeuralDB::finetune(
   const ChunkId start_id =
       _query_index->reserveChunkIds(initTxn, queries.size());
 
-  auto [token_counts, chunk_lens] = _text_processor.process(start_id, queries);
+  auto [token_counts, chunk_lens] =
+      _text_processor.process(start_id, queries, partition);
 
   auto txn = newTxn();
 
@@ -383,7 +387,8 @@ void OnDiskNeuralDB::finetune(
 
 void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
                                const std::vector<std::string>& targets,
-                               uint32_t strength) {
+                               uint32_t strength,
+                               const std::optional<std::string>& partition) {
   if (sources.size() != targets.size()) {
     throw std::invalid_argument(
         "number of sources must match number of targets for associate.");
@@ -393,7 +398,7 @@ void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
   labels.reserve(sources.size());
 
   for (const auto& target : targets) {
-    auto results = query(target, strength);
+    auto results = query(target, strength, partition);
     std::vector<ChunkId> ids;
     ids.reserve(results.size());
     for (const auto& res : results) {
@@ -402,7 +407,7 @@ void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
     labels.push_back(std::move(ids));
   }
 
-  finetune(sources, labels);
+  finetune(sources, labels, partition);
 }
 
 void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, uint32_t doc_version) {

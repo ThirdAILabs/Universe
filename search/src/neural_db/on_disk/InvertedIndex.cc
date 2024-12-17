@@ -44,11 +44,9 @@ void InvertedIndex::insert(TxnPtr& txn, ChunkId start_id,
   }
 
   for (const auto& [token, chunk_counts] : token_counts) {
-    const HashedToken token_value = token;
-    const auto token_key = asSlice<HashedToken>(&token_value);
     const ChunkCountView view(chunk_counts);
 
-    auto status = txn->Merge(_token_index, token_key, view.slice());
+    auto status = txn->Merge(_token_index, token, view.slice());
     if (!status.ok()) {
       throw RocksdbError(status, "inserting doc chunks");
     }
@@ -91,7 +89,7 @@ ChunkId InvertedIndex::reserveChunkIds(TxnPtr& txn, ChunkId n_ids) {
 }
 
 std::unordered_map<ChunkId, float> InvertedIndex::candidateSet(
-    const std::vector<HashedToken>& query_tokens, int64_t min_chunks_for_idf) {
+    const std::vector<std::string>& query_tokens, int64_t min_chunks_for_idf) {
   const auto token_to_chunk_bytes = mapTokensToChunks(query_tokens);
 
   std::vector<ChunkCountView> token_to_chunks;
@@ -142,12 +140,11 @@ std::unordered_map<ChunkId, float> InvertedIndex::candidateSet(
 }
 
 std::vector<rocksdb::PinnableSlice> InvertedIndex::mapTokensToChunks(
-    const std::vector<HashedToken>& query_tokens) {
+    const std::vector<std::string>& query_tokens) {
   std::vector<rocksdb::Slice> keys;
   keys.reserve(query_tokens.size());
-
-  for (const HashedToken& token : query_tokens) {
-    keys.emplace_back(asSlice<HashedToken>(&token));
+  for (const auto& token : query_tokens) {
+    keys.emplace_back(token);
   }
   std::vector<rocksdb::PinnableSlice> values(keys.size());
   std::vector<rocksdb::Status> statuses(keys.size());
