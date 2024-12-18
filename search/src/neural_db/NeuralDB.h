@@ -19,14 +19,15 @@ struct Source {
 struct InsertMetadata {
   DocId doc_id;
   uint32_t doc_version;
-  ChunkId start;
-  ChunkId end;
+  ChunkId start_id;
+  ChunkId end_id;
 
-  InsertMetadata(DocId doc_id, uint32_t doc_version, ChunkId start, ChunkId end)
+  InsertMetadata(DocId doc_id, uint32_t doc_version, ChunkId start_id,
+                 ChunkId end_id)
       : doc_id(std::move(doc_id)),
         doc_version(doc_version),
-        start(start),
-        end(end) {}
+        start_id(start_id),
+        end_id(end_id) {}
 };
 
 class NeuralDB {

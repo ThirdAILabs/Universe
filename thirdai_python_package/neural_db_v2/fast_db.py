@@ -12,10 +12,17 @@ from .core.types import Chunk, ChunkId, Score
 from .documents import document_by_name
 from .rerankers.pretrained_reranker import PretrainedReranker
 from .retrievers.finetunable_retriever import Splade
+from .core.types import InsertedDocMetadata
 
 
 class FastDB:
-    def __init__(self, save_path: str, splade: bool = False, **kwargs):
+    def __init__(
+        self,
+        save_path: str,
+        splade: bool = False,
+        preload_reranker: bool = False,
+        **kwargs,
+    ):
         os.makedirs(save_path, exist_ok=True)
 
         if os.path.exists(self.config_path(save_path)):
@@ -26,22 +33,32 @@ class FastDB:
 
         self.db = search.OnDiskNeuralDB(save_path=save_path)
 
-        self.reranker: Optional[Reranker] = None
+        if preload_reranker:
+            self.reranker: Optional[Reranker] = PretrainedReranker()
+        else:
+            self.reranker: Optional[Reranker] = None
 
         if splade:
             self.splade = Splade()
         else:
             self.splade = None
 
-    def insert(self, docs: List[Union[str, Document]], **kwargs) -> List[Any]:
+    def insert(
+        self, docs: List[Union[str, Document]], **kwargs
+    ) -> List[InsertedDocMetadata]:
         docs = [
             doc if isinstance(doc, Document) else document_by_name(doc) for doc in docs
         ]
+
+        insert_metadata = []
 
         for doc in docs:
             doc_id = doc.doc_id()
 
             doc_version = None
+
+            doc_chunks = []
+
             for batch in doc.chunks():
                 if batch.metadata is not None:
                     metadata = batch.metadata.to_dict(orient="records")
@@ -64,7 +81,15 @@ class FastDB:
                 # Ensures that if the doc has multiple batches they all have the same version.
                 doc_version = meta.doc_version
 
-        return []
+                doc_chunks.extend(range(meta.start_id, meta.end_id))
+
+            insert_metadata.append(
+                InsertedDocMetadata(
+                    doc_id=doc_id, doc_version=doc_version, chunk_ids=doc_chunks
+                )
+            )
+
+        return insert_metadata
 
     def search(
         self,

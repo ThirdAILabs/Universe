@@ -298,8 +298,8 @@ void createSearchSubmodule(py::module_& module) {
   py::class_<ndb::InsertMetadata>(search_submodule, "InsertMetadata")
       .def_readonly("doc_id", &ndb::InsertMetadata::doc_id)
       .def_readonly("doc_version", &ndb::InsertMetadata::doc_version)
-      .def_readonly("start", &ndb::InsertMetadata::start)
-      .def_readonly("end", &ndb::InsertMetadata::end);
+      .def_readonly("start_id", &ndb::InsertMetadata::start_id)
+      .def_readonly("end_id", &ndb::InsertMetadata::end_id);
 
   py::class_<ndb::Source>(search_submodule, "Source")
       .def_readonly("document", &ndb::Source::document)
