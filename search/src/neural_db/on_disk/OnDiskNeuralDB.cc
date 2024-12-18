@@ -44,6 +44,39 @@ std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
   return doc_id + "_" + std::to_string(doc_version);
 }
 
+rocksdb::Options dbOptions() {
+  rocksdb::Options options;
+  options.create_if_missing = true;
+  options.create_missing_column_families = true;
+
+  return options;
+}
+
+std::vector<rocksdb::ColumnFamilyDescriptor> columnFamilies() {
+  rocksdb::ColumnFamilyOptions counter_options;
+  counter_options.merge_operator = std::make_shared<IncrementCounter>();
+
+  rocksdb::ColumnFamilyOptions concat_counts_options;
+  concat_counts_options.merge_operator = std::make_shared<ConcatChunkCounts>();
+
+  rocksdb::ColumnFamilyOptions concat_options;
+  concat_options.merge_operator = std::make_shared<Concat>();
+
+  return {
+      {rocksdb::kDefaultColumnFamilyName, {}},
+      {"chunk_counters", counter_options},
+      {"chunk_index", concat_counts_options},
+      {"chunk_data", {}},
+      {"chunk_metadata", {}},
+      {"doc_chunks", concat_options},
+      {"doc_version", {}},
+      {"doc_id_to_name", {}},
+      {"query_counters", counter_options},
+      {"query_index", concat_counts_options},
+      {"id_map", concat_options},
+  };
+}
+
 OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
                                const IndexConfig& config, bool read_only)
     : _save_path(save_path), _text_processor(config.tokenizer) {
@@ -60,43 +93,17 @@ OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
     ar::serialize(metadata, metadata_file);
   }
 
-  rocksdb::Options options;
-  options.create_if_missing = true;
-  options.create_missing_column_families = true;
-
-  rocksdb::ColumnFamilyOptions counter_options;
-  counter_options.merge_operator = std::make_shared<IncrementCounter>();
-
-  rocksdb::ColumnFamilyOptions concat_counts_options;
-  concat_counts_options.merge_operator = std::make_shared<ConcatChunkCounts>();
-
-  rocksdb::ColumnFamilyOptions concat_options;
-  concat_options.merge_operator = std::make_shared<Concat>();
-
-  std::vector<rocksdb::ColumnFamilyDescriptor> column_families = {
-      {rocksdb::kDefaultColumnFamilyName, {}},
-      {"chunk_counters", counter_options},
-      {"chunk_index", concat_counts_options},
-      {"chunk_data", {}},
-      {"chunk_metadata", {}},
-      {"doc_chunks", concat_options},
-      {"doc_version", {}},
-      {"doc_id_to_name", {}},
-      {"query_counters", counter_options},
-      {"query_index", concat_counts_options},
-      {"id_map", concat_options}};
-
   std::vector<rocksdb::ColumnFamilyHandle*> columns;
 
   rocksdb::Status open_status;
   if (!read_only) {
     open_status = rocksdb::TransactionDB::Open(
-        options, rocksdb::TransactionDBOptions(), db_path, column_families,
+        dbOptions(), rocksdb::TransactionDBOptions(), db_path, columnFamilies(),
         &columns, &_transaction_db);
     _db = _transaction_db;
   } else {
-    open_status = rocksdb::DB::OpenForReadOnly(options, db_path,
-                                               column_families, &columns, &_db);
+    open_status = rocksdb::DB::OpenForReadOnly(
+        dbOptions(), db_path, columnFamilies(), &columns, &_db);
     _transaction_db = nullptr;
   }
   if (!open_status.ok()) {
@@ -134,6 +141,15 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
 
   auto [token_counts, chunk_lens] = _text_processor.process(start_id, chunks);
 
+  /**
+   * We use 2 transactions becuase we need the reserved chunk ids to do the
+   * initial text processing/frequency counting, but it its not ideal to have a
+   * transaction open while doing that processing. This is still safe because if
+   * the second transaction fails the only risk is those chunk_ids are lost,
+   * which is not a big concern. Additionally, reserving chunk ids are the main
+   * place where we could have transaction conflicts (except for doc versions)
+   * so it is unlikely for the second transaction to fail with a conflict.
+   */
   auto txn = newTxn();
 
   uint32_t doc_version =
@@ -307,12 +323,9 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
   std::vector<MetadataMap> topk_metadata;
 
   const size_t batch_size = 20;
-  for (size_t start = 0; start < sorted_candidates.size();
+  for (size_t start = 0;
+       start < sorted_candidates.size() && topk_chunk_ids.size() < top_k;
        start += batch_size) {
-    if (topk_chunk_ids.size() == top_k) {
-      break;
-    }
-
     size_t end = std::min(start + batch_size, sorted_candidates.size());
 
     std::vector<ChunkId> chunk_ids(end - start);
@@ -363,6 +376,7 @@ void OnDiskNeuralDB::finetune(
         "number of labels must match number of queries for finetuning.");
   }
 
+  // See comment above for why we have 2 transactions.
   auto initTxn = newTxn();  // this will be committed by the index
   const ChunkId start_id =
       _query_index->reserveChunkIds(initTxn, queries.size());

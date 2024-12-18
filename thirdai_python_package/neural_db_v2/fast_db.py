@@ -8,11 +8,10 @@ from thirdai import search
 from .core.documents import Document
 from .core.reranker import Reranker
 from .core.supervised import SupervisedDataset
-from .core.types import Chunk, ChunkId, Score
+from .core.types import Chunk, ChunkId, InsertedDocMetadata, Score
 from .documents import document_by_name
 from .rerankers.pretrained_reranker import PretrainedReranker
 from .retrievers.finetunable_retriever import Splade
-from .core.types import InsertedDocMetadata
 
 
 class FastDB:

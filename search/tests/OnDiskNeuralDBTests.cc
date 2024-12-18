@@ -1,5 +1,7 @@
 #include "InvertedIndexTestUtils.h"
 #include <gtest/gtest.h>
+#include <search/src/neural_db/Constraints.h>
+#include <search/src/neural_db/Errors.h>
 #include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
 #include <algorithm>
 #include <filesystem>
@@ -209,6 +211,12 @@ TEST_F(OnDiskNeuralDbTests, ConstrainedSearch) {
   };
 
   checkNdbRank(db, "a b c d e", constraints, {0});
+
+  // No constraints should match because type is wrong
+  auto results =
+      db.rank("a b c d e",
+              {{"k1", LessThan::make(MetadataValue::Str("wrong type"))}}, 10);
+  ASSERT_EQ(results.size(), 0);
 }
 
 std::string intString(int start, int end) {
@@ -329,6 +337,31 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
 
   db.deleteDoc("22", 1);
   checkNdbQuery(db, query, {5});
+}
+
+TEST_F(OnDiskNeuralDbTests, DeleteInvalidDoc) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert({intString(0, 10), intString(30, 40)}, {{}, {}}, "doc_1", "11",
+            std::nullopt);
+
+  bool missing_doc_exception = false;
+  try {
+    db.deleteDoc("doc_2", 0);
+  } catch (const NeuralDbError& e) {
+    ASSERT_EQ(e.code(), ErrorCode::DocNotFound);
+    missing_doc_exception = true;
+  }
+  ASSERT_TRUE(missing_doc_exception);
+
+  bool wrong_version_exception = false;
+  try {
+    db.deleteDoc("11", 2);
+  } catch (const NeuralDbError& e) {
+    ASSERT_EQ(e.code(), ErrorCode::DocNotFound);
+    wrong_version_exception = true;
+  }
+  ASSERT_TRUE(wrong_version_exception);
 }
 
 TEST_F(OnDiskNeuralDbTests, DocVersioning) {

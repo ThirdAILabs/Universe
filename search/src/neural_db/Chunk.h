@@ -7,11 +7,6 @@ namespace thirdai::search::ndb {
 using ChunkId = uint64_t;
 using DocId = std::string;
 
-struct NewChunk {
-  std::string text;
-  MetadataMap metadata;
-};
-
 struct Chunk {
   ChunkId id;
   std::string text;
@@ -58,8 +53,15 @@ struct ChunkCount {
   ChunkCount(ChunkId chunk_id, uint32_t count)
       : chunk_id(chunk_id), count(count) {}
 
+  /**
+   * We use 40 bits for the id and 24 bits for the count so that the entire
+   * struct fits within a word. This is prefered to uint32_t for each because it
+   * allows for more chunk ids, and still supports counts up to 16 million.
+   */
   ChunkId chunk_id : 40;
   uint32_t count : 24;
 };
+
+static_assert(sizeof(ChunkCount) == 8, "ChunkCount should be 8 bytes.");
 
 }  // namespace thirdai::search::ndb
