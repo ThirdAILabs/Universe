@@ -14,8 +14,7 @@ class PDF(Document):
         self,
         path: str,
         version: str = "v1",
-        min_chunk_words: int = 100,
-        max_chunk_words: int = 200,
+        chunk_size: int = 100,
         stride: int = 40,
         emphasize_first_words: int = 0,
         ignore_header_footer: bool = True,
@@ -32,15 +31,9 @@ class PDF(Document):
         if version not in ["v1", "v2"]:
             raise ValueError("Invalid version, must be either 'v1' or 'v2'.")
 
-        assert (
-            min_chunk_words <= max_chunk_words
-        ), "min_chunk_words should be less than or equal to max_chunk_words"
-        assert stride != 0, "stride cannot be 0"
-
         self.version = version
         self.path = path
-        self.min_chunk_words = min_chunk_words
-        self.max_chunk_words = max_chunk_words
+        self.chunk_size = chunk_size
         self.stride = stride
         self.emphasize_first_words = emphasize_first_words
         self.ignore_header_footer = ignore_header_footer
@@ -56,9 +49,8 @@ class PDF(Document):
             parsed_chunks = pdf_parse_v1(self.path)
         else:
             parsed_chunks = pdf_parse_v2(
-                filename=self.path,
-                min_chunk_words=self.min_chunk_words,
-                max_chunk_words=self.max_chunk_words,
+                filepath=self.path,
+                chunk_words=self.chunk_size,
                 stride_words=self.stride,
                 emphasize_first_n_words=self.emphasize_first_words,
                 ignore_header_footer=self.ignore_header_footer,
