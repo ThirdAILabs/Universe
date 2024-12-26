@@ -1,11 +1,19 @@
+import copy
+import io
+import re
 from collections import Counter, defaultdict
 
 import fitz
 import numpy as np
 import pandas as pd
 import pdfplumber
+import pytesseract
 import unidecode
+from nltk import sent_tokenize
+from pdf_parse import BlockType
+from PIL import Image, ImageFilter
 from sklearn.cluster import DBSCAN
+from tqdm import tqdm
 
 
 def get_fitz_blocks(filename):
@@ -19,8 +27,78 @@ def get_fitz_blocks(filename):
     return blocks
 
 
+def extract_text_from_image(block):
+    # load image
+    byte_image = block["image"]
+    image = Image.open(io.BytesIO(byte_image))
+
+    # preprocessing
+    image = image.resize(image.size, Image.LANCZOS)
+    image = image.filter(ImageFilter.MedianFilter(size=3))
+
+    # Extracting text
+    text = pytesseract.image_to_string()
+    return text
+
+
 def remove_images(blocks):
-    return [block for block in blocks if block["type"] == 0]
+    return [block for block in blocks if block["type"] == BlockType.Text]
+
+
+def process_image_blocks(blocks, parallelize: bool = True):
+    # filter out the image blocks
+    image_blocks = list(filter(lambda block: block["type"] == BlockType.Image, blocks))
+    image_blocks = copy.deepcopy(image_blocks)
+
+    if not parallelize:
+        for block in image_blocks:
+            # Extracting text from image
+            extracted_text = extract_text_from_image(block)
+            # post-processing: Refactoring so that these image blocks can also be processed as text box
+            block["lines"] = [
+                {
+                    "spans": [
+                        {
+                            "size": block["size"],
+                            "bbox": block["bbox"],
+                            "text": extracted_text.strip(),
+                        }
+                    ]
+                }
+            ]
+
+            # modiyfing this block so that it will get processed as text-block
+    else:
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        with ProcessPoolExecutor() as executor, tqdm(
+            total=len(image_blocks), desc=f"progress: ", leave=False
+        ) as pbar:
+            futures = []
+            # Submit arguments to the executor
+            for block in image_blocks:
+                future = executor.submit(extract_text_from_image, block)
+                future.add_done_callback(lambda p: pbar.update())
+                futures.append((block, future))
+
+            # Wait for all arguments to complete and handle exceptions
+            for block, future in as_completed(futures):
+                extracted_text = future.result()
+
+                # post-processing: Refactoring so that these image blocks can also be processed as text box
+                block["lines"] = [
+                    {
+                        "spans": [
+                            {
+                                "size": block["size"],
+                                "bbox": block["bbox"],
+                                "text": extracted_text.strip(),
+                            }
+                        ]
+                    }
+                ]
+
+    return image_blocks
 
 
 def get_text_len(block):
@@ -49,8 +127,9 @@ def remove_header_footer(blocks):
 def remove_nonstandard_orientation(blocks):
     orient_to_count = defaultdict(lambda: 0)
     for block in blocks:
-        for line in block["lines"]:
-            orient_to_count[line["dir"]] += 1
+        if block["type"] == BlockType.Text:
+            for line in block["lines"]:
+                orient_to_count[line["dir"]] += 1
     #
     sorted_count_orient_pairs = sorted(
         [(count, orient) for orient, count in orient_to_count.items()]
@@ -85,6 +164,7 @@ def strip_spaces(blocks):
             ],
         }
         for block in blocks
+        if block["type"] == BlockType.Text
     ]
 
 
@@ -101,6 +181,7 @@ def remove_empty_spans(blocks):
             ],
         }
         for block in blocks
+        if block["type"] == BlockType.Text
     ]
 
 
@@ -108,6 +189,7 @@ def remove_empty_lines(blocks):
     return [
         {**block, "lines": [line for line in block["lines"] if len(line["spans"]) > 0]}
         for block in blocks
+        if block["type"] == BlockType.Text
     ]
 
 
@@ -120,7 +202,7 @@ def remove_empty_blocks(blocks):
 
 def get_lines(blocks):
     return [
-        {**line, "page_num": block["page_num"]}
+        {**line, "page_num": block["page_num"], "from_block_type": block["type"]}
         for block in blocks
         for line in block["lines"]
     ]
@@ -151,12 +233,17 @@ def get_lines_with_first_n_words(lines, n):
 def estimate_section_titles(lines):
     text_size_freq = defaultdict(int)
     for line in lines:
-        for span in line["spans"]:
-            text_size_freq[int(span["size"])] += 1
+        # Don't consider text from image_block while estimating section title
+        if line["from_block_type"] == BlockType.Text:
+            for span in line["spans"]:
+                text_size_freq[int(span["size"])] += 1
     most_common_text_size = sorted(text_size_freq.items(), key=lambda x: x[1])[-1][0]
     current_section_title = ""
     for i in range(len(lines)):
-        if lines[i]["spans"][0]["size"] > most_common_text_size:
+        if (
+            lines[i]["from_block_type"] == BlockType.Text
+            and lines[i]["spans"][0]["size"] > most_common_text_size
+        ):
             current_section_title = lines[i]["text"]
         lines[i]["section_title"] = current_section_title
     return lines
@@ -211,7 +298,9 @@ def process_tables(filename, lines):
     return new_lines
 
 
-def get_chunks_from_lines(lines, chunk_words, stride_words):
+def get_chunks_from_lines(
+    lines, min_chunk_words: int, max_chunk_words: int, stride_words: int
+):
     chunk_start = 0
     chunks = []
     chunk_boxes = []
@@ -220,7 +309,7 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
     while chunk_start < len(lines):
         chunk_end = chunk_start
         chunk_size = 0
-        while chunk_size < chunk_words and chunk_end < len(lines):
+        while chunk_size < min_chunk_words and chunk_end < len(lines):
             chunk_size += lines[chunk_end]["word_count"]
             chunk_end += 1
         stride_end = chunk_start
@@ -228,12 +317,31 @@ def get_chunks_from_lines(lines, chunk_words, stride_words):
         while stride_size < stride_words and stride_end < len(lines):
             stride_size += lines[stride_end]["word_count"]
             stride_end += 1
-        # combine the chunks
-        chunks.append(" ".join(line["text"] for line in lines[chunk_start:chunk_end]))
-        # metadata for highlighting
+
+        all_lines = " ".join(line["text"] for line in lines[chunk_start:chunk_end])
+
+        # This would be helpful if the chunk_size shoots from (< min_chunk_words) to (> max_chunk_words) which would be the case when the entire page or large part of a pdf's page is image containing text.
+        split_count = 0
+        sentences = sent_tokenize(all_lines)
+        idx = 0
+        while idx < len(sentences):
+            joined_sentences = []
+            while joined_sentences.count(" ") + 1 < max_chunk_words:
+                joined_sentences.append(sentences[idx])
+                idx += 1
+
+            # add it to chunks
+            chunks.append(" ".join(joined_sentences))
+            split_count += 1  # This 'split count' will be useful when a large text from image is getting splitted and bbox of each entry would be same.
+
+        # TODO(anyone): find a way to adjust the bbox when images are present so that highlighting would make sense.
+        # When a PDF page would be text-blocks only, the highlighting would be normal (As 'lines' are very small text chunks, so only one entry will be added in the list 'chunks')
+        # When a PDF page contains images containing lot of text, this splitting would ensure that chunks are withing 'within'
         chunk_boxes.append(
             [(line["page_num"], line["bbox"]) for line in lines[chunk_start:chunk_end]]
+            * split_count
         )
+
         # combine unique section titles
         if "section_title" in lines[0]:
             unique_section_titles = set(
@@ -258,23 +366,27 @@ def clean_encoding(text):
 
 
 def get_chunks(
-    filename,
-    chunk_words,
-    stride_words,
-    emphasize_first_n_words,
-    ignore_header_footer,
-    ignore_nonstandard_orientation,
-    emphasize_section_titles,
-    table_parsing,
+    filename: str,
+    min_chunk_words: int,
+    max_chunk_words: int,
+    stride_words: int,
+    emphasize_first_n_words: int,
+    ignore_header_footer: bool,
+    ignore_nonstandard_orientation: bool,
+    emphasize_section_titles: bool,
+    table_parsing: bool,
 ):
     blocks = get_fitz_blocks(filename)
-    blocks = remove_images(blocks)
+    image_blocks = process_image_blocks(blocks)
+    text_blocks = remove_images(blocks)
     if ignore_header_footer:
-        blocks = remove_header_footer(blocks)
+        text_blocks = remove_header_footer(text_blocks)
     if ignore_nonstandard_orientation:
-        blocks = remove_nonstandard_orientation(blocks)
-    blocks = remove_empty_blocks(blocks)
-    lines = get_lines(blocks)
+        text_blocks = remove_nonstandard_orientation(text_blocks)
+    text_blocks = remove_empty_blocks(text_blocks)
+    lines = get_lines(
+        sorted(text_blocks + image_blocks, key=lambda block: block["block_number"])
+    )
     lines = set_line_text(lines)
     if emphasize_section_titles:
         lines = estimate_section_titles(lines)
@@ -283,7 +395,7 @@ def get_chunks(
     lines = set_line_word_counts(lines)
     first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
     chunks, chunk_boxes, display, section_titles = get_chunks_from_lines(
-        lines, chunk_words, stride_words
+        lines, min_chunk_words, max_chunk_words, stride_words
     )
     chunks = [clean_encoding(text) for text in chunks]
     section_titles = [clean_encoding(section_title) for section_title in section_titles]
@@ -291,15 +403,16 @@ def get_chunks(
 
 
 def make_df(
-    filename,
-    chunk_words,
-    stride_words,
-    emphasize_first_n_words,
-    ignore_header_footer,
-    ignore_nonstandard_orientation,
-    doc_keywords,
-    emphasize_section_titles,
-    table_parsing,
+    filename: str,
+    min_chunk_words: int,
+    max_chunk_words: int,
+    stride_words: int,
+    emphasize_first_n_words: int,
+    ignore_header_footer: bool,
+    ignore_nonstandard_orientation: bool,
+    doc_keywords: str,
+    emphasize_section_titles: bool,
+    table_parsing: bool,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -312,7 +425,8 @@ def make_df(
     """
     chunks, chunk_boxes, display, first_n_words, section_titles = get_chunks(
         filename,
-        chunk_words,
+        min_chunk_words,
+        max_chunk_words,
         stride_words,
         emphasize_first_n_words,
         ignore_header_footer,
