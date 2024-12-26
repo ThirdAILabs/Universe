@@ -73,8 +73,13 @@ def process_pdf_file(filepath: str):
 
         # Get text in fitz block format
         textPages = get_fitz_textPages(file_path=filepath, method="blocks")
-        for page_no, page in textPages.items():
-            blocks = [Block(block) for block in page]
+        num_pages = max(textPages.keys())
+        for page_no in range(num_pages):
+            # sorting blocks based on block number
+            blocks = sorted(
+                [Block(block) for block in textPages[page_no]],
+                key=lambda block: block.block_no,
+            )
             for block in blocks:
                 current_block_nums = {}
                 current_block_nums[page_no] = [block.block_no]
