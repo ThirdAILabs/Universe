@@ -13,7 +13,7 @@ from .utils import (
     ATTACH_N_WORD_THRESHOLD,
     chunk_text,
     ensure_valid_encoding,
-    get_fitz_textPages,
+    get_fitz_text_pages,
 )
 
 # TODO: Remove senttokenize
@@ -72,12 +72,15 @@ def process_pdf_file(filepath: str):
         paras = []
 
         # Get text in fitz block format
-        textPages = get_fitz_textPages(file_path=filepath, method="blocks")
-        num_pages = max(textPages.keys())
-        for page_no in range(num_pages):
+        text_pages = get_fitz_text_pages(file_path=filepath, method="blocks")
+
+        # sorting to get pages in serial order
+        page_numbers = sorted(text_pages.keys())
+
+        for page_no in page_numbers:
             # sorting blocks based on block number
             blocks = sorted(
-                [Block(block) for block in textPages[page_no]],
+                [Block(block) for block in text_pages[page_no]],
                 key=lambda block: block.block_no,
             )
             for block in blocks:
@@ -178,16 +181,21 @@ def create_train_df(elements):
     return df
 
 
-def highlighted_doc(source, columns):
+def highlighted_doc(source: str, columns: dict):
     if not "highlight" in columns:
         return None
     highlight = eval(columns["highlight"])
+
+    # only extract from the required pages.
+    text_pages = get_fitz_text_pages(
+        file_path=source, method="blocks", page_numbers=highlight.keys()
+    )
+
     doc = fitz.open(source)
-    for key, val in highlight.items():
-        page = doc[key]
-        blocks = page.get_text("blocks")
-        for i, b in enumerate(blocks):
-            if i in val:
-                rect = fitz.Rect(b[:4])
-                page.add_highlight_annot(rect)
+    for page_no, blocks_to_highlight in highlight.items():
+        page_blocks = [Block(block) for block in text_pages[page_no]]
+        for block in page_blocks:
+            if blocks_to_highlight in block.block_no:
+                rect = fitz.Rect(x0=block.x0, y0=block.y0, x1=block.x1, y1=block.y1)
+                doc[page_no].add_highlight_annot(rect)
     return doc

@@ -7,13 +7,13 @@ import pdfplumber
 import unidecode
 from sklearn.cluster import DBSCAN
 
-from .utils import get_fitz_textPages
+from .utils import get_fitz_text_pages
 
 
 def get_fitz_blocks(filepath):
-    textPages = get_fitz_textPages(filepath, method="dict")
+    text_pages = get_fitz_text_pages(filepath, method="dict")
     blocks = []
-    for page_num, text_page in textPages.items():
+    for page_num, text_page in text_pages.items():
         text_page_blocks = text_page["blocks"]
         blocks.extend({**block, "page_num": page_num} for block in text_page_blocks)
     return sorted(blocks, key=lambda block: (block["page_num"], block["number"]))

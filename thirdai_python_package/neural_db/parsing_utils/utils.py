@@ -1,11 +1,11 @@
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Iterable, Optional
 
 import fitz
 import unidecode
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize, word_tokenize
-from tqdm import tqdm
 
 ATTACH_N_WORD_THRESHOLD = 20
 MIN_WORDS_PER_CHUNK = 50
@@ -108,28 +108,28 @@ def extract_text(file_path: str, page_num: int, method: str):
         page = doc[page_num]
         handler = page.get_textpage_ocr(tessdata=fitz.get_tessdata())
         if method.lower() == "dict":
-            return handler.extractDICT(), page_num
+            return handler.extractDICT(sort=True), page_num
         elif method.lower() == "blocks":
             return handler.extractBLOCKS(), page_num
         raise TypeError("Unsupported method. Use ['blocks' or 'dict']")
 
 
-def get_fitz_textPages(file_path: str, method: str):
-    with fitz.open(file_path) as doc:
-        num_pages = len(doc)
+def get_fitz_text_pages(
+    file_path: str, method: str, page_numbers: Optional[Iterable[int]] = None
+):
+    if page_numbers is None:
+        with fitz.open(file_path) as doc:
+            page_numbers = list(range(len(doc)))
 
-    TextPages = {}
-    with ProcessPoolExecutor() as executor, tqdm(
-        total=num_pages, desc=f"progress: ", leave=False
-    ) as pbar:
+    text_pages = {}
+    with ProcessPoolExecutor() as executor:
         futures = []
         # Submit arguments to the executor
-        for page_no in range(num_pages):
+        for page_no in page_numbers:
             future = executor.submit(extract_text, file_path, page_no, method)
-            future.add_done_callback(lambda p: pbar.update())
             futures.append(future)
 
         for future in as_completed(futures):
-            res, page_num = future.result()
-            TextPages[page_num] = res
-        return TextPages
+            text, page_num = future.result()
+            text_pages[page_num] = text
+        return text_pages

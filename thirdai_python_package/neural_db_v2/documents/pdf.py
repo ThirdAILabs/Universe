@@ -2,10 +2,16 @@ import logging
 from typing import Any, Dict, Iterable, Optional
 
 from thirdai.neural_db.documents import process_pdf as pdf_parse_v1
+from thirdai.neural_db.parsing_utils.pdf_parse import (
+    highlighted_doc as highlighted_doc_v1,
+)
+from thirdai.neural_db.parsing_utils.sliding_pdf_parse import (
+    highlighted_doc as highlighted_doc_v2,
+)
 from thirdai.neural_db.parsing_utils.sliding_pdf_parse import make_df as pdf_parse_v2
 
 from ..core.documents import Document
-from ..core.types import NewChunkBatch
+from ..core.types import Chunk, NewChunkBatch
 from .utils import join_metadata, series_from_value
 
 
@@ -90,3 +96,10 @@ class PDF(Document):
                 document=series_from_value(self.display_path or self.path, len(text)),
             )
         ]
+
+    @staticmethod
+    def highlighted_doc(source: str, chunk: Chunk):
+        v1_highlighted = highlighted_doc_v1(source, chunk.metadata)
+        if v1_highlighted:
+            return v1_highlighted
+        return highlighted_doc_v2(source, chunk.metadata)
