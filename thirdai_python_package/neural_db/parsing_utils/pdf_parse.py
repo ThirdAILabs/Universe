@@ -195,7 +195,7 @@ def highlighted_doc(source: str, columns: dict):
     for page_no, blocks_to_highlight in highlight.items():
         page_blocks = [Block(block) for block in text_pages[page_no]]
         for block in page_blocks:
-            if blocks_to_highlight in block.block_no:
+            if block.block_no in blocks_to_highlight:
                 rect = fitz.Rect(x0=block.x0, y0=block.y0, x1=block.x1, y1=block.y1)
                 doc[page_no].add_highlight_annot(rect)
     return doc
