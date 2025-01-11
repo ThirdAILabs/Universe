@@ -176,12 +176,13 @@ all_connector_doc_getters = [
             reference_columns=["content"],
         ),
     ),
-    Equivalent_doc(
-        connector_doc=lambda: ndb.SharePoint(
-            ctx=base.get_client_context(), library_path=base.get_library_path()
-        ),
-        local_doc=build_local_sharepoint_doc,
-    ),
+    # (Gautam): Disabling sharepoint connector test because lost the access to college sharepoint access.
+    # Equivalent_doc(
+    #     connector_doc=lambda: ndb.SharePoint(
+    #         ctx=base.get_client_context(), library_path=base.get_library_path()
+    #     ),
+    #     local_doc=build_local_sharepoint_doc,
+    # ),
     # This is failing because of an login error. Commenting it out to unblock actions.
     # Equivalent_doc(
     #     connector_doc=lambda: ndb.SalesForce(
