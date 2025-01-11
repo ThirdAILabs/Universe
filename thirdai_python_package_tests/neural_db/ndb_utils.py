@@ -176,7 +176,7 @@ all_connector_doc_getters = [
             reference_columns=["content"],
         ),
     ),
-    # (Gautam): Disabling sharepoint connector test because lost the access to college sharepoint access.
+    # (Gautam): Disabling sharepoint connector test because lost the college sharepoint access.
     # Equivalent_doc(
     #     connector_doc=lambda: ndb.SharePoint(
     #         ctx=base.get_client_context(), library_path=base.get_library_path()
