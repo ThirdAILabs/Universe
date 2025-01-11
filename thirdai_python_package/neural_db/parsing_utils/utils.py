@@ -108,7 +108,9 @@ def extract_text(file_path: str, page_num: int, method: str):
         page = doc[page_num]
 
         # https://github.com/pymupdf/PyMuPDF/discussions/4217#discussioncomment-11796809
-        handler = page.get_textpage_ocr(tessdata=fitz.get_tessdata())                           # By default, `full` param is false
+        handler = page.get_textpage_ocr(
+            tessdata=fitz.get_tessdata()
+        )  # By default, `full` param is false
 
         if method.lower() == "dict":
             return handler.extractDICT(sort=True), page_num
