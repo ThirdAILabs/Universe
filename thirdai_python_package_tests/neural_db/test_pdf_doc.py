@@ -1,6 +1,6 @@
 import fitz
 import pytest
-from ndb_utils import CITI_PDF_FILE, IMAGE_PDF_FILE, PDF_FILE, PRIAXOR_PDF_FILE
+from ndb_utils import CITI_PDF_FILE, PDF_FILE, PRIAXOR_PDF_FILE
 from thirdai import neural_db as ndb
 
 pytestmark = [pytest.mark.unit]
@@ -45,14 +45,3 @@ def test_pdf_table_parsing():
 @pytest.mark.parametrize("pdf_file", [PRIAXOR_PDF_FILE, CITI_PDF_FILE])
 def test_pdf_table_parsing_with_section_titles(pdf_file):
     pdf = ndb.PDF(pdf_file, version="v2", table_parsing=True)
-
-
-@pytest.mark.parametrize("version", ["v1", "v2"])
-def test_image_pdf_parsing(version):
-    pdf = ndb.PDF(IMAGE_PDF_FILE, version=version)
-    chunk = pdf.chunks()[0]  # only have one chunk
-
-    # text 'definition of climate change' should be extracted from the image present in the IMAGE_PDF_FILE
-    assert not chunk.text[
-        chunk.text.str.contains("definition of climate change", case=True)
-    ].empty

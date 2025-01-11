@@ -106,7 +106,10 @@ def clean_text(text: str) -> str:
 def extract_text(file_path: str, page_num: int, method: str):
     with fitz.open(file_path) as doc:
         page = doc[page_num]
-        handler = page.get_textpage_ocr(tessdata=fitz.get_tessdata())
+
+        # https://github.com/pymupdf/PyMuPDF/discussions/4217#discussioncomment-11796809
+        handler = page.get_textpage_ocr(tessdata=fitz.get_tessdata())                           # By default, `full` param is false
+
         if method.lower() == "dict":
             return handler.extractDICT(sort=True), page_num
         elif method.lower() == "blocks":

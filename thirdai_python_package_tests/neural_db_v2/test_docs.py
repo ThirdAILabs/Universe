@@ -11,6 +11,7 @@ from ndbv2_utils import (
     PPTX_FILE,
     TXT_FILE,
     URL_LINK,
+    IMAGE_PDF_FILE
 )
 from thirdai.neural_db_v2 import (
     CSV,
@@ -264,3 +265,13 @@ def test_in_memory_text_doc(metadata):
 
     assert (chunks.text == pd.Series(["a b", "c d"])).all()
     assert (chunks.metadata["item"] == pd.Series([1, 2])).all()
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+def test_image_pdf_parsing(version):
+    pdf = PDF(IMAGE_PDF_FILE, version=version)
+    chunk = pdf.chunks()[0]  # only have one chunk
+
+    # text 'definition of climate change' should be extracted from the image present in the IMAGE_PDF_FILE
+    assert not chunk.text[
+        chunk.text.str.contains("definition of climate change", case=True)
+    ].empty
