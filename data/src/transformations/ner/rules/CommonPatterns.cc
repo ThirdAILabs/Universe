@@ -2,31 +2,16 @@
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <utils/text/StringManipulation.h>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 
 namespace thirdai::data::ner {
 
-std::optional<ValidatorSubMatch> creditCardLuhnCheck(
-    const std::string& number) {
-  /*
-   * Checks whether the number being passed satisifies the luhn's check. This is
-   * useful for detecting credit card numbers.
-   */
-  std::string cleaned;
-  for (char c : number) {
-    if (std::isdigit(c)) {
-      cleaned.push_back(c);
-    }
-  }
-
-  if (cleaned.size() > 19 || cleaned.size() < 12) {
-    return std::nullopt;
-  }
-
+bool isLuhnValid(const std::string& number) {
   int sum = 0;
   bool alternate = false;
-  for (auto it = cleaned.rbegin(); it != cleaned.rend(); ++it) {
+  for (auto it = number.rbegin(); it != number.rend(); ++it) {
     int n = (*it) - '0';
     if (alternate) {
       n *= 2;
@@ -37,10 +22,55 @@ std::optional<ValidatorSubMatch> creditCardLuhnCheck(
     sum += n;
     alternate = !alternate;
   }
+  return (sum % 10 == 0);
+}
 
-  if (sum % 10 == 0) {
-    return {{0, number.size()}};
+std::optional<ValidatorSubMatch> creditCardLuhnCheck(
+    const std::string& number) {
+  // Split by spaces
+  std::vector<std::string> number_groups;
+  std::string current;
+  size_t current_pos = 0;
+
+  // Build groups and track their positions
+  std::vector<std::pair<std::string, size_t>> groups;  // (digits, position)
+
+  for (size_t i = 0; i < number.size(); i++) {
+    if (std::isdigit(number[i])) {
+      if (current.empty()) {
+        current_pos = i;
+      }
+      current += number[i];
+    } else if (!current.empty()) {
+      groups.emplace_back(current, current_pos);
+      current.clear();
+    }
   }
+  if (!current.empty()) {
+    groups.emplace_back(current, current_pos);
+  }
+
+  // Try combinations of consecutive groups, starting with largest possible
+  // combinations
+  for (size_t window = groups.size(); window > 0; window--) {
+    for (size_t i = 0; i <= groups.size() - window; i++) {
+      std::string combined;
+      for (size_t j = i; j < i + window; j++) {
+        combined += groups[j].first;
+      }
+
+      if (combined.size() > 19) {
+        continue;
+      }
+      if (combined.size() >= 12 && isLuhnValid(combined)) {
+        size_t start = groups[i].second;
+        size_t end =
+            groups[i + window - 1].second + groups[i + window - 1].first.size();
+        return {{start, end - start}};
+      }
+    }
+  }
+
   return std::nullopt;
 }
 
@@ -134,7 +164,9 @@ RulePtr creditCardPattern() {
   return Pattern::make(
       /*entity=*/"CREDITCARDNUMBER",
       /*pattern=*/
-      R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b)",
+      // R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[-
+      // ]?(\d{3,5})\b)",
+      /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
       {
