@@ -101,8 +101,8 @@ class PDF(Document):
         ]
 
     @staticmethod
-    def highlighted_doc(source: str, chunk: Chunk):
-        v1_highlighted = highlighted_doc_v1(source, chunk.metadata)
+    def highlighted_doc(source: str, chunk: Chunk, with_images: bool = False):
+        v1_highlighted = highlighted_doc_v1(source, chunk.metadata, with_images)
         if v1_highlighted:
             return v1_highlighted
         return highlighted_doc_v2(source, chunk.metadata)

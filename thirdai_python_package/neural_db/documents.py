@@ -1181,8 +1181,8 @@ class PDF(Extracted):
         )
 
     @staticmethod
-    def highlighted_doc(reference: Reference):
-        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata)
+    def highlighted_doc(reference: Reference, with_images: bool = False):
+        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata, with_images)
         if old_highlights:
             return old_highlights
         return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
