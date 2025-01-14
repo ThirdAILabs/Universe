@@ -885,7 +885,7 @@ class Extracted(Document):
         save_extra_info=True,
         metadata=None,
         strong_column=None,
-        on_disk=False
+        on_disk=False,
     ):
         path = str(path)
         df = self.process_data(path)
@@ -1179,7 +1179,9 @@ class PDF(Extracted):
 
     @staticmethod
     def highlighted_doc(reference: Reference, with_images: bool = False):
-        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata, with_images)
+        old_highlights = pdf_parse.highlighted_doc(
+            reference.source, reference.metadata, with_images
+        )
         if old_highlights:
             return old_highlights
         return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
