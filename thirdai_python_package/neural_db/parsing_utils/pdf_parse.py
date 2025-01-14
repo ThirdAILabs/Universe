@@ -79,8 +79,8 @@ def process_pdf_file(filepath: str, with_images: bool = False):
             blocks = sorted(
                 list(
                     filter(
-                        [Block(block) for block in text_pages[page_no]],
                         lambda block: with_images or block.block_type == BlockType.Text,
+                        [Block(block) for block in text_pages[page_no]],
                     )
                 ),
                 key=lambda block: block.block_no,
@@ -157,6 +157,7 @@ def process_pdf_file(filepath: str, with_images: bool = False):
                     )
         return rows, True
     except Exception as e:
+        raise e
         print(e.__str__())
         return "Cannot process pdf file:" + filepath, False
 
@@ -200,8 +201,8 @@ def highlighted_doc(source: str, columns: dict, with_images: bool = False):
     for page_no, blocks_to_highlight in highlight.items():
         page_blocks = list(
             filter(
-                [Block(block) for block in text_pages[page_no]],
                 lambda block: with_images or block.block_type == BlockType.Text,
+                [Block(block) for block in text_pages[page_no]],
             )
         )
         for block in page_blocks:

@@ -18,7 +18,7 @@ def get_fitz_blocks(filepath: str, with_images: bool):
         blocks.extend({**block, "page_num": page_num} for block in text_page_blocks)
     return sorted(
         list(
-            filter(blocks, lambda block: with_images or block["type"] == BlockType.Text)
+            filter(lambda block: with_images or block["type"] == BlockType.Text, blocks)
         ),
         key=lambda block: (block["page_num"], block["number"]),
     )
