@@ -889,7 +889,7 @@ class Extracted(Document):
         with_images: bool = False,
     ):
         path = str(path)
-        df = self.process_data(path, with_images)
+        df = self.process_data(path)
         self.table = create_table(df, on_disk)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
@@ -903,7 +903,7 @@ class Extracted(Document):
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
 
-    def process_data(self, path: str, with_images: bool = False) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         raise NotImplementedError()
 
     @property
@@ -2294,9 +2294,15 @@ class SentenceLevelExtracted(Extracted):
     """
 
     def __init__(
-        self, path: str, save_extra_info: bool = True, metadata=None, on_disk=False
+        self,
+        path: str,
+        save_extra_info: bool = True,
+        metadata=None,
+        on_disk=False,
+        with_images: bool = False,
     ):
         self.path = Path(path)
+        self.with_images = with_images
         self.hash_val = hash_file(
             path, metadata="sentence-level-extracted-" + str(metadata)
         )
@@ -2458,14 +2464,18 @@ class SentenceLevelPDF(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(self, path: str, metadata=None, on_disk=False):
-        super().__init__(path=path, metadata=metadata, on_disk=on_disk)
+    def __init__(
+        self, path: str, metadata=None, on_disk=False, with_images: bool = False
+    ):
+        super().__init__(
+            path=path, metadata=metadata, on_disk=on_disk, with_images=with_images
+        )
 
     def process_data(
         self,
         path: str,
     ) -> pd.DataFrame:
-        return process_pdf(path)
+        return process_pdf(path, self.with_images)
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):

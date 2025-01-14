@@ -269,7 +269,7 @@ def test_in_memory_text_doc(metadata):
 
 @pytest.mark.parametrize("version", ["v1", "v2"])
 def test_image_pdf_parsing(version):
-    pdf = PDF(IMAGE_PDF_FILE, version=version)
+    pdf = PDF(IMAGE_PDF_FILE, version=version, with_images=True)
     chunk = pdf.chunks()[0]  # only have one chunk
 
     # text 'definition of climate change' should be extracted from the image present in the IMAGE_PDF_FILE

@@ -115,7 +115,7 @@ def extract_text(file_path: str, page_num: int, method: str, with_images: bool):
 
         if with_images:
             # https://github.com/pymupdf/PyMuPDF/discussions/4217#discussioncomment-11796809
-            # TODO(Gautam/David): Since `get_textpage_ocr` is sufficient irrespective of `with_images` flag, test all the demos and modify (if they break) to remove this flag `with_images`
+            # TODO(Gautam/David): Since `get_textpage_ocr` is sufficient irrespective of `with_images` flag, test all the demos and modify (if they break) to remove this flag `with_images` in future.
             handler = page.get_textpage_ocr(
                 tessdata=fitz.get_tessdata()
             )  # By default, `full` param is false

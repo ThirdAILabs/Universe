@@ -183,19 +183,27 @@ def create_train_df(elements):
     return df
 
 
-def highlighted_doc(source: str, columns: dict):
+def highlighted_doc(source: str, columns: dict, with_images: bool = False):
     if not "highlight" in columns:
         return None
     highlight = eval(columns["highlight"])
 
     # only extract from the required pages.
     text_pages = get_fitz_text_pages(
-        file_path=source, method="blocks", page_numbers=highlight.keys()
+        file_path=source,
+        method="blocks",
+        page_numbers=highlight.keys(),
+        with_images=with_images,
     )
 
     doc = fitz.open(source)
     for page_no, blocks_to_highlight in highlight.items():
-        page_blocks = [Block(block) for block in text_pages[page_no]]
+        page_blocks = list(
+            filter(
+                [Block(block) for block in text_pages[page_no]],
+                lambda block: with_images or block.block_type == BlockType.Text,
+            )
+        )
         for block in page_blocks:
             if block.block_no in blocks_to_highlight:
                 rect = fitz.Rect(x0=block.x0, y0=block.y0, x1=block.x1, y1=block.y1)
