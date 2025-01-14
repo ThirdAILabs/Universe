@@ -7,16 +7,21 @@ import pdfplumber
 import unidecode
 from sklearn.cluster import DBSCAN
 
-from .utils import get_fitz_text_pages
+from .utils import BlockType, get_fitz_text_pages
 
 
-def get_fitz_blocks(filepath):
-    text_pages = get_fitz_text_pages(filepath, method="dict")
+def get_fitz_blocks(filepath: str, with_images: bool):
+    text_pages = get_fitz_text_pages(filepath, method="dict", with_images=with_images)
     blocks = []
     for page_num, text_page in text_pages.items():
         text_page_blocks = text_page["blocks"]
         blocks.extend({**block, "page_num": page_num} for block in text_page_blocks)
-    return sorted(blocks, key=lambda block: (block["page_num"], block["number"]))
+    return sorted(
+        list(
+            filter(blocks, lambda block: with_images or block["type"] == BlockType.Text)
+        ),
+        key=lambda block: (block["page_num"], block["number"]),
+    )
 
 
 def get_text_len(block):
@@ -262,8 +267,9 @@ def get_chunks(
     ignore_nonstandard_orientation,
     emphasize_section_titles,
     table_parsing,
+    with_images: bool,
 ):
-    blocks = get_fitz_blocks(filepath)
+    blocks = get_fitz_blocks(filepath, with_images)
     if ignore_header_footer:
         blocks = remove_header_footer(blocks)
     if ignore_nonstandard_orientation:
@@ -295,6 +301,7 @@ def make_df(
     doc_keywords,
     emphasize_section_titles,
     table_parsing,
+    with_images: bool,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -314,6 +321,7 @@ def make_df(
         ignore_nonstandard_orientation,
         emphasize_section_titles,
         table_parsing,
+        with_images,
     )
 
     emphasis = [

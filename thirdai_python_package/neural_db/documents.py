@@ -886,14 +886,16 @@ class Extracted(Document):
         metadata=None,
         strong_column=None,
         on_disk=False,
+        with_images: bool = False,
     ):
         path = str(path)
-        df = self.process_data(path)
+        df = self.process_data(path, with_images)
         self.table = create_table(df, on_disk)
         self.hash_val = hash_file(path, metadata="extracted-" + str(metadata))
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
+        self.with_images = with_images
         self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.strong_column = strong_column
         if self.strong_column and self.strong_column not in self.table.columns:
@@ -901,10 +903,7 @@ class Extracted(Document):
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str, with_images: bool = False) -> pd.DataFrame:
         raise NotImplementedError()
 
     @property
@@ -1029,8 +1028,8 @@ class Extracted(Document):
             self.table.load_meta(directory)
 
 
-def process_pdf(path: str) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(path)
+def process_pdf(path: str, with_images: bool = False) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path, with_images)
 
     if not success:
         raise ValueError(f"Could not read PDF file: {path}")
@@ -1117,6 +1116,7 @@ class PDF(Extracted):
         emphasize_section_titles=False,
         table_parsing=False,
         save_extra_info=True,
+        with_images: bool = False,
     ):
         self.version = version
 
@@ -1126,6 +1126,7 @@ class PDF(Extracted):
                 metadata=metadata,
                 on_disk=on_disk,
                 save_extra_info=save_extra_info,
+                with_images=with_images,
             )
             return
 
@@ -1157,6 +1158,7 @@ class PDF(Extracted):
             strong_column="emphasis",
             on_disk=on_disk,
             save_extra_info=save_extra_info,
+            with_images=with_images,
         )
 
     def process_data(
@@ -1164,7 +1166,7 @@ class PDF(Extracted):
         path: str,
     ) -> pd.DataFrame:
         if not hasattr(self, "version") or self.version == "v1":
-            return process_pdf(path)
+            return process_pdf(path, self.with_images)
         return sliding_pdf_parse.make_df(
             path,
             self.chunk_size,
@@ -1175,6 +1177,7 @@ class PDF(Extracted):
             self.doc_keywords,
             self.emphasize_section_titles,
             self.table_parsing,
+            self.with_images,
         )
 
     @staticmethod

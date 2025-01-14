@@ -31,6 +31,7 @@ class PDF(Document):
         table_parsing: bool = False,
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
+        with_images: bool = False,
     ):
         super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
@@ -49,10 +50,11 @@ class PDF(Document):
         self.emphasize_section_titles = emphasize_section_titles
         self.table_parsing = table_parsing
         self.display_path = display_path
+        self.with_images = with_images
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         if self.version == "v1":
-            parsed_chunks = pdf_parse_v1(self.path)
+            parsed_chunks = pdf_parse_v1(self.path, self.with_images)
         else:
             parsed_chunks = pdf_parse_v2(
                 filepath=self.path,
@@ -64,6 +66,7 @@ class PDF(Document):
                 doc_keywords=self.doc_keywords,
                 emphasize_section_titles=self.emphasize_section_titles,
                 table_parsing=self.table_parsing,
+                with_images=self.with_images,
             )
 
         text = parsed_chunks["para"]

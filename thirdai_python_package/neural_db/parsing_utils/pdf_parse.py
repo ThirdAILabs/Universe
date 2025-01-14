@@ -1,7 +1,6 @@
 import functools
 import re
 from dataclasses import dataclass
-from enum import IntEnum
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -11,6 +10,7 @@ from nltk.tokenize import sent_tokenize
 
 from .utils import (
     ATTACH_N_WORD_THRESHOLD,
+    BlockType,
     chunk_text,
     ensure_valid_encoding,
     get_fitz_text_pages,
@@ -18,11 +18,6 @@ from .utils import (
 
 # TODO: Remove senttokenize
 # TODO: Limit paragraph length
-
-
-class BlockType(IntEnum):
-    Text = 0
-    Image = 1
 
 
 @dataclass
@@ -64,7 +59,7 @@ def para_is_complete(para):
 
 
 # paragraph = {"page_no": [block_id,...], "pagen_no_2":[blicksids, ...]}
-def process_pdf_file(filepath: str):
+def process_pdf_file(filepath: str, with_images: bool = False):
     try:
         rows = []
         prev = ""
@@ -72,15 +67,22 @@ def process_pdf_file(filepath: str):
         paras = []
 
         # Get text in fitz block format
-        text_pages = get_fitz_text_pages(file_path=filepath, method="blocks")
+        text_pages = get_fitz_text_pages(
+            file_path=filepath, method="blocks", with_images=with_images
+        )
 
         # sorting to get pages in serial order
         page_numbers = sorted(text_pages.keys())
 
         for page_no in page_numbers:
-            # sorting blocks based on block number
+            # filtering (if needed) and sorting blocks
             blocks = sorted(
-                [Block(block) for block in text_pages[page_no]],
+                list(
+                    filter(
+                        [Block(block) for block in text_pages[page_no]],
+                        lambda block: with_images or block.block_type == BlockType.Text,
+                    )
+                ),
                 key=lambda block: block.block_no,
             )
             for block in blocks:
