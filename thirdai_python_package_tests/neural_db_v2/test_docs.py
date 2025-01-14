@@ -276,3 +276,11 @@ def test_image_pdf_parsing(version):
     assert not chunk.text[
         chunk.text.str.contains("definition of climate change", case=True)
     ].empty
+
+    pdf = PDF(IMAGE_PDF_FILE, version=version)
+    chunk = pdf.chunks()[0]
+
+    # text 'definition of climate change' should not be extracted from the image present in the IMAGE_PDF_FILE
+    assert chunk.text[
+        chunk.text.str.contains("definition of climate change", case=True)
+    ].empty
