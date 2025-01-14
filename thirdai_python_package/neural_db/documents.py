@@ -885,8 +885,7 @@ class Extracted(Document):
         save_extra_info=True,
         metadata=None,
         strong_column=None,
-        on_disk=False,
-        with_images: bool = False,
+        on_disk=False
     ):
         path = str(path)
         df = self.process_data(path)
@@ -895,7 +894,6 @@ class Extracted(Document):
         self._save_extra_info = save_extra_info
 
         self.path = Path(path)
-        self.with_images = with_images
         self.doc_metadata = metadata_with_source(metadata or {}, Path(path).name)
         self.strong_column = strong_column
         if self.strong_column and self.strong_column not in self.table.columns:
@@ -1119,6 +1117,7 @@ class PDF(Extracted):
         with_images: bool = False,
     ):
         self.version = version
+        self.with_images = with_images
 
         if version == "v1":
             super().__init__(
@@ -1126,7 +1125,6 @@ class PDF(Extracted):
                 metadata=metadata,
                 on_disk=on_disk,
                 save_extra_info=save_extra_info,
-                with_images=with_images,
             )
             return
 
@@ -1158,7 +1156,6 @@ class PDF(Extracted):
             strong_column="emphasis",
             on_disk=on_disk,
             save_extra_info=save_extra_info,
-            with_images=with_images,
         )
 
     def process_data(
