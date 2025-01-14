@@ -85,6 +85,7 @@ def process_pdf_file(filepath: str, with_images: bool = False):
                 ),
                 key=lambda block: block.block_no,
             )
+            print(f'{len(blocks) = }')
             for block in blocks:
                 current_block_nums = {}
                 current_block_nums[page_no] = [block.block_no]
@@ -157,7 +158,6 @@ def process_pdf_file(filepath: str, with_images: bool = False):
                     )
         return rows, True
     except Exception as e:
-        raise e
         print(e.__str__())
         return "Cannot process pdf file:" + filepath, False
 
