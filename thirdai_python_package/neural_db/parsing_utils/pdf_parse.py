@@ -59,7 +59,9 @@ def para_is_complete(para):
 
 
 # paragraph = {"page_no": [block_id,...], "pagen_no_2":[blicksids, ...]}
-def process_pdf_file(filepath: str, with_images: bool = False):
+def process_pdf_file(
+    filepath: str, with_images: bool = False, parallelize: bool = False
+):
     try:
         rows = []
         prev = ""
@@ -68,7 +70,10 @@ def process_pdf_file(filepath: str, with_images: bool = False):
 
         # Get text in fitz block format
         text_pages = get_fitz_text_pages(
-            file_path=filepath, method="blocks", with_images=with_images
+            file_path=filepath,
+            method="blocks",
+            with_images=with_images,
+            parallelize=parallelize,
         )
 
         # sorting to get pages in serial order

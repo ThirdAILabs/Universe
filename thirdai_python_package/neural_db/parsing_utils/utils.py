@@ -134,13 +134,14 @@ def get_fitz_text_pages(
     method: str,
     page_numbers: Optional[Iterable[int]] = None,
     with_images: bool = False,
+    parallelize: bool = False,
 ):
     if page_numbers is None:
         with fitz.open(file_path) as doc:
             page_numbers = list(range(len(doc)))
 
     text_pages = {}
-    if with_images:
+    if parallelize:
         with ProcessPoolExecutor() as executor:
             futures = []
             # Submit arguments to the executor

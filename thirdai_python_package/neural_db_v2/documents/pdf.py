@@ -32,6 +32,7 @@ class PDF(Document):
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
         with_images: bool = False,
+        parallelize: bool = False,
     ):
         super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
@@ -51,10 +52,11 @@ class PDF(Document):
         self.table_parsing = table_parsing
         self.display_path = display_path
         self.with_images = with_images
+        self.parallelize = parallelize
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         if self.version == "v1":
-            parsed_chunks = pdf_parse_v1(self.path, self.with_images)
+            parsed_chunks = pdf_parse_v1(self.path, self.with_images, self.parallelize)
         else:
             parsed_chunks = pdf_parse_v2(
                 filepath=self.path,
@@ -67,6 +69,7 @@ class PDF(Document):
                 emphasize_section_titles=self.emphasize_section_titles,
                 table_parsing=self.table_parsing,
                 with_images=self.with_images,
+                parallelize=self.parallelize,
             )
 
         text = parsed_chunks["para"]
@@ -101,8 +104,12 @@ class PDF(Document):
         ]
 
     @staticmethod
-    def highlighted_doc(source: str, chunk: Chunk, with_images: bool = False):
-        v1_highlighted = highlighted_doc_v1(source, chunk.metadata, with_images)
+    def highlighted_doc(
+        source: str, chunk: Chunk, with_images: bool = False, parallelize: bool = False
+    ):
+        v1_highlighted = highlighted_doc_v1(
+            source, chunk.metadata, with_images, parallelize
+        )
         if v1_highlighted:
             return v1_highlighted
         return highlighted_doc_v2(source, chunk.metadata)

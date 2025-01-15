@@ -1026,8 +1026,10 @@ class Extracted(Document):
             self.table.load_meta(directory)
 
 
-def process_pdf(path: str, with_images: bool = False) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(path, with_images)
+def process_pdf(
+    path: str, with_images: bool = False, parallelize: bool = False
+) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path, with_images, parallelize)
 
     if not success:
         raise ValueError(f"Could not read PDF file: {path}")

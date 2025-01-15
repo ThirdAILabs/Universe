@@ -10,8 +10,10 @@ from sklearn.cluster import DBSCAN
 from .utils import BlockType, get_fitz_text_pages
 
 
-def get_fitz_blocks(filepath: str, with_images: bool):
-    text_pages = get_fitz_text_pages(filepath, method="dict", with_images=with_images)
+def get_fitz_blocks(filepath: str, with_images: bool, parallelize: bool):
+    text_pages = get_fitz_text_pages(
+        filepath, method="dict", with_images=with_images, parallelize=parallelize
+    )
     blocks = []
     for page_num, text_page in text_pages.items():
         text_page_blocks = text_page["blocks"]
@@ -268,8 +270,9 @@ def get_chunks(
     emphasize_section_titles,
     table_parsing,
     with_images: bool,
+    parallelize: bool,
 ):
-    blocks = get_fitz_blocks(filepath, with_images)
+    blocks = get_fitz_blocks(filepath, with_images, parallelize)
     if ignore_header_footer:
         blocks = remove_header_footer(blocks)
     if ignore_nonstandard_orientation:
@@ -302,6 +305,7 @@ def make_df(
     emphasize_section_titles,
     table_parsing,
     with_images: bool = False,
+    parallelize: bool = False,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -322,6 +326,7 @@ def make_df(
         emphasize_section_titles,
         table_parsing,
         with_images,
+        parallelize,
     )
 
     emphasis = [
