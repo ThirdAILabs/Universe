@@ -301,7 +301,7 @@ def make_df(
     doc_keywords,
     emphasize_section_titles,
     table_parsing,
-    with_images: bool,
+    with_images: bool = False,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
