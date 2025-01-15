@@ -76,14 +76,11 @@ def process_pdf_file(filepath: str, with_images: bool = False):
 
         for page_no in page_numbers:
             # filtering (if needed) and sorting blocks
-            blocks = sorted(
-                list(
-                    filter(
-                        lambda block: with_images or block.block_type == BlockType.Text,
-                        [Block(block) for block in text_pages[page_no]],
-                    )
-                ),
-                key=lambda block: block.block_no,
+            blocks = list(
+                filter(
+                    lambda block: with_images or block.block_type == BlockType.Text,
+                    [Block(block) for block in text_pages[page_no]],
+                )
             )
             for block in blocks:
                 current_block_nums = {}
