@@ -140,16 +140,21 @@ def get_fitz_text_pages(
             page_numbers = list(range(len(doc)))
 
     text_pages = {}
-    with ProcessPoolExecutor() as executor:
-        futures = []
-        # Submit arguments to the executor
-        for page_no in page_numbers:
-            future = executor.submit(
-                extract_text, file_path, page_no, method, with_images
-            )
-            futures.append(future)
+    if with_images:
+        with ProcessPoolExecutor() as executor:
+            futures = []
+            # Submit arguments to the executor
+            for page_no in page_numbers:
+                future = executor.submit(
+                    extract_text, file_path, page_no, method, with_images
+                )
+                futures.append(future)
 
-        for future in as_completed(futures):
-            text, page_num = future.result()
+            for future in as_completed(futures):
+                text, page_num = future.result()
+                text_pages[page_num] = text
+    else:
+        for page_num in page_numbers:
+            text, _ = extract_text(file_path, page_num, method, with_images)
             text_pages[page_num] = text
-        return text_pages
+    return text_pages
