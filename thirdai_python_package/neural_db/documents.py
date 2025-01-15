@@ -1026,8 +1026,8 @@ class Extracted(Document):
             self.table.load_meta(directory)
 
 
-def process_pdf(path: str, with_images: bool = False) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(path, with_images)
+def process_pdf(path: str) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path)
 
     if not success:
         raise ValueError(f"Could not read PDF file: {path}")
@@ -1114,10 +1114,8 @@ class PDF(Extracted):
         emphasize_section_titles=False,
         table_parsing=False,
         save_extra_info=True,
-        with_images: bool = False,
     ):
         self.version = version
-        self.with_images = with_images
 
         if version == "v1":
             super().__init__(
@@ -1163,7 +1161,7 @@ class PDF(Extracted):
         path: str,
     ) -> pd.DataFrame:
         if not hasattr(self, "version") or self.version == "v1":
-            return process_pdf(path, self.with_images)
+            return process_pdf(path)
         return sliding_pdf_parse.make_df(
             path,
             self.chunk_size,
@@ -1174,14 +1172,11 @@ class PDF(Extracted):
             self.doc_keywords,
             self.emphasize_section_titles,
             self.table_parsing,
-            self.with_images,
         )
 
     @staticmethod
-    def highlighted_doc(reference: Reference, with_images: bool = False):
-        old_highlights = pdf_parse.highlighted_doc(
-            reference.source, reference.metadata, with_images
-        )
+    def highlighted_doc(reference: Reference):
+        old_highlights = pdf_parse.highlighted_doc(reference.source, reference.metadata)
         if old_highlights:
             return old_highlights
         return sliding_pdf_parse.highlighted_doc(reference.source, reference.metadata)
@@ -2298,10 +2293,8 @@ class SentenceLevelExtracted(Extracted):
         save_extra_info: bool = True,
         metadata=None,
         on_disk=False,
-        with_images: bool = False,
     ):
         self.path = Path(path)
-        self.with_images = with_images
         self.hash_val = hash_file(
             path, metadata="sentence-level-extracted-" + str(metadata)
         )
@@ -2463,18 +2456,14 @@ class SentenceLevelPDF(SentenceLevelExtracted):
             constrains to restrict results based on the metadata.
     """
 
-    def __init__(
-        self, path: str, metadata=None, on_disk=False, with_images: bool = False
-    ):
-        super().__init__(
-            path=path, metadata=metadata, on_disk=on_disk, with_images=with_images
-        )
+    def __init__(self, path: str, metadata=None, on_disk=False):
+        super().__init__(path=path, metadata=metadata, on_disk=on_disk)
 
     def process_data(
         self,
         path: str,
     ) -> pd.DataFrame:
-        return process_pdf(path, self.with_images)
+        return process_pdf(path)
 
 
 class SentenceLevelDOCX(SentenceLevelExtracted):
