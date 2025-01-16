@@ -354,7 +354,7 @@ def make_df(
     )
 
 
-def highlighted_doc(source, columns):
+def highlighted_doc(source: str, columns: dict):
     if not "chunk_boxes" in columns:
         return None
     doc = fitz.open(source)

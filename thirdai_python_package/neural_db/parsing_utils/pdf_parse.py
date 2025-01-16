@@ -185,7 +185,9 @@ def create_train_df(elements):
     return df
 
 
-def highlighted_doc(source: str, columns: dict, with_images: bool = False):
+def highlighted_doc(
+    source: str, columns: dict, with_images: bool = False, parallelize: bool = False
+):
     if not "highlight" in columns:
         return None
     highlight = eval(columns["highlight"])
@@ -196,6 +198,7 @@ def highlighted_doc(source: str, columns: dict, with_images: bool = False):
         method="blocks",
         page_numbers=highlight.keys(),
         with_images=with_images,
+        parallelize=parallelize,
     )
 
     doc = fitz.open(source)
