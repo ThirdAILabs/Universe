@@ -123,7 +123,7 @@ def extract_text(file_path: str, page_num: int, method: str, with_images: bool):
             handler = page.get_textpage()
 
         if method.lower() == "dict":
-            return handler.extractDICT(sort=True), page_num
+            return handler.extractDICT(), page_num
         elif method.lower() == "blocks":
             return handler.extractBLOCKS(), page_num
         raise TypeError("Unsupported method. Use ['blocks' or 'dict']")
