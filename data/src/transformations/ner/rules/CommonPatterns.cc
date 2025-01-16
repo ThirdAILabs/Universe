@@ -163,9 +163,6 @@ RulePtr creditCardPattern() {
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
       /*entity=*/"CREDITCARDNUMBER",
-      /*pattern=*/
-      // R"(\b(([24613]\d{3})|(5[0-5]\d{2}))[- ]?(\d{3,4})[- ]?(\d{3,4})[-
-      // ]?(\d{3,5})\b)",
       /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
