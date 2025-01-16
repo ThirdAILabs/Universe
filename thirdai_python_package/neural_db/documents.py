@@ -901,10 +901,7 @@ class Extracted(Document):
                 f"Strong column '{self.strong_column}' not found in the dataframe."
             )
 
-    def process_data(
-        self,
-        path: str,
-    ) -> pd.DataFrame:
+    def process_data(self, path: str) -> pd.DataFrame:
         raise NotImplementedError()
 
     @property
@@ -1029,8 +1026,10 @@ class Extracted(Document):
             self.table.load_meta(directory)
 
 
-def process_pdf(path: str) -> pd.DataFrame:
-    elements, success = pdf_parse.process_pdf_file(path)
+def process_pdf(
+    path: str, with_images: bool = False, parallelize: bool = False
+) -> pd.DataFrame:
+    elements, success = pdf_parse.process_pdf_file(path, with_images, parallelize)
 
     if not success:
         raise ValueError(f"Could not read PDF file: {path}")
@@ -2291,7 +2290,11 @@ class SentenceLevelExtracted(Extracted):
     """
 
     def __init__(
-        self, path: str, save_extra_info: bool = True, metadata=None, on_disk=False
+        self,
+        path: str,
+        save_extra_info: bool = True,
+        metadata=None,
+        on_disk=False,
     ):
         self.path = Path(path)
         self.hash_val = hash_file(

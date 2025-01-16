@@ -2,10 +2,16 @@ import logging
 from typing import Any, Dict, Iterable, Optional
 
 from thirdai.neural_db.documents import process_pdf as pdf_parse_v1
+from thirdai.neural_db.parsing_utils.pdf_parse import (
+    highlighted_doc as highlighted_doc_v1,
+)
+from thirdai.neural_db.parsing_utils.sliding_pdf_parse import (
+    highlighted_doc as highlighted_doc_v2,
+)
 from thirdai.neural_db.parsing_utils.sliding_pdf_parse import make_df as pdf_parse_v2
 
 from ..core.documents import Document
-from ..core.types import NewChunkBatch
+from ..core.types import Chunk, NewChunkBatch
 from .utils import join_metadata, series_from_value
 
 
@@ -25,6 +31,8 @@ class PDF(Document):
         table_parsing: bool = False,
         doc_id: Optional[str] = None,
         display_path: Optional[str] = None,
+        with_images: bool = False,
+        parallelize: bool = False,
     ):
         super().__init__(doc_id=doc_id, doc_metadata=doc_metadata)
 
@@ -43,13 +51,15 @@ class PDF(Document):
         self.emphasize_section_titles = emphasize_section_titles
         self.table_parsing = table_parsing
         self.display_path = display_path
+        self.with_images = with_images
+        self.parallelize = parallelize
 
     def chunks(self) -> Iterable[NewChunkBatch]:
         if self.version == "v1":
-            parsed_chunks = pdf_parse_v1(self.path)
+            parsed_chunks = pdf_parse_v1(self.path, self.with_images, self.parallelize)
         else:
             parsed_chunks = pdf_parse_v2(
-                filename=self.path,
+                filepath=self.path,
                 chunk_words=self.chunk_size,
                 stride_words=self.stride,
                 emphasize_first_n_words=self.emphasize_first_words,
@@ -58,6 +68,8 @@ class PDF(Document):
                 doc_keywords=self.doc_keywords,
                 emphasize_section_titles=self.emphasize_section_titles,
                 table_parsing=self.table_parsing,
+                with_images=self.with_images,
+                parallelize=self.parallelize,
             )
 
         text = parsed_chunks["para"]
@@ -90,3 +102,14 @@ class PDF(Document):
                 document=series_from_value(self.display_path or self.path, len(text)),
             )
         ]
+
+    @staticmethod
+    def highlighted_doc(
+        source: str, chunk: Chunk, with_images: bool = False, parallelize: bool = False
+    ):
+        v1_highlighted = highlighted_doc_v1(
+            source, chunk.metadata, with_images, parallelize
+        )
+        if v1_highlighted:
+            return v1_highlighted
+        return highlighted_doc_v2(source, chunk.metadata)

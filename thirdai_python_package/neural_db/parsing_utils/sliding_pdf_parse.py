@@ -7,20 +7,23 @@ import pdfplumber
 import unidecode
 from sklearn.cluster import DBSCAN
 
-
-def get_fitz_blocks(filename):
-    doc = fitz.open(filename)
-    blocks = [
-        {**block, "page_num": num}
-        for num, page in enumerate(doc)
-        for block in page.get_text("dict")["blocks"]
-    ]
-    doc.close()
-    return blocks
+from .utils import BlockType, get_fitz_text_pages
 
 
-def remove_images(blocks):
-    return [block for block in blocks if block["type"] == 0]
+def get_fitz_blocks(filepath: str, with_images: bool, parallelize: bool):
+    text_pages = get_fitz_text_pages(
+        filepath, method="dict", with_images=with_images, parallelize=parallelize
+    )
+    blocks = []
+    for page_num, text_page in text_pages.items():
+        text_page_blocks = text_page["blocks"]
+        blocks.extend({**block, "page_num": page_num} for block in text_page_blocks)
+    return sorted(
+        list(
+            filter(lambda block: with_images or block["type"] == BlockType.Text, blocks)
+        ),
+        key=lambda block: (block["page_num"], block["number"]),
+    )
 
 
 def get_text_len(block):
@@ -162,8 +165,8 @@ def estimate_section_titles(lines):
     return lines
 
 
-def process_tables(filename, lines):
-    pdf = pdfplumber.open(filename)
+def process_tables(filepath, lines):
+    pdf = pdfplumber.open(filepath)
     tables_by_page = [page.find_tables() for page in pdf.pages]
 
     def within_by_bbox(a, b):
@@ -258,7 +261,7 @@ def clean_encoding(text):
 
 
 def get_chunks(
-    filename,
+    filepath,
     chunk_words,
     stride_words,
     emphasize_first_n_words,
@@ -266,9 +269,10 @@ def get_chunks(
     ignore_nonstandard_orientation,
     emphasize_section_titles,
     table_parsing,
+    with_images: bool,
+    parallelize: bool,
 ):
-    blocks = get_fitz_blocks(filename)
-    blocks = remove_images(blocks)
+    blocks = get_fitz_blocks(filepath, with_images, parallelize)
     if ignore_header_footer:
         blocks = remove_header_footer(blocks)
     if ignore_nonstandard_orientation:
@@ -279,7 +283,7 @@ def get_chunks(
     if emphasize_section_titles:
         lines = estimate_section_titles(lines)
     if table_parsing:
-        lines = process_tables(filename, lines)
+        lines = process_tables(filepath, lines)
     lines = set_line_word_counts(lines)
     first_n_words = get_lines_with_first_n_words(lines, emphasize_first_n_words)
     chunks, chunk_boxes, display, section_titles = get_chunks_from_lines(
@@ -291,7 +295,7 @@ def get_chunks(
 
 
 def make_df(
-    filename,
+    filepath,
     chunk_words,
     stride_words,
     emphasize_first_n_words,
@@ -300,6 +304,8 @@ def make_df(
     doc_keywords,
     emphasize_section_titles,
     table_parsing,
+    with_images: bool = False,
+    parallelize: bool = False,
 ):
     """Arguments:
     chunk_size: number of words in each chunk of text.
@@ -311,7 +317,7 @@ def make_df(
     table_parsing: Whether to enable separate parsing of tables
     """
     chunks, chunk_boxes, display, first_n_words, section_titles = get_chunks(
-        filename,
+        filepath,
         chunk_words,
         stride_words,
         emphasize_first_n_words,
@@ -319,6 +325,8 @@ def make_df(
         ignore_nonstandard_orientation,
         emphasize_section_titles,
         table_parsing,
+        with_images,
+        parallelize,
     )
 
     emphasis = [
@@ -346,7 +354,7 @@ def make_df(
     )
 
 
-def highlighted_doc(source, columns):
+def highlighted_doc(source: str, columns: dict):
     if not "chunk_boxes" in columns:
         return None
     doc = fitz.open(source)
