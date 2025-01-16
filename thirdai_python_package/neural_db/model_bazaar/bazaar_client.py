@@ -541,6 +541,7 @@ class ModelBazaar(Bazaar):
         self._username = None
         self._access_token = None
         self._doc_types = ["local", "nfs", "s3"]
+        self._data_gen_categories = ["text", "token"]
 
     def sign_up(self, email, password, username):
         """
@@ -1057,3 +1058,45 @@ class ModelBazaar(Bazaar):
         )
 
         return model
+
+    def generate_data(
+        self,
+        task_prompt: str,
+        data_cateogry: str,
+        form_data: dict,
+    ):
+        """
+        Initiates training for a model and returns a Model instance.
+
+        Args:
+            task_prompt (str): Task prompt.
+            data_category (str): Data-category valid-values: ["text" or "token"]
+            form_data (dict): Template for the Data generation
+
+        Returns:
+            Response object
+        """
+        if data_cateogry not in self._data_gen_categories:
+            raise ValueError(
+                f"Invalid data category for generation. Supported data category are {self._data_gen_categories}"
+            )
+
+        if data_cateogry == "text":
+            url = urljoin(self._base_url, f"data/generate-text-data")
+        else:
+            url = urljoin(self._base_url, f"data/generate-token-data")
+
+        # TODO(Gautam): Incase of token data generation, task-prompt is not used anywhere rightnow. Fix this design
+        response = http_post_with_error(
+            url,
+            params={"task_prompt": task_prompt},
+            data={"form": json.dumps(form_data)},
+            headers=auth_header(self._access_token),
+        )
+
+        response_content = json.loads(response.content)
+        if response_content["status"] != "success":
+            print(response_content)
+            raise Exception(response_content["message"])
+        else:
+            print(response_content["message"])
