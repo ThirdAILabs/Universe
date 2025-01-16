@@ -80,7 +80,7 @@ def process_pdf_file(
         page_numbers = sorted(text_pages.keys())
 
         for page_no in page_numbers:
-            # filtering Text Blocks
+            # filtering Blocks depending whether or to parse the images or not.
             blocks = list(
                 filter(
                     lambda block: with_images or block.block_type == BlockType.Text,
