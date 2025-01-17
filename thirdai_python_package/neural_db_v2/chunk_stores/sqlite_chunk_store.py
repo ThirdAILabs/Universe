@@ -19,6 +19,7 @@ from sqlalchemy import (
     and_,
     create_engine,
     delete,
+    distinct,
     event,
     func,
     select,
@@ -501,6 +502,16 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             return set(row.chunk_id for row in conn.execute(query))
 
+    def fetch_metadata_types(self):
+        with self.engine.begin() as conn:
+            return dict(
+                conn.execute(
+                    select(
+                        self.metadata_type_table.c.key, self.metadata_type_table.c.type
+                    )
+                ).fetchall()
+            )
+
     def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(
             (self.chunk_table.c.doc_id == doc_id)
@@ -509,6 +520,83 @@ class SQLiteChunkStore(ChunkStore):
 
         with self.engine.connect() as conn:
             return [row.chunk_id for row in conn.execute(stmt)]
+
+    def summarize_metadata(self, doc_id: str, doc_version: int):
+        with self.engine.begin() as conn:
+            # find the min and max chunk_id of the document
+            stmt = select(
+                self.chunk_table.c.document,
+                func.min(self.chunk_table.c.chunk_id),
+                func.max(self.chunk_table.c.chunk_id),
+            ).where(
+                and_(
+                    self.chunk_table.c.doc_id == doc_id,
+                    self.chunk_table.c.doc_version == doc_version,
+                )
+            )
+            document_path, min_chunk_id, max_chunk_id = conn.execute(stmt).fetchone()
+            is_pdf = document_path.endswith(".pdf")
+
+            # summarize the metadata information for the doc
+            summarized_metadata = {}
+            for metadata_type, metadata_table in self.metadata_tables.items():
+                if metadata_type in [MetadataType.FLOAT, MetadataType.INTEGER]:
+                    stmt = (
+                        select(
+                            metadata_table.c.key,
+                            func.min(metadata_table.c.value),
+                            func.max(metadata_table.c.value),
+                        )
+                        .where(
+                            and_(
+                                metadata_table.c.chunk_id >= min_chunk_id,
+                                metadata_table.c.chunk_id <= max_chunk_id,
+                            )
+                        )
+                        .group_by(metadata_table.c.key)
+                    )
+
+                    result = conn.execute(stmt).fetchall()
+                    for column_name, min_value, max_value in result:
+                        summarized_metadata[column_name] = {
+                            "min": min_value,
+                            "max": max_value,
+                            "type": metadata_type.value,
+                        }
+
+                elif metadata_type == MetadataType.STRING:
+                    stmt = (
+                        select(
+                            metadata_table.c.key,
+                            func.group_concat(distinct(metadata_table.c.value), ","),
+                        )
+                        .where(
+                            and_(
+                                metadata_table.c.chunk_id >= min_chunk_id,
+                                metadata_table.c.chunk_id <= max_chunk_id,
+                                (
+                                    metadata_table.c.key.notin_(
+                                        ["highlight", "chunk_boxes"]
+                                    )
+                                    if is_pdf
+                                    else True
+                                ),  # Don't summarize PDF's internal metadata ['highlight', 'chunk_boxes']
+                            )
+                        )
+                        .group_by(metadata_table.c.key)
+                    )
+
+                    result = conn.execute(stmt).fetchall()
+                    for column_name, unique_values in result:
+                        summarized_metadata[column_name] = {
+                            "unique_values": unique_values,
+                            "type": metadata_type.value,
+                        }
+                else:
+                    # Boolean type
+                    summarized_metadata[column_name] = {"type": metadata_type.value}
+
+        return summarized_metadata
 
     def max_version_for_doc(self, doc_id: str) -> int:
         stmt = select(func.max(self.chunk_table.c.doc_version)).where(
