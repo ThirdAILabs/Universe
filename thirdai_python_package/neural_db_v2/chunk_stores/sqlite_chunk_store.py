@@ -535,7 +535,11 @@ class SQLiteChunkStore(ChunkStore):
                     self.chunk_table.c.doc_version == doc_version,
                 )
             )
-            document_path, min_chunk_id, max_chunk_id = conn.execute(stmt).fetchone()
+            result = conn.execute(stmt).fetchone()
+            if not result:
+                raise ValueError("Non-existing Doc ID or Doc version")
+
+            document_path, min_chunk_id, max_chunk_id = result
             is_pdf = document_path.endswith(".pdf")
 
             # summarize the metadata information for the doc
