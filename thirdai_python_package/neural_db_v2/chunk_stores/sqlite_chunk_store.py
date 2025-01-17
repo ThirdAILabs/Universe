@@ -521,6 +521,7 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             return [row.chunk_id for row in conn.execute(stmt)]
 
+    # summarizes user's metadata.
     def summarize_metadata(self, doc_id: str, doc_version: int):
         with self.engine.begin() as conn:
             # find the min and max chunk_id of the document
@@ -563,13 +564,9 @@ class SQLiteChunkStore(ChunkStore):
                             "max": max_value,
                             "type": metadata_type.value,
                         }
-
-                elif metadata_type == MetadataType.STRING:
+                else:
                     stmt = (
-                        select(
-                            metadata_table.c.key,
-                            func.group_concat(distinct(metadata_table.c.value), ","),
-                        )
+                        select(metadata_table.c.key, metadata_table.c.value)
                         .where(
                             and_(
                                 metadata_table.c.chunk_id >= min_chunk_id,
@@ -578,23 +575,24 @@ class SQLiteChunkStore(ChunkStore):
                                     metadata_table.c.key.notin_(
                                         ["highlight", "chunk_boxes"]
                                     )
-                                    if is_pdf
+                                    if metadata_type == MetadataType.STRING and is_pdf
                                     else True
                                 ),  # Don't summarize PDF's internal metadata ['highlight', 'chunk_boxes']
                             )
                         )
-                        .group_by(metadata_table.c.key)
+                        .group_by(metadata_table.c.key, metadata_table.c.value)
                     )
 
                     result = conn.execute(stmt).fetchall()
-                    for column_name, unique_values in result:
-                        summarized_metadata[column_name] = {
-                            "unique_values": unique_values,
-                            "type": metadata_type.value,
-                        }
-                else:
-                    # Boolean type
-                    summarized_metadata[column_name] = {"type": metadata_type.value}
+                    for column_name, col_value in result:
+                        if column_name not in summarized_metadata:
+                            summarized_metadata[column_name] = {
+                                "unique_values": [],
+                                "type": metadata_type.value,
+                            }
+                        summarized_metadata[column_name]["unique_values"].append(
+                            col_value
+                        )
 
         return summarized_metadata
 
