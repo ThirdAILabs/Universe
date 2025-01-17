@@ -7,6 +7,7 @@
 #include <rocksdb/slice.h>
 #include <rocksdb/status.h>
 #include <search/src/inverted_index/BM25.h>
+#include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/neural_db/Chunk.h>
 #include <search/src/neural_db/Constraints.h>
@@ -76,6 +77,14 @@ std::vector<rocksdb::ColumnFamilyDescriptor> columnFamilies() {
       {"id_map", concat_options},
   };
 }
+
+std::unique_ptr<OnDiskNeuralDB> OnDiskNeuralDB::make(
+    const std::string& save_path) {
+  return std::make_unique<OnDiskNeuralDB>(save_path);
+}
+
+OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path)
+    : OnDiskNeuralDB(save_path, IndexConfig(), false) {}
 
 OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
                                const IndexConfig& config, bool read_only)
