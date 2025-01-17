@@ -42,6 +42,6 @@ def test_pdf_table_parsing():
     find_table(df, table_string)
 
 
-def test_pdf_table_parsing_with_section_titles():
-    pdf = ndb.PDF(PRIAXOR_PDF_FILE, version="v2", table_parsing=True)
-    pdf = ndb.PDF(CITI_PDF_FILE, version="v2", table_parsing=True)
+@pytest.mark.parametrize("pdf_file", [PRIAXOR_PDF_FILE, CITI_PDF_FILE])
+def test_pdf_table_parsing_with_section_titles(pdf_file):
+    pdf = ndb.PDF(pdf_file, version="v2", table_parsing=True)

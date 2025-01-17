@@ -1,5 +1,9 @@
 import re
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from enum import IntEnum
+from typing import Iterable, Optional
 
+import fitz
 import unidecode
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -9,6 +13,11 @@ MIN_WORDS_PER_CHUNK = 50
 CHUNK_THRESHOLD = 150
 MAX_CHUNK_LEN = 750
 MIN_CHUNK_LEN = 20
+
+
+class BlockType(IntEnum):
+    Text = 0
+    Image = 1
 
 
 # Convert a string to a unicode string
@@ -98,3 +107,55 @@ def clean_text(text: str) -> str:
     )
 
     return text
+
+
+def extract_text(file_path: str, page_num: int, method: str, with_images: bool):
+    with fitz.open(file_path) as doc:
+        page = doc[page_num]
+
+        if with_images:
+            # https://github.com/pymupdf/PyMuPDF/discussions/4217#discussioncomment-11796809
+            # TODO(Gautam/David): Since `get_textpage_ocr` is sufficient irrespective of `with_images` flag, test all the demos and modify (if they break) to remove this flag `with_images` in future.
+            handler = page.get_textpage_ocr(
+                tessdata=fitz.get_tessdata()
+            )  # By default, `full` param is false
+        else:
+            handler = page.get_textpage()
+
+        if method.lower() == "dict":
+            return handler.extractDICT(), page_num
+        elif method.lower() == "blocks":
+            return handler.extractBLOCKS(), page_num
+        raise TypeError("Unsupported method. Use ['blocks' or 'dict']")
+
+
+def get_fitz_text_pages(
+    file_path: str,
+    method: str,
+    page_numbers: Optional[Iterable[int]] = None,
+    with_images: bool = False,
+    parallelize: bool = False,
+):
+    if page_numbers is None:
+        with fitz.open(file_path) as doc:
+            page_numbers = list(range(len(doc)))
+
+    text_pages = {}
+    if parallelize:
+        with ProcessPoolExecutor() as executor:
+            futures = []
+            # Submit arguments to the executor
+            for page_no in page_numbers:
+                future = executor.submit(
+                    extract_text, file_path, page_no, method, with_images
+                )
+                futures.append(future)
+
+            for future in as_completed(futures):
+                text, page_num = future.result()
+                text_pages[page_num] = text
+    else:
+        for page_num in page_numbers:
+            text, _ = extract_text(file_path, page_num, method, with_images)
+            text_pages[page_num] = text
+    return text_pages

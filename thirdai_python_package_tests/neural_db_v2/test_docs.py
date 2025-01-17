@@ -7,6 +7,7 @@ from ndbv2_utils import (
     CSV_FILE,
     DOCX_FILE,
     EML_FILE,
+    IMAGE_PDF_FILE,
     PDF_FILE,
     PPTX_FILE,
     TXT_FILE,
@@ -264,3 +265,25 @@ def test_in_memory_text_doc(metadata):
 
     assert (chunks.text == pd.Series(["a b", "c d"])).all()
     assert (chunks.metadata["item"] == pd.Series([1, 2])).all()
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+@pytest.mark.parametrize("parallelize", [True, False])
+def test_image_pdf_parsing(version, parallelize):
+    pdf = PDF(
+        IMAGE_PDF_FILE, version=version, with_images=True, parallelize=parallelize
+    )
+    chunk = pdf.chunks()[0]  # only have one chunk
+
+    # text 'definition of climate change' should be extracted from the image present in the IMAGE_PDF_FILE
+    assert not chunk.text[
+        chunk.text.str.contains("definition of climate change", case=True)
+    ].empty
+
+    pdf = PDF(IMAGE_PDF_FILE, version=version)
+    chunk = pdf.chunks()[0]
+
+    # text 'definition of climate change' should not be extracted from the image present in the IMAGE_PDF_FILE
+    assert chunk.text[
+        chunk.text.str.contains("definition of climate change", case=True)
+    ].empty
