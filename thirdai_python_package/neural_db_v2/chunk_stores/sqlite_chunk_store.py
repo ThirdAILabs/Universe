@@ -502,16 +502,6 @@ class SQLiteChunkStore(ChunkStore):
         with self.engine.connect() as conn:
             return set(row.chunk_id for row in conn.execute(query))
 
-    def fetch_metadata_types(self):
-        with self.engine.begin() as conn:
-            return dict(
-                conn.execute(
-                    select(
-                        self.metadata_type_table.c.key, self.metadata_type_table.c.type
-                    )
-                ).fetchall()
-            )
-
     def get_doc_chunks(self, doc_id: str, before_version: int) -> List[ChunkId]:
         stmt = select(self.chunk_table.c.chunk_id).where(
             (self.chunk_table.c.doc_id == doc_id)
