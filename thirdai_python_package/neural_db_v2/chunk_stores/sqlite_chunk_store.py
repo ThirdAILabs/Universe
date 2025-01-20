@@ -569,7 +569,7 @@ class SQLiteChunkStore(ChunkStore):
                 if metadata_type == MetadataType.STRING:
                     delete_stmt = delete(metadata_table).where(
                         metadata_table.c.chunk_id.in_(chunk_ids)
-                    )
+                    ).where(~metadata_table.c.key.in_(["page", "highlight"]))
                     conn.execute(delete_stmt)
                     insert_data = [
                         {"chunk_id": chunk_id, "key": str(key), "value": str(value)}
