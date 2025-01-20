@@ -16,6 +16,7 @@
 #include <search/src/neural_db/on_disk/MergeOperators.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <numeric>
@@ -33,6 +34,8 @@ constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 constexpr size_t TOP_QUERIES = 10;
 constexpr float LAMBDA = 0.6;
 
+constexpr char DOC_VER_DELIMITER = ';';
+
 static std::string dbPath(const std::string& base) {
   return (std::filesystem::path(base) / "model").string();
 }
@@ -42,7 +45,7 @@ static std::string metadataPath(const std::string& base) {
 }
 
 std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
-  return doc_id + "_" + std::to_string(doc_version);
+  return doc_id + DOC_VER_DELIMITER + std::to_string(doc_version);
 }
 
 rocksdb::Options dbOptions() {
@@ -142,6 +145,10 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
                                       std::optional<uint32_t> doc_version_opt) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
+  }
+
+  if (doc_id.find_first_of(DOC_VER_DELIMITER) != std::string::npos) {
+    throw std::invalid_argument("doc id cannot contain ';'");
   }
 
   auto initTxn = newTxn();  // this will be committed by the index
@@ -428,7 +435,8 @@ void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
   finetune(sources, labels);
 }
 
-void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, uint32_t doc_version) {
+void OnDiskNeuralDB::deleteDocVersion(const DocId& doc_id,
+                                      uint32_t doc_version) {
   auto txn = newTxn();
 
   const auto doc_chunks = deleteDocChunkRangesAndName(txn, doc_id, doc_version);
@@ -482,6 +490,75 @@ std::unordered_set<ChunkId> OnDiskNeuralDB::deleteDocChunkRangesAndName(
   return deleted_ids;
 }
 
+void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, bool keep_latest_version) {
+  auto versions = getDocVersions(doc_id);
+
+  if (versions.empty()) {
+    return;
+  }
+
+  uint32_t maxVersion = versions[0];
+  for (uint32_t version : versions) {
+    if (version > maxVersion) {
+      maxVersion = version;
+    }
+  }
+
+  for (uint32_t version : versions) {
+    if (keep_latest_version && version == maxVersion) {
+      continue;
+    }
+
+    try {
+      deleteDocVersion(doc_id, version);
+    } catch (const NeuralDbError& e) {
+      if (e.code() != ErrorCode::DocNotFound) {
+        // DocNotFound is ok, possible with concurrent deletets. Rethrow other
+        // errors.
+        throw;
+      }
+    }
+  }
+}
+
+std::pair<DocId, uint32_t> parseDocIdAndVersion(const std::string& key) {
+  auto loc = key.find_first_of(DOC_VER_DELIMITER);
+  if (loc == std::string::npos) {
+    throw NeuralDbError(ErrorCode::MalformedData,
+                        "invalid document version key");
+  }
+
+  const std::string doc_id = key.substr(0, loc);
+  uint32_t version;
+  try {
+    version = std::stoul(key.substr(loc + 1));
+  } catch (const std::invalid_argument& e) {  // parse error
+    throw NeuralDbError(ErrorCode::MalformedData,
+                        "invalid document version key");
+  }
+
+  return {doc_id, version};
+}
+
+std::vector<uint32_t> OnDiskNeuralDB::getDocVersions(const DocId& doc_id) {
+  auto iter = std::unique_ptr<rocksdb::Iterator>(
+      _db->NewIterator(rocksdb::ReadOptions(), _doc_id_to_name));
+
+  std::vector<uint32_t> versions;
+  for (iter->Seek(doc_id); iter->Valid() && iter->key().starts_with(doc_id);
+       iter->Next()) {
+    auto key = iter->key().ToString();
+
+    const auto [parsed_doc_id, version] = parseDocIdAndVersion(key);
+
+    if (parsed_doc_id == doc_id) {
+      versions.push_back(version);
+    }
+  }
+
+  return versions;
+}
+
 void OnDiskNeuralDB::prune() {
   auto txn = newTxn();
   _chunk_index->prune(txn);  // txn is commit by index
@@ -494,15 +571,7 @@ std::vector<Source> OnDiskNeuralDB::sources() {
   std::vector<Source> sources;
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     auto key = iter->key().ToString();
-    auto loc = key.find_last_of('_');
-    if (loc == std::string::npos) {
-      throw NeuralDbError(ErrorCode::MalformedData,
-                          "invalid document version key");
-    }
-
-    const std::string doc_id = key.substr(0, loc);
-    const uint32_t version = std::stoul(key.substr(loc + 1));
-
+    const auto [doc_id, version] = parseDocIdAndVersion(key);
     sources.emplace_back(iter->value().ToString(), doc_id, version);
   }
 

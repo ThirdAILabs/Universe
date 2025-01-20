@@ -46,7 +46,9 @@ class OnDiskNeuralDB final : public NeuralDB {
                  const std::vector<std::string>& targets,
                  uint32_t strength) final;
 
-  void deleteDoc(const DocId& doc_id, uint32_t doc_version) final;
+  void deleteDocVersion(const DocId& doc_id, uint32_t doc_version) final;
+
+  void deleteDoc(const DocId& doc_id, bool keep_latest_version) final;
 
   void prune() final;
 
@@ -74,6 +76,8 @@ class OnDiskNeuralDB final : public NeuralDB {
   std::unordered_set<ChunkId> deleteDocChunkRangesAndName(TxnPtr& txn,
                                                           const DocId& doc_id,
                                                           uint32_t version);
+
+  std::vector<uint32_t> getDocVersions(const DocId& doc_id);
 
   std::string _save_path;
 
