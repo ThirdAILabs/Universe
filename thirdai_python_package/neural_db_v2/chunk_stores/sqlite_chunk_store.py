@@ -560,6 +560,25 @@ class SQLiteChunkStore(ChunkStore):
                 for row in conn.execute(stmt).all()
             ]
 
+    def update_metadata(self, doc_id: str, new_metadata: Dict[str, str]):
+        chunk_ids = self.get_doc_chunks(doc_id, float("inf"))
+        if not chunk_ids:
+            raise ValueError(f"No chunks found for document ID: {doc_id}")
+        with self.engine.begin() as conn:
+            for metadata_type, metadata_table in self.metadata_tables.items():
+                if metadata_type == MetadataType.STRING:
+                    delete_stmt = delete(metadata_table).where(
+                        metadata_table.c.chunk_id.in_(chunk_ids)
+                    )
+                    conn.execute(delete_stmt)
+                    insert_data = [
+                        {"chunk_id": chunk_id, "key": str(key), "value": str(value)}
+                        for chunk_id in chunk_ids
+                        for key, value in new_metadata.items()
+                    ]
+
+                    conn.execute(metadata_table.insert(), insert_data)
+
     def save(self, path: str):
         shutil.copyfile(self.db_name, path)
 

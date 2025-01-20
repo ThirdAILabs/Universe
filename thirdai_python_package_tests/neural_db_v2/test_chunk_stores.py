@@ -705,3 +705,37 @@ def test_chunk_context(chunk_store):
     # Context should not go to different version of same doc
     assert get_context_text(a3, 2) == ["a1", "a2", "a3", "a4"]
     assert get_context_text(a5, 1) == ["a5", "a6"]
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_doc_metadata_chunk_store(chunk_store):
+    store = chunk_store()
+
+    store.insert(
+        [
+            InMemoryText(
+                document_name="b.txt",
+                text=["b1", "b2", "b3"],
+                doc_id="b1",
+                doc_metadata={"brand": "haier", "model_id": "12345"},
+            ),
+            InMemoryText(
+                document_name="a.txt",
+                text=["a5", "a6"],
+                doc_id="a1",
+                doc_metadata={"brand": "haier", "model_id": "12345"},
+            ),
+        ]
+    )
+
+    for doc_id in ["b1", "a1"]:
+        chunks = store.get_chunks(
+            store.get_doc_chunks(doc_id, before_version=float("inf"))
+        )
+        assert chunks[0].metadata == {"brand": "haier", "model_id": "12345"}
+
+    new_metadata = {"brand": "haier", "model_id": "123456"}
+    store.update_metadata("a1", new_metadata)
+
+    chunks = store.get_chunks(store.get_doc_chunks("a1", before_version=float("inf")))
+    assert chunks[0].metadata == {"brand": "haier", "model_id": "123456"}

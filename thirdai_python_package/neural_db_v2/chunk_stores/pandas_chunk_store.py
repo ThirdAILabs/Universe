@@ -190,6 +190,12 @@ class PandasChunkStore(ChunkStore):
             for row in rows.itertuples()
         ]
 
+    def update_metadata(self, doc_id: str, new_metadata: Dict[str, str]):
+        chunk_ids = self.get_doc_chunks(doc_id, float("inf"))
+        self.metadata_df.loc[chunk_ids, list(new_metadata.keys())] = pd.DataFrame(
+            [new_metadata] * len(chunk_ids), index=chunk_ids
+        )
+
     def save(self, path: str):
         pickle_to(self, path)
 

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Set, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 from .documents import Document
 from .types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
@@ -33,6 +33,10 @@ class ChunkStore(ABC):
     @abstractmethod
     def max_version_for_doc(self, doc_id: str) -> int:
         raise NotImplementedError
+
+    @abstractmethod
+    def update_metadata(self, doc_id: str, new_metadata: Dict[str, str]):
+        pass
 
     @abstractmethod
     def documents(self) -> List[dict]:
