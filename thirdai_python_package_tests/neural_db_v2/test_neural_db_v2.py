@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 from pathlib import Path
 
@@ -96,6 +97,90 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     os.remove(csv_file_name)
 
     clean_up_sql_lite_db(db.chunk_store)
+
+
+@pytest.mark.release
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_summarized_metadata(chunk_store):
+    db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=FinetunableRetriever())
+
+    def generate_chunk_metadata(n_chunks: int):
+        # prepare integer col
+        integer_col = [random.randint(-200, 200) for _ in range(n_chunks)]
+
+        # prepare bool col
+        bool_col = random.choice([[True, False], [True], [False]])
+        bool_col = bool_col * (n_chunks // len(bool_col))
+
+        # prepare float col
+        float_col = [random.uniform(-200, 200) for _ in range(n_chunks)]
+
+        # prepare string col
+        values = [
+            "apple",
+            "banana",
+            "cherry",
+            "date",
+            "elderberry",
+            "fig",
+            "grape",
+            "honeydew",
+            "kiwi",
+            "lemon",
+        ]
+        string_col = random.sample(values, k=min(n_chunks, 5))
+
+        if len(string_col) < n_chunks:
+            string_col = string_col * ((n_chunks // len(string_col)) + 1)
+            string_col = random.sample(string_col, k=n_chunks)
+
+        return integer_col, float_col, bool_col, string_col
+
+    n_chunks = 100
+    doc_a_metadata = generate_chunk_metadata(n_chunks)
+    doc_b_metadata = generate_chunk_metadata(n_chunks)
+
+    doc_metadata = {
+        "a": {
+            "doc_a_integer": doc_a_metadata[0],
+            "doc_a_float": doc_a_metadata[1],
+            "doc_a_bool": doc_a_metadata[2],
+            "doc_a_string": doc_a_metadata[3],
+        },
+        "b": {
+            "doc_b_integer": doc_b_metadata[0],
+            "doc_b_float": doc_b_metadata[1],
+            "doc_b_bool": doc_b_metadata[2],
+            "doc_b_string": doc_b_metadata[3],
+        },
+    }
+    db.insert(
+        [
+            ndb.InMemoryText(
+                "doc_a",
+                text=["Random text"] * n_chunks,
+                chunk_metadata=doc_metadata["a"],
+                doc_id="a",
+            ),
+            ndb.InMemoryText(
+                "doc_b",
+                text=["Another random text"] * n_chunks,
+                chunk_metadata=doc_metadata["b"],
+                doc_id="b",
+            ),
+        ]
+    )
+
+    summarized_metadata = db.chunk_store.summarized_metadata
+
+    for doc_id in ["a", "b"]:
+        for metadata_col_name, metadata_values in doc_metadata[doc_id].items():
+            summary = summarized_metadata[doc_id][1][metadata_col_name].summary
+            if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
+                assert min(metadata_values) == summary.min
+                assert max(metadata_values) == summary.max
+            else:
+                assert summary.unique_values == set(metadata_values)
 
 
 @pytest.mark.release
