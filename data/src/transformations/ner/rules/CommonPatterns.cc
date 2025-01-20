@@ -2,7 +2,6 @@
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <utils/text/StringManipulation.h>
-#include <iostream>
 #include <optional>
 #include <stdexcept>
 
@@ -27,7 +26,7 @@ bool isLuhnValid(const std::string& number) {
 
 std::optional<ValidatorSubMatch> creditCardLuhnCheck(
     const std::string& number) {
-  // Split by spaces
+  // Split by spaces and non-digits
   std::vector<std::string> number_groups;
   std::string current;
   size_t current_pos = 0;
