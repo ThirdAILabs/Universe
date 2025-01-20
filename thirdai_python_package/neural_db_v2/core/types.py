@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -187,3 +187,20 @@ sql_type_mapping = {
     MetadataType.FLOAT: Float,
     MetadataType.BOOLEAN: Boolean,
 }
+
+
+@dataclass
+class NumericChunkMetadataSummary:
+    min: Union[float, int]
+    max: Union[float, int]
+
+
+@dataclass
+class StringChunkMetadataSummary:
+    unique_values: Set[str]
+
+
+@dataclass
+class ChunkMetaDataSummary:
+    metadata_type: MetadataType
+    summary: Union[NumericChunkMetadataSummary, StringChunkMetadataSummary]

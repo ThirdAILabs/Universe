@@ -107,18 +107,17 @@ class InRange(Constraint):
         self.max_inclusive = max_inclusive
 
     def sql_condition(self, column_name: str, table: Table):
-        comparsions = []
         if self.min_inclusive:
-            comparsions.append(table.c.value >= self.value)
+            lower_condition = table.c.value >= self.value
         else:
-            comparsions.append(table.c.value > self.value)
+            lower_condition = table.c.value > self.value
 
         if self.max_inclusive:
-            comparsions.append(table.c.value <= self.value)
+            upper_condition = table.c.value <= self.value
         else:
-            comparsions.append(table.c.value < self.value)
+            upper_condition = table.c.value < self.value
 
-        return and_(table.c.key == column_name, *comparsions)
+        return and_(table.c.key == column_name, lower_condition, upper_condition)
 
     def pd_filter(self, column_name: str, df: pd.DataFrame):
         if self.min_inclusive:

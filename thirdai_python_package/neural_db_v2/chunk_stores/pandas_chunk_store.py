@@ -9,7 +9,13 @@ from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
-from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
+from ..core.types import (
+    Chunk,
+    ChunkBatch,
+    ChunkId,
+    InsertedDocMetadata,
+    pandas_type_to_metadata_type,
+)
 from .constraints import Constraint
 
 
@@ -67,6 +73,24 @@ class PandasChunkStore(ChunkStore):
                     metadata = batch.metadata.copy(deep=False)
                     metadata["chunk_id"] = chunk_ids
                     all_metadata.append(metadata)
+
+                    # summarize the metadata
+                    key_to_pandas_type = metadata.dtypes.to_dict()
+
+                    key_to_metadata_types = {
+                        key: pandas_type_to_metadata_type[pandas_type]
+                        for key, pandas_type in key_to_pandas_type.items()
+                        if pandas_type in pandas_type_to_metadata_type
+                    }
+
+                    for key, metadata_type in key_to_metadata_types.items():
+                        metadata_col = metadata[key].dropna()
+                        if metadata_col.empty:
+                            continue
+
+                        self._summarize_metadata(
+                            key, metadata_col, metadata_type, doc_id, doc_version
+                        )
 
                 output_batches.append(
                     ChunkBatch(

@@ -1,4 +1,5 @@
 import itertools
+import random
 import shutil
 import uuid
 from collections import defaultdict
@@ -257,7 +258,13 @@ class SQLiteChunkStore(ChunkStore):
             method=sqlite_insert_bulk if bulk_insert else None,
         )
 
-    def _store_metadata(self, metadata_df: pd.DataFrame, chunk_ids: pd.Series):
+    def _store_metadata(
+        self,
+        metadata_df: pd.DataFrame,
+        chunk_ids: pd.Series,
+        doc_id: int,
+        doc_version: int,
+    ):
         with self.engine.begin() as conn:
             key_to_pandas_type = metadata_df.dtypes.to_dict()
 
@@ -293,6 +300,12 @@ class SQLiteChunkStore(ChunkStore):
                 metadata_col = metadata_df[key].dropna()
                 if metadata_col.empty:
                     continue
+
+                # summarize the metadata
+                self._summarize_metadata(
+                    key, metadata_col, metadata_type, doc_id, doc_version
+                )
+
                 df_to_insert = pd.DataFrame(
                     {
                         "chunk_id": chunk_ids.loc[metadata_col.index],
@@ -339,9 +352,13 @@ class SQLiteChunkStore(ChunkStore):
                     singlevalue_metadata, multivalue_metadata = (
                         separate_multivalue_columns(batch.metadata)
                     )
-                    self._store_metadata(singlevalue_metadata, chunk_ids)
+                    self._store_metadata(
+                        singlevalue_metadata, chunk_ids, doc_id, doc_version
+                    )
                     for col in multivalue_metadata:
-                        flattened_metadata = flatten_multivalue_column(col, chunk_ids)
+                        flattened_metadata = flatten_multivalue_column(
+                            col, chunk_ids, doc_id, doc_version
+                        )
                         self._store_metadata(
                             flattened_metadata[[col.name]],
                             flattened_metadata["chunk_id"],
@@ -510,85 +527,6 @@ class SQLiteChunkStore(ChunkStore):
 
         with self.engine.connect() as conn:
             return [row.chunk_id for row in conn.execute(stmt)]
-
-    # summarizes user's metadata.
-    def summarize_metadata(self, doc_id: str, doc_version: int):
-        with self.engine.begin() as conn:
-            # find the min and max chunk_id of the document
-            stmt = select(
-                self.chunk_table.c.document,
-                func.min(self.chunk_table.c.chunk_id),
-                func.max(self.chunk_table.c.chunk_id),
-            ).where(
-                and_(
-                    self.chunk_table.c.doc_id == doc_id,
-                    self.chunk_table.c.doc_version == doc_version,
-                )
-            )
-            result = conn.execute(stmt).fetchone()
-            if not result:
-                raise ValueError("Non-existing Doc ID or Doc version")
-
-            document_path, min_chunk_id, max_chunk_id = result
-            is_pdf = document_path.endswith(".pdf")
-
-            # summarize the metadata information for the doc
-            summarized_metadata = {}
-            for metadata_type, metadata_table in self.metadata_tables.items():
-                if metadata_type in [MetadataType.FLOAT, MetadataType.INTEGER]:
-                    stmt = (
-                        select(
-                            metadata_table.c.key,
-                            func.min(metadata_table.c.value),
-                            func.max(metadata_table.c.value),
-                        )
-                        .where(
-                            and_(
-                                metadata_table.c.chunk_id >= min_chunk_id,
-                                metadata_table.c.chunk_id <= max_chunk_id,
-                            )
-                        )
-                        .group_by(metadata_table.c.key)
-                    )
-
-                    result = conn.execute(stmt).fetchall()
-                    for column_name, min_value, max_value in result:
-                        summarized_metadata[column_name] = {
-                            "min": min_value,
-                            "max": max_value,
-                            "type": metadata_type.value,
-                        }
-                else:
-                    stmt = (
-                        select(metadata_table.c.key, metadata_table.c.value)
-                        .where(
-                            and_(
-                                metadata_table.c.chunk_id >= min_chunk_id,
-                                metadata_table.c.chunk_id <= max_chunk_id,
-                                (
-                                    metadata_table.c.key.notin_(
-                                        ["highlight", "chunk_boxes"]
-                                    )
-                                    if metadata_type == MetadataType.STRING and is_pdf
-                                    else True
-                                ),  # Don't summarize PDF's internal metadata ['highlight', 'chunk_boxes']
-                            )
-                        )
-                        .group_by(metadata_table.c.key, metadata_table.c.value)
-                    )
-
-                    result = conn.execute(stmt).fetchall()
-                    for column_name, col_value in result:
-                        if column_name not in summarized_metadata:
-                            summarized_metadata[column_name] = {
-                                "unique_values": [],
-                                "type": metadata_type.value,
-                            }
-                        summarized_metadata[column_name]["unique_values"].append(
-                            col_value
-                        )
-
-        return summarized_metadata
 
     def max_version_for_doc(self, doc_id: str) -> int:
         stmt = select(func.max(self.chunk_table.c.doc_version)).where(
