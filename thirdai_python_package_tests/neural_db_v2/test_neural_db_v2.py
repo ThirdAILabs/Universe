@@ -182,6 +182,8 @@ def test_summarized_metadata(chunk_store):
             else:
                 assert summary.unique_values == set(metadata_values)
 
+    clean_up_sql_lite_db(db.chunk_store)
+
 
 @pytest.mark.release
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
