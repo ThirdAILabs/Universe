@@ -103,7 +103,7 @@ class ChunkStore(ABC):
                 metadata_type=metadata_type,
                 summary=StringChunkMetadataSummary(
                     unique_values=random.sample(
-                        unique_values, k=100
+                        unique_values, k=min(len(unique_values), 100)
                     )  # randomly take 100 unique samples
                 ),
             )
