@@ -580,7 +580,7 @@ class SQLiteChunkStore(ChunkStore):
                 for row in conn.execute(stmt).all()
             ]
 
-    def _load_summarized_metadata(self, doc_id: int, doc_version: int):
+    def _get_extreme_doc_chunk_ids(self, doc_id: int, doc_version):
         with self.engine.begin() as conn:
             stmt = select(
                 func.min(self.chunk_table.c.chunk_id),
@@ -591,11 +591,15 @@ class SQLiteChunkStore(ChunkStore):
                     self.chunk_table.c.doc_version == doc_version,
                 )
             )
-            result = conn.execute(stmt).fetchone()
-            if result is None:
-                raise ValueError("Invalid doc-id or doc-version.")
+            return conn.execute(stmt).fetchone()
 
-            min_chunk_id, max_chunk_id = result
+    def _load_summarized_metadata(self, doc_id: int, doc_version: int):
+        doc_extreme_chunk_id = self._get_extreme_doc_chunk_ids(doc_id, doc_version)
+        if doc_extreme_chunk_id is None:
+            raise ValueError("Invalid doc-id or doc-version.")
+
+        with self.engine.begin() as conn:
+            min_chunk_id, max_chunk_id = doc_extreme_chunk_id
 
             document_summarized_metadata = {}
             for metadata_type, metadata_table in self.metadata_tables.items():
