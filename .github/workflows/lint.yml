@@ -25,10 +25,7 @@ jobs:
     steps:
       - name: Install clang tidy
         run: |
-          clang-tidy --version
           sudo apt install clang-tidy-15
-          clang-tidy --version
-          clang-tidy-15 --version
 
       - uses: actions/checkout@v2
         with:           
@@ -36,4 +33,4 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
       - name: Run clang-tidy linting on all files
         run: |
-          bin/lint.py
+          bin/lint.py --clang_tidy_cmd clang-tidy-15

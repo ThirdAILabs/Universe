@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import subprocess
 import time
+import argparse
 from pathlib import Path
 
 
@@ -80,7 +81,7 @@ def try_starting_new_processes(
 
 # Returns a list of all (clang tidy command, log_path) pairs for all .cc file
 # we need to lint
-def get_clang_tidy_commands_to_run():
+def get_clang_tidy_commands_to_run(clang_tidy_cmd):
     commands_to_run = []
 
     for cc_file in list(get_our_files("*.cc")):
@@ -92,7 +93,7 @@ def get_clang_tidy_commands_to_run():
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path = str(log_path.resolve())
         commands_to_run.append(
-            (f"clang-tidy  -quiet {cc_file} > {log_path} 2>&1 ", log_path)
+            (f"{clang_tidy_cmd} -quiet {cc_file} > {log_path} 2>&1 ", log_path)
         )
     return commands_to_run
 
@@ -105,7 +106,7 @@ def get_clang_tidy_commands_to_run():
 # that until all commands have finished. If there were errors, this function
 # exits() with the number of errors and prints the logs from each of the files
 # with errors. Otherwise, it just returns.
-def run_clang_tidy():
+def run_clang_tidy(clang_tidy_cmd):
     max_concurrent_jobs = int(1.5 * multiprocessing.cpu_count())
 
     # Total number of errors summed across processes
@@ -114,7 +115,7 @@ def run_clang_tidy():
     # Map from log_path: process
     log_path_to_running_process = {}
 
-    commands_to_run = get_clang_tidy_commands_to_run()
+    commands_to_run = get_clang_tidy_commands_to_run(clang_tidy_cmd)
 
     while len(commands_to_run) > 0 or len(log_path_to_running_process) > 0:
         log_paths = list(log_path_to_running_process.keys())
@@ -128,14 +129,23 @@ def run_clang_tidy():
         exit(total_errors)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--clang_tidy_cmd", type=str, default="clang-tidy")
+
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     os.chdir(universe_dir())
 
     ensure_compile_commands_db_created()
 
     pragma_once_check()
 
-    run_clang_tidy()
+    run_clang_tidy(args.clang_tidy_cmd)
 
 
 if __name__ == "__main__":
