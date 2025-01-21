@@ -182,15 +182,17 @@ def test_summarized_metadata(chunk_store):
                 assert max(metadata_values) == summary.max
             else:
                 assert summary.unique_values == set(metadata_values)
-    
-    # Also check that the loaded chunk_store have the same summarized_metadata
-    db.save('saved.ndb')
 
-    loaded_db = db.load('saved.ndb')
+    # Also check that the loaded chunk_store have the same summarized_metadata
+    db.save("saved.ndb")
+
+    loaded_db = db.load("saved.ndb")
     loaded_db_summarized_metadata = loaded_db.chunk_store.summarized_metadata
     for doc_id in ["a", "b"]:
         for metadata_col_name, metadata_values in doc_metadata[doc_id].items():
-            summary = loaded_db_summarized_metadata[doc_id][1][metadata_col_name].summary
+            summary = loaded_db_summarized_metadata[doc_id][1][
+                metadata_col_name
+            ].summary
             if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
                 assert min(metadata_values) == summary.min
                 assert max(metadata_values) == summary.max
@@ -199,6 +201,7 @@ def test_summarized_metadata(chunk_store):
 
     clean_up_sql_lite_db(db.chunk_store)
     clean_up_sql_lite_db(loaded_db.chunk_store)
+
 
 @pytest.mark.release
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
