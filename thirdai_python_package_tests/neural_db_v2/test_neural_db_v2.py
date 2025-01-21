@@ -183,9 +183,10 @@ def test_summarized_metadata(chunk_store):
                 assert summary.unique_values == set(metadata_values)
 
     # Also check that the loaded chunk_store have the same summarized_metadata
-    db.save("saved.ndb")
+    save_file = "saved.ndb"
+    db.save(save_file)
 
-    loaded_db = db.load("saved.ndb")
+    loaded_db = db.load(save_file)
     loaded_db_summarized_metadata = loaded_db.chunk_store.summarized_metadata
     for doc_id in ["a", "b"]:
         for metadata_col_name, metadata_values in doc_metadata[doc_id].items():
@@ -199,7 +200,7 @@ def test_summarized_metadata(chunk_store):
                 assert summary.unique_values == set(metadata_values)
 
     clean_up_sql_lite_db(db.chunk_store)
-    clean_up_sql_lite_db(loaded_db.chunk_store)
+    shutil.rmtree(save_file)
 
 
 @pytest.mark.release
