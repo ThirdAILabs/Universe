@@ -242,6 +242,7 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata,
             Column("key", String, primary_key=True),
             Column("type", String),
+            Column("summarization", String),
             extend_existing=True,
         )
 
