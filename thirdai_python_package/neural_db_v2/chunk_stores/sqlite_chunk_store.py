@@ -35,8 +35,11 @@ from ..core.types import (
     Chunk,
     ChunkBatch,
     ChunkId,
+    ChunkMetaDataSummary,
     InsertedDocMetadata,
     MetadataType,
+    NumericChunkMetadataSummary,
+    StringChunkMetadataSummary,
     pandas_type_to_metadata_type,
     sql_type_mapping,
 )
@@ -242,7 +245,6 @@ class SQLiteChunkStore(ChunkStore):
             self.metadata,
             Column("key", String, primary_key=True),
             Column("type", String),
-            Column("summarization", String),
             extend_existing=True,
         )
 
@@ -578,6 +580,120 @@ class SQLiteChunkStore(ChunkStore):
                 for row in conn.execute(stmt).all()
             ]
 
+    def _load_summarized_metadata(self, doc_id: int, doc_version: int):
+        with self.engine.begin() as conn:
+            stmt = select(
+                func.min(self.chunk_table.c.chunk_id),
+                func.max(self.chunk_table.c.chunk_id),
+            ).where(
+                and_(
+                    self.chunk_table.c.doc_id == doc_id,
+                    self.chunk_table.c.doc_version == doc_version,
+                )
+            )
+            result = conn.execute(stmt).fetchone()
+            if result is None:
+                raise ValueError("Invalid doc-id or doc-version.")
+
+            min_chunk_id, max_chunk_id = result
+
+            document_summarized_metadata = {}
+            for metadata_type, metadata_table in self.metadata_tables.items():
+                if metadata_type in [MetadataType.FLOAT, MetadataType.INTEGER]:
+                    stmt = (
+                        select(
+                            metadata_table.c.key,
+                            func.min(metadata_table.c.value),
+                            func.max(metadata_table.c.value),
+                        )
+                        .where(
+                            and_(
+                                metadata_table.c.chunk_id >= min_chunk_id,
+                                metadata_table.c.chunk_id <= max_chunk_id,
+                            )
+                        )
+                        .group_by(metadata_table.c.key)
+                    )
+
+                    result = conn.execute(stmt).fetchall()
+                    for column_name, min_value, max_value in result:
+                        document_summarized_metadata[column_name] = (
+                            ChunkMetaDataSummary(
+                                metadata_type=metadata_type,
+                                summary=NumericChunkMetadataSummary(
+                                    min=min_value, max=max_value
+                                ),
+                            )
+                        )
+                elif metadata_type == MetadataType.STRING:
+                    subquery = (
+                        select(
+                            metadata_table.c.key,
+                            metadata_table.c.value,
+                            func.row_number()
+                            .over(
+                                partition_by=metadata_table.c.key,  # Partition by key
+                                order_by=func.random(),  # Randomize order within each key
+                            )
+                            .label("row_number"),  # Assign row numbers
+                        )
+                        .where(
+                            and_(
+                                metadata_table.c.chunk_id >= min_chunk_id,
+                                metadata_table.c.chunk_id <= max_chunk_id,
+                            )
+                        )
+                        .group_by(metadata_table.c.key, metadata_table.c.value)
+                        .subquery()
+                    )
+                    stmt = select(subquery.c.key, subquery.c.value).where(
+                        subquery.c.row_number <= 100
+                    )  # Limit to 100 rows per key
+
+                    result = conn.execute(stmt).fetchall()
+                    for column_name, col_value in result:
+                        if column_name not in document_summarized_metadata:
+                            document_summarized_metadata[column_name] = (
+                                ChunkMetaDataSummary(
+                                    metadata_type=metadata_type,
+                                    summary=StringChunkMetadataSummary(
+                                        unique_values=set()
+                                    ),
+                                )
+                            )
+                        document_summarized_metadata[
+                            column_name
+                        ].summary.unique_values.add(col_value)
+                else:
+                    # Bool metadata type
+                    stmt = (
+                        select(metadata_table.c.key, metadata_table.c.value)
+                        .where(
+                            and_(
+                                metadata_table.c.chunk_id >= min_chunk_id,
+                                metadata_table.c.chunk_id <= max_chunk_id,
+                            )
+                        )
+                        .group_by(metadata_table.c.key, metadata_table.c.value)
+                    )
+
+                    result = conn.execute(stmt).fetchall()
+                    for column_name, col_value in result:
+                        if column_name not in document_summarized_metadata:
+                            document_summarized_metadata[column_name] = (
+                                ChunkMetaDataSummary(
+                                    metadata_type=metadata_type,
+                                    summary=StringChunkMetadataSummary(
+                                        unique_values=set()
+                                    ),
+                                )
+                            )
+                        document_summarized_metadata[
+                            column_name
+                        ].summary.unique_values.add(col_value)
+
+        return document_summarized_metadata
+
     def save(self, path: str):
         shutil.copyfile(self.db_name, path)
 
@@ -646,4 +762,11 @@ class SQLiteChunkStore(ChunkStore):
             max_id = result.scalar()
             obj.next_id = (max_id or 0) + 1
 
+        # summarize the metadata
+        documents = obj.documents()
+        for doc_entry in documents:
+            doc_id, doc_version = doc_entry["doc_id"], doc_entry["doc_version"]
+            obj.summarized_metadata[doc_id][doc_version] = (
+                obj._load_summarized_metadata(doc_id, doc_version)
+            )
         return obj

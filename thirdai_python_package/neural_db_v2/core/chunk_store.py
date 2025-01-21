@@ -1,5 +1,6 @@
 import random
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import Iterable, List, Set, Tuple
 
 import pandas as pd
@@ -18,7 +19,10 @@ from .types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
 # instead of documents.
 class ChunkStore(ABC):
     def __init__(self):
-        self.summarized_metadata = {}
+        # doc_id --> doc_version --> key --> ChunkMetaDataSummary
+        self.summarized_metadata = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(ChunkMetaDataSummary))
+        )
 
     @abstractmethod
     def insert(
@@ -63,12 +67,6 @@ class ChunkStore(ABC):
         doc_version: int,
     ):
         # summarizing metadata
-        if doc_id not in self.summarized_metadata:
-            self.summarized_metadata[doc_id] = {}
-
-        if doc_version not in self.summarized_metadata[doc_id]:
-            self.summarized_metadata[doc_id][doc_version] = {}
-
         if metadata_type in [MetadataType.FLOAT, MetadataType.INTEGER]:
             if key not in self.summarized_metadata[doc_id][doc_version]:
                 self.summarized_metadata[doc_id][doc_version][key] = (
@@ -92,7 +90,7 @@ class ChunkStore(ABC):
         else:
             unique_values = set(metadata_series.unique())
 
-            if key in self.summarized_metadata:
+            if key in self.summarized_metadata[doc_id][doc_version]:
                 unique_values.add(
                     self.summarized_metadata[doc_id][doc_version][
                         key
