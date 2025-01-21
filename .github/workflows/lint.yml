@@ -20,17 +20,13 @@ on:
 jobs:
   clang-tidy:
     runs-on: 
-      labels: ubuntu-latest-16-cores
+      labels: ubuntu-22.04-8-core
 
     steps:
-      - name: Install clang tidy
-        run: |
-          sudo apt install clang-tidy-15
-
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
       - name: Run clang-tidy linting on all files
         run: |
-          bin/lint.py --clang_tidy_cmd clang-tidy-15
+          bin/lint.py

@@ -41,7 +41,7 @@ jobs:
           
   cpp-asan-tests:
     runs-on: 
-      labels: ubuntu-latest-8-cores
+      labels: ubuntu-22.04-8-core
     steps:
       - name: install gcc-11
         run: |
