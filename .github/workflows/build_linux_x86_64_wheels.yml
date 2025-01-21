@@ -20,7 +20,7 @@ on:
 
 jobs:
   build_wheels:
-    runs-on: ubuntu-22.04-8-core
+    runs-on: ubuntu-22.04-8-cores
 
     steps:
       - uses: actions/checkout@v2
