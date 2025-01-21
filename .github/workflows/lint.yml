@@ -23,6 +23,13 @@ jobs:
       labels: ubuntu-latest-16-cores
 
     steps:
+      - name: Install clang tidy
+        run: |
+          clang-tidy --version
+          sudo apt install clang-tidy-15
+          clang-tidy --version
+          clang-tidy-15 --version
+
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'

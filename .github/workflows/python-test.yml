@@ -20,8 +20,11 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   python-tests:
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-latest-8-cores
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -32,6 +35,8 @@ jobs:
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           bin/build.py --extras test
 
@@ -53,8 +58,11 @@ jobs:
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m unit --durations=0
 
   python-release-tests:
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-latest-8-cores
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -65,6 +73,8 @@ jobs:
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           pip3 install .[test]
 
@@ -85,8 +95,11 @@ jobs:
         run: cd build && python3 -m pytest ../ --ignore-glob=../deps -v -m release --durations=0
 
   distributed-python-tests:
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-latest-8-cores
     steps:
+      - name: install gcc-11
+        run: |
+          sudo apt install gcc-11 g++-11
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
@@ -97,6 +110,8 @@ jobs:
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
+          export CC=/usr/bin/gcc-11
+          export CXX=/usr/bin/g++-11
           python -m pip install --upgrade "pip!=22.0.1" "pip!=22.0.2" "pip!=22.0.0"
           bin/build.py --extras test
 
