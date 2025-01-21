@@ -73,12 +73,6 @@ jobs:
         with:
           go-version: 1.19
 
-      # Install teserract
-      - name: Install Tesseract OCR
-        run: |
-          sudo apt-get update
-          sudo apt-get install tesseract-ocr -y
-
       - name: Run python release tests
         env:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
