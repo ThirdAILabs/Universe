@@ -100,7 +100,6 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
 
 
 @pytest.mark.release
-@pytest.fixture(scope="function")
 @pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
 def test_summarized_metadata(chunk_store):
     db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=FinetunableRetriever())
