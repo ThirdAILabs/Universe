@@ -92,7 +92,7 @@ def get_clang_tidy_commands_to_run():
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path = str(log_path.resolve())
         commands_to_run.append(
-            (f"clang-tidy  -quiet {cc_file} > {log_path} 2>&1 ", log_path)
+            (f"clang-tidy -quiet {cc_file} > {log_path} 2>&1 ", log_path)
         )
     return commands_to_run
 
