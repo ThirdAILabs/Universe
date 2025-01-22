@@ -1,8 +1,10 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/utilities/checkpoint.h>
 #include <rocksdb/utilities/transaction.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/IndexConfig.h>

@@ -1,4 +1,5 @@
 #include "OnDiskNeuralDB.h"
+#include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/db.h>
@@ -583,8 +584,22 @@ void OnDiskNeuralDB::save(const std::string& save_path) const {
 
   createDirectory(save_path);
 
-  std::filesystem::copy(_save_path, save_path,
-                        std::filesystem::copy_options::recursive);
+  rocksdb::Checkpoint* ckpt_ptr;
+  auto ckpt_create_status = rocksdb::Checkpoint::Create(_db, &ckpt_ptr);
+
+  // Convert to unique pointer for better memory management
+  auto ckpt = std::unique_ptr<rocksdb::Checkpoint>(ckpt_ptr);
+
+  if (!ckpt_create_status.ok()) {
+    throw RocksdbError(ckpt_create_status, "creating checkpoint");
+  }
+
+  auto ckpt_save_status = ckpt->CreateCheckpoint(dbPath(save_path));
+  if (!ckpt_save_status.ok()) {
+    throw RocksdbError(ckpt_save_status, "saving checkpoint");
+  }
+
+  std::filesystem::copy(metadataPath(_save_path), metadataPath(save_path));
 }
 
 std::shared_ptr<OnDiskNeuralDB> OnDiskNeuralDB::load(
