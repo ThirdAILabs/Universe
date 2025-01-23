@@ -1,8 +1,10 @@
 #pragma once
 
+#include <archive/src/Archive.h>
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/utilities/checkpoint.h>
 #include <rocksdb/utilities/transaction.h>
 #include <rocksdb/utilities/transaction_db.h>
 #include <search/src/inverted_index/IndexConfig.h>
@@ -20,9 +22,12 @@ namespace thirdai::search::ndb {
 
 class OnDiskNeuralDB final : public NeuralDB {
  public:
+  static std::unique_ptr<OnDiskNeuralDB> make(const std::string& save_path);
+
+  explicit OnDiskNeuralDB(const std::string& save_path);
+
   explicit OnDiskNeuralDB(const std::string& save_path,
-                          const IndexConfig& config = IndexConfig(),
-                          bool read_only = false);
+                          const IndexConfig& config, bool read_only = false);
 
   InsertMetadata insert(const std::vector<std::string>& chunks,
                         const std::vector<MetadataMap>& metadata,
@@ -43,7 +48,9 @@ class OnDiskNeuralDB final : public NeuralDB {
                  const std::vector<std::string>& targets,
                  uint32_t strength) final;
 
-  void deleteDoc(const DocId& doc_id, uint32_t doc_version) final;
+  void deleteDocVersion(const DocId& doc_id, uint32_t doc_version) final;
+
+  void deleteDoc(const DocId& doc_id, bool keep_latest_version) final;
 
   void prune() final;
 
@@ -71,6 +78,8 @@ class OnDiskNeuralDB final : public NeuralDB {
   std::unordered_set<ChunkId> deleteDocChunkRangesAndName(TxnPtr& txn,
                                                           const DocId& doc_id,
                                                           uint32_t version);
+
+  std::vector<uint32_t> getDocVersions(const DocId& doc_id);
 
   std::string _save_path;
 
