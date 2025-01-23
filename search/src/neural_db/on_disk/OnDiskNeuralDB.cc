@@ -584,6 +584,12 @@ void OnDiskNeuralDB::save(const std::string& save_path) const {
 
   createDirectory(save_path);
 
+  /**
+   * The rocksdb checkpoint api will make sure that the save is done safely with
+   * the db while it is open. It also has nice optimizations like the ability to
+   * hard link sst files to the new directory if they are on the same device, so
+   * that they do not have to be copied.
+   */
   rocksdb::Checkpoint* ckpt_ptr;
   auto ckpt_create_status = rocksdb::Checkpoint::Create(_db, &ckpt_ptr);
 
