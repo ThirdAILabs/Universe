@@ -355,7 +355,7 @@ void createSearchSubmodule(py::module_& module) {
            // arg is 'associate_strength' for compatability with regular ndbv2
            py::arg("targets"), py::arg("associate_strength") = 4)
       .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
-           py::arg("doc_version"))
+           py::arg("keep_latest_version") = false)
       .def("sources", &ndb::NeuralDB::sources);
 
 #if !_WIN32
