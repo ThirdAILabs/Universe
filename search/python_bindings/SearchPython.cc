@@ -7,15 +7,15 @@
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
-#include <search/src/neural_db/Constraints.h>
 #include <stdexcept>
 #include <string>
 #if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <search/src/neural_db/Constraints.h>
+#include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
 #endif
 #include <search/src/inverted_index/Tokenizer.h>
-#include <search/src/neural_db/NeuralDB.h>
 #include <optional>
 
 namespace thirdai::search::python {
@@ -77,6 +77,7 @@ py::dict metadataToDict(const ndb::MetadataMap& map) {
   return dict;
 }
 
+#if !_WIN32
 ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
                                   const std::vector<std::string>& chunks,
                                   const std::vector<py::dict>& py_metadata,
@@ -95,6 +96,7 @@ ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
 
   return ndb->insert(chunks, metadata, document, doc_id, doc_version);
 }
+#endif
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
@@ -339,6 +341,7 @@ void createSearchSubmodule(py::module_& module) {
         return ndb::GreaterThan::make(objToMetadataValue(value));
       }));
 
+#if !_WIN32
   py::class_<ndb::NeuralDB, std::shared_ptr<ndb::NeuralDB>>(search_submodule,
                                                             "NeuralDB")
       .def("insert", &wrappedInsert, py::arg("chunks"),
@@ -358,7 +361,6 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("keep_latest_version") = false)
       .def("sources", &ndb::NeuralDB::sources);
 
-#if !_WIN32
   py::class_<ndb::OnDiskNeuralDB, ndb::NeuralDB,
              std::shared_ptr<ndb::OnDiskNeuralDB>>(search_submodule,
                                                    "OnDiskNeuralDB")

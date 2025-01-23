@@ -149,7 +149,10 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
   }
 
   if (doc_id.find_first_of(DOC_VER_DELIMITER) != std::string::npos) {
-    throw std::invalid_argument("doc id cannot contain ';'");
+    std::string error = "doc id cannot contain '";
+    error.push_back(DOC_VER_DELIMITER);
+    error.append("'");
+    throw std::invalid_argument(error);
   }
 
   auto initTxn = newTxn();  // this will be committed by the index
