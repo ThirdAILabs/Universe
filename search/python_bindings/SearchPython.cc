@@ -24,6 +24,7 @@ std::string pyTypeStr(const py::handle& obj) {
   return py::str(obj.get_type()).cast<std::string>();
 }
 
+#if !_WIN32
 ndb::MetadataValue objToMetadataValue(const py::handle& obj) {
   if (py::isinstance<py::bool_>(obj)) {
     return ndb::MetadataValue::Bool(obj.cast<bool>());
@@ -77,7 +78,6 @@ py::dict metadataToDict(const ndb::MetadataMap& map) {
   return dict;
 }
 
-#if !_WIN32
 ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
                                   const std::vector<std::string>& chunks,
                                   const std::vector<py::dict>& py_metadata,
@@ -287,6 +287,7 @@ void createSearchSubmodule(py::module_& module) {
       // This is deprecated, it is only for compatability loading old models.
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 
+#if !_WIN32
   py::class_<ndb::Chunk>(search_submodule, "Chunk")
       .def_readonly("id", &ndb::Chunk::id)
       .def_readonly("text", &ndb::Chunk::text)
@@ -341,7 +342,6 @@ void createSearchSubmodule(py::module_& module) {
         return ndb::GreaterThan::make(objToMetadataValue(value));
       }));
 
-#if !_WIN32
   py::class_<ndb::NeuralDB, std::shared_ptr<ndb::NeuralDB>>(search_submodule,
                                                             "NeuralDB")
       .def("insert", &wrappedInsert, py::arg("chunks"),
