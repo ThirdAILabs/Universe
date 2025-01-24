@@ -332,11 +332,59 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
 
   checkNdbQuery(db, query, {2, 0, 5});
 
-  db.deleteDoc("11", 1);
+  db.deleteDocVersion("11", 1);
   checkNdbQuery(db, query, {2, 5});
 
-  db.deleteDoc("22", 1);
+  db.deleteDocVersion("22", 1);
   checkNdbQuery(db, query, {5});
+}
+
+TEST_F(OnDiskNeuralDbTests, DeleteDoc) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert({"a b c d e"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b c d"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b c"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b"}, {{}}, "doc_2", "id_2", std::nullopt);
+  db.insert({"x"}, {{}}, "doc_11", "id_11", std::nullopt);
+  db.insert({"x y"}, {{}}, "doc_12", "id_12", std::nullopt);
+  db.insert({"x y z"}, {{}}, "doc_13", "id_13", std::nullopt);
+
+  checkNdbQuery(db, "a b c d e", {0, 1, 2, 3});
+
+  // Check that ids that are a prefix of the given id are not deleted
+  checkNdbQuery(db, "x y z", {6, 5, 4});
+
+  db.deleteDoc("id_1", false);
+
+  checkNdbQuery(db, "a b c d e", {3});
+
+  // Check that ids that are a prefix of the given id are not deleted
+  checkNdbQuery(db, "x y z", {6, 5, 4});
+}
+
+TEST_F(OnDiskNeuralDbTests, DeleteDocKeepLatestVersion) {
+  OnDiskNeuralDB db(tmpDbName());
+
+  db.insert({"a b c d e"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b c d"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b c"}, {{}}, "doc_1", "id_1", std::nullopt);
+  db.insert({"a b"}, {{}}, "doc_2", "id_2", std::nullopt);
+  db.insert({"x"}, {{}}, "doc_11", "id_11", std::nullopt);
+  db.insert({"x y"}, {{}}, "doc_12", "id_12", std::nullopt);
+  db.insert({"x y z"}, {{}}, "doc111_13", "id111_13", std::nullopt);
+
+  checkNdbQuery(db, "a b c d e", {0, 1, 2, 3});
+
+  // Check that ids that are a prefix of the given id are not deleted
+  checkNdbQuery(db, "x y z", {6, 5, 4});
+
+  db.deleteDoc("id_1", true);
+
+  checkNdbQuery(db, "a b c d e", {2, 3});
+
+  // Check that ids that are a prefix of the given id are not deleted
+  checkNdbQuery(db, "x y z", {6, 5, 4});
 }
 
 TEST_F(OnDiskNeuralDbTests, DeleteInvalidDoc) {
@@ -347,7 +395,7 @@ TEST_F(OnDiskNeuralDbTests, DeleteInvalidDoc) {
 
   bool missing_doc_exception = false;
   try {
-    db.deleteDoc("doc_2", 0);
+    db.deleteDocVersion("doc_2", 0);
   } catch (const NeuralDbError& e) {
     ASSERT_EQ(e.code(), ErrorCode::DocNotFound);
     missing_doc_exception = true;
@@ -356,7 +404,7 @@ TEST_F(OnDiskNeuralDbTests, DeleteInvalidDoc) {
 
   bool wrong_version_exception = false;
   try {
-    db.deleteDoc("11", 2);
+    db.deleteDocVersion("11", 2);
   } catch (const NeuralDbError& e) {
     ASSERT_EQ(e.code(), ErrorCode::DocNotFound);
     wrong_version_exception = true;
@@ -391,7 +439,7 @@ TEST_F(OnDiskNeuralDbTests, DocVersioning) {
 
   for (int i = 0; i < 5; i++) {
     for (int j = 1; j < 4; j++) {
-      db.deleteDoc(std::to_string(i), j);
+      db.deleteDocVersion(std::to_string(i), j);
     }
   }
 

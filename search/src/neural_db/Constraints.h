@@ -49,7 +49,7 @@ class MetadataValue {
     return std::get<float>(_value);
   }
 
-  std::string asStr() const {
+  const std::string& asStr() const {
     checkType(MetadataType::Str);
     return std::get<std::string>(_value);
   }

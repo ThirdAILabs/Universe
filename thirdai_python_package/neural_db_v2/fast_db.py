@@ -152,16 +152,7 @@ class FastDB:
         keep_latest_version: bool = False,
         return_deleted_chunks: bool = False,
     ):
-        docs = self.db.sources()
-
-        versions = [doc.doc_version for doc in docs if doc.doc_id == doc_id]
-        max_version = max(versions)
-
-        for version in versions:
-            if version == max_version and keep_latest_version:
-                continue
-
-            self.db.delete_doc(doc_id=doc_id, doc_version=version)
+        self.db.delete_doc(doc_id=doc_id, keep_latest_version=keep_latest_version)
 
     def upvote(self, queries: List[str], chunk_ids: List[ChunkId], **kwargs):
         self.db.finetune(queries, [[chunk_id] for chunk_id in chunk_ids], **kwargs)

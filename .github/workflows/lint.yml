@@ -20,7 +20,7 @@ on:
 jobs:
   clang-tidy:
     runs-on: 
-      labels: ubuntu-latest-16-cores
+      labels: ubuntu-22.04-8-cores
 
     steps:
       - uses: actions/checkout@v2
