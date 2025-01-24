@@ -25,6 +25,8 @@ from thirdai.neural_db_v2 import (
     TextFile,
 )
 
+pytestmark = [pytest.mark.unit]
+
 
 def all_empty_strings(series: pd.Series):
     return series.map(lambda x: isinstance(x, str) and len(x) == 0).all()
@@ -86,6 +88,7 @@ def doc_property_checks(
     assert has_chunks
 
 
+@pytest.mark.release
 def test_csv_doc_infered_columns():
     df = pd.read_csv(CSV_FILE)
 
@@ -100,6 +103,7 @@ def test_csv_doc_infered_columns():
     assert (df["text"] == chunks.text).all()
 
 
+@pytest.mark.release
 def test_csv_doc_no_keywords():
     df = pd.read_csv(CSV_FILE)
 
@@ -116,6 +120,7 @@ def test_csv_doc_no_keywords():
     assert (chunks.metadata["type"] == "csv").all()
 
 
+@pytest.mark.release
 def test_csv_doc_with_keywords():
     df = pd.read_csv(CSV_FILE)
 
@@ -137,6 +142,7 @@ def test_csv_doc_with_keywords():
     assert (chunks.metadata["type"] == "csv").all()
 
 
+@pytest.mark.release
 def test_csv_doc_streaming():
     df = pd.read_csv(CSV_FILE)
 
@@ -166,7 +172,6 @@ def test_csv_doc_streaming():
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_docx_doc(metadata):
     doc = DOCX(DOCX_FILE, doc_metadata=metadata)
@@ -180,7 +185,6 @@ def test_docx_doc(metadata):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 @pytest.mark.parametrize("version", ["v1", "v2"])
 def test_pdf_doc(metadata, version):
@@ -198,7 +202,6 @@ def test_pdf_doc(metadata, version):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_email_doc(metadata):
     doc = Email(EML_FILE, doc_metadata=metadata)
@@ -212,7 +215,6 @@ def test_email_doc(metadata):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_pptx_doc(metadata):
     doc = PPTX(PPTX_FILE, doc_metadata=metadata)
@@ -226,7 +228,6 @@ def test_pptx_doc(metadata):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}])
 def test_txt_doc(metadata):
     doc = TextFile(TXT_FILE, doc_metadata=metadata)
@@ -240,7 +241,6 @@ def test_txt_doc(metadata):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_url_doc(metadata):
     for title_is_strong in [True, False]:
@@ -255,7 +255,6 @@ def test_url_doc(metadata):
 
 
 @pytest.mark.release
-@pytest.mark.unit
 @pytest.mark.parametrize("metadata", [{}, {"val": "abc"}])
 def test_in_memory_text_doc(metadata):
 
@@ -279,7 +278,6 @@ def test_in_memory_text_doc(metadata):
     assert (chunks.metadata["item"] == pd.Series([1, 2])).all()
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize("version", ["v1", "v2"])
 @pytest.mark.parametrize("parallelize", [True, False])
 def test_image_pdf_parsing(version, parallelize):
