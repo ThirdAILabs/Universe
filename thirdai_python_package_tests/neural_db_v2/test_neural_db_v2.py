@@ -188,8 +188,6 @@ def test_summarized_metadata(chunk_store):
     save_file = "saved.ndb"
     db.save(save_file)
 
-    del db
-
     loaded_db = ndb.NeuralDB.load(save_file)
     loaded_db_summarized_metadata = (
         loaded_db.chunk_store.document_metadata_summary.summarized_metadata

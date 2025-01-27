@@ -130,7 +130,7 @@ class InRange(Constraint):
         else:
             upper_condition = df[column_name] < self.max_value
 
-        return df[lower_condition & upper_condition]
+        return lower_condition & upper_condition
 
 
 class Substring(Constraint):
