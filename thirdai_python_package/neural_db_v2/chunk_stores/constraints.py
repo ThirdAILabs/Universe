@@ -108,14 +108,14 @@ class InRange(Constraint):
 
     def sql_condition(self, column_name: str, table: Table):
         if self.min_inclusive:
-            lower_condition = table.c.value >= self.value
+            lower_condition = table.c.value >= self.min_value
         else:
-            lower_condition = table.c.value > self.value
+            lower_condition = table.c.value > self.min_value
 
         if self.max_inclusive:
-            upper_condition = table.c.value <= self.value
+            upper_condition = table.c.value <= self.max_value
         else:
-            upper_condition = table.c.value < self.value
+            upper_condition = table.c.value < self.max_value
 
         return and_(table.c.key == column_name, lower_condition, upper_condition)
 

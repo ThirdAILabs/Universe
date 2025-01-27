@@ -361,9 +361,7 @@ class SQLiteChunkStore(ChunkStore):
                         singlevalue_metadata, chunk_ids, doc_id, doc_version
                     )
                     for col in multivalue_metadata:
-                        flattened_metadata = flatten_multivalue_column(
-                            col, chunk_ids, doc_id, doc_version
-                        )
+                        flattened_metadata = flatten_multivalue_column(col, chunk_ids)
                         self._store_metadata(
                             flattened_metadata[[col.name]],
                             flattened_metadata["chunk_id"],
