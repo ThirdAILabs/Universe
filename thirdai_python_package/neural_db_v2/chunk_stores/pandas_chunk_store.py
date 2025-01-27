@@ -115,7 +115,7 @@ class PandasChunkStore(ChunkStore):
                     if metadata_type:
                         self.document_metadata_summary.summarize_metadata(
                             key,
-                            new_metadata_keys[key],
+                            self.metadata_df[key],
                             metadata_type,
                             doc_id,
                             doc_version,
