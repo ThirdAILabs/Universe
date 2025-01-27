@@ -104,7 +104,7 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
 def test_summarized_metadata(chunk_store):
     db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=FinetunableRetriever())
 
-    def generate_chunk_metadata(n_chunks: int):
+    def generate_metadata_document(n_chunks: int, save_path: str):
         # prepare integer col
         integer_col = [random.randint(-200, 200) for _ in range(n_chunks)]
 
@@ -134,38 +134,38 @@ def test_summarized_metadata(chunk_store):
             string_col = string_col * ((n_chunks // len(string_col)) + 1)
             string_col = random.sample(string_col, k=n_chunks)
 
-        return integer_col, float_col, bool_col, string_col
+        pd.DataFrame(
+            {
+                "integer_col": integer_col,
+                "float_col": float_col,
+                "bool_col": bool_col,
+                "string_col": string_col,
+                "text_col": ["random text"] * n_chunks,
+                "keyword_col": ["random keyword"] * n_chunks,
+            }
+        ).to_csv(save_path, index=False)
 
     n_chunks = 100
-    doc_a_metadata = generate_chunk_metadata(n_chunks)
-    doc_b_metadata = generate_chunk_metadata(n_chunks)
 
-    doc_metadata = {
-        "a": {
-            "doc_a_integer": doc_a_metadata[0],
-            "doc_a_float": doc_a_metadata[1],
-            "doc_a_bool": doc_a_metadata[2],
-            "doc_a_string": doc_a_metadata[3],
-        },
-        "b": {
-            "doc_b_integer": doc_b_metadata[0],
-            "doc_b_float": doc_b_metadata[1],
-            "doc_b_bool": doc_b_metadata[2],
-            "doc_b_string": doc_b_metadata[3],
-        },
-    }
+    # create doc_a csv file
+    doc_a_path = "doc_a.csv"
+    generate_metadata_document(n_chunks, doc_a_path)
+
+    doc_b_path = "doc_b.csv"
+    generate_metadata_document(n_chunks, doc_b_path)
+
     db.insert(
         [
-            ndb.InMemoryText(
-                "doc_a",
-                text=["Random text"] * n_chunks,
-                chunk_metadata=doc_metadata["a"],
+            ndb.CSV(
+                doc_a_path,
+                text_columns=["text_col"],
+                keyword_columns=["keyword_col"],
                 doc_id="a",
             ),
-            ndb.InMemoryText(
-                "doc_b",
-                text=["Another random text"] * n_chunks,
-                chunk_metadata=doc_metadata["b"],
+            ndb.CSV(
+                doc_b_path,
+                text_columns=["text_col"],
+                keyword_columns=["keyword_col"],
                 doc_id="b",
             ),
         ]
@@ -173,36 +173,40 @@ def test_summarized_metadata(chunk_store):
 
     summarized_metadata = db.chunk_store.document_metadata_summary.summarized_metadata
 
-    for doc_id in ["a", "b"]:
-        for metadata_col_name, metadata_values in doc_metadata[(doc_id, 1)].items():
-            summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
-            if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
-                assert min(metadata_values) == summary.min
-                assert max(metadata_values) == summary.max
-            else:
-                assert summary.unique_values == set(metadata_values)
+    for doc_id, csv_path in zip(["a", "b"], [doc_a_path, doc_b_path]):
+        df = pd.read_csv(csv_path)
+        summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
+        for metadata_col_name in ["integer_col", "float_col"]:
+            assert df[metadata_col_name].min() == summary.min
+            assert df[metadata_col_name].max() == summary.max
+
+        for metadata_col_name in ["string_col", "bool_col"]:
+            assert summary.unique_values == set(df[metadata_col_name].unique())
 
     # Also check that the loaded chunk_store have the same summarized_metadata
     save_file = "saved.ndb"
     db.save(save_file)
 
-    loaded_db = db.load(save_file)
+    del db
+
+    loaded_db = ndb.NeuralDB.load(save_file)
     loaded_db_summarized_metadata = (
         loaded_db.chunk_store.document_metadata_summary.summarized_metadata
     )
-    for doc_id in ["a", "b"]:
-        for metadata_col_name, metadata_values in doc_metadata[(doc_id, 1)].items():
-            summary = loaded_db_summarized_metadata[(doc_id, 1)][
-                metadata_col_name
-            ].summary
-            if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
-                assert min(metadata_values) == summary.min
-                assert max(metadata_values) == summary.max
-            else:
-                assert summary.unique_values == set(metadata_values)
+    for doc_id, csv_path in zip(["a", "b"], [doc_a_path, doc_b_path]):
+        df = pd.read_csv(csv_path)
+        summary = loaded_db_summarized_metadata[(doc_id, 1)][metadata_col_name].summary
+        for metadata_col_name in ["integer_col", "float_col"]:
+            assert df[metadata_col_name].min() == summary.min
+            assert df[metadata_col_name].max() == summary.max
+
+        for metadata_col_name in ["string_col", "bool_col"]:
+            assert summary.unique_values == set(df[metadata_col_name].unique())
 
     clean_up_sql_lite_db(db.chunk_store)
     shutil.rmtree(save_file)
+    os.remove(doc_a_path)
+    os.remove(doc_b_path)
 
 
 @pytest.mark.release
