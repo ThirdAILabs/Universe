@@ -778,12 +778,10 @@ class SQLiteChunkStore(ChunkStore):
         documents = obj.documents()
 
         # doc_id --> doc_version --> key --> ChunkMetaDataSummary
-        obj.summarized_metadata = defaultdict(
-            lambda: defaultdict(lambda: defaultdict(ChunkMetaDataSummary))
-        )
+        obj.document_metadata_summary = DocumentMetadataSummary()
         for doc_entry in documents:
             doc_id, doc_version = doc_entry["doc_id"], doc_entry["doc_version"]
-            obj.summarized_metadata[doc_id][doc_version] = (
+            obj.document_metadata_summary.summarized_metadata[(doc_id, doc_version)] = (
                 obj._load_summarized_metadata(doc_id, doc_version)
             )
         return obj

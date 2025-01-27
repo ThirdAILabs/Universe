@@ -171,11 +171,11 @@ def test_summarized_metadata(chunk_store):
         ]
     )
 
-    summarized_metadata = db.chunk_store.summarized_metadata
+    summarized_metadata = db.chunk_store.document_metadata_summary.summarized_metadata
 
     for doc_id in ["a", "b"]:
-        for metadata_col_name, metadata_values in doc_metadata[doc_id].items():
-            summary = summarized_metadata[doc_id][1][metadata_col_name].summary
+        for metadata_col_name, metadata_values in doc_metadata[(doc_id, 1)].items():
+            summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
             if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
                 assert min(metadata_values) == summary.min
                 assert max(metadata_values) == summary.max
@@ -187,10 +187,12 @@ def test_summarized_metadata(chunk_store):
     db.save(save_file)
 
     loaded_db = db.load(save_file)
-    loaded_db_summarized_metadata = loaded_db.chunk_store.summarized_metadata
+    loaded_db_summarized_metadata = (
+        loaded_db.chunk_store.document_metadata_summary.summarized_metadata
+    )
     for doc_id in ["a", "b"]:
-        for metadata_col_name, metadata_values in doc_metadata[doc_id].items():
-            summary = loaded_db_summarized_metadata[doc_id][1][
+        for metadata_col_name, metadata_values in doc_metadata[(doc_id, 1)].items():
+            summary = loaded_db_summarized_metadata[(doc_id, 1)][
                 metadata_col_name
             ].summary
             if metadata_col_name in ["doc_a_integer", "doc_a_float"]:
