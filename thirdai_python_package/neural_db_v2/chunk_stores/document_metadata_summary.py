@@ -66,6 +66,6 @@ class DocumentMetadataSummary:
             unique_values.discard(None)  # Remove None value
             self.summarized_metadata[(doc_id, doc_version)][
                 key
-            ].summary.unique_values = random.sample(
-                unique_values, k=min(100, len(unique_values))
+            ].summary.unique_values = set(
+                random.sample(unique_values, k=min(100, len(unique_values)))
             )
