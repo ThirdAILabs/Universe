@@ -1,5 +1,5 @@
 import operator
-import os
+from collections import defaultdict
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -17,6 +17,7 @@ from ..core.types import (
     pandas_type_to_metadata_type,
 )
 from .constraints import Constraint
+from .document_metadata_summary import DocumentMetadataSummary
 
 
 class PandasChunkStore(ChunkStore):
@@ -41,11 +42,14 @@ class PandasChunkStore(ChunkStore):
 
         self.next_id = 0
 
+        self.document_metadata_summary = DocumentMetadataSummary()
+
     def insert(
         self, docs: List[Document], **kwargs
     ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
+        new_metadata_keys = defaultdict(set)
 
         output_batches = []
         insert_doc_metadata = []
@@ -74,23 +78,10 @@ class PandasChunkStore(ChunkStore):
                     metadata["chunk_id"] = chunk_ids
                     all_metadata.append(metadata)
 
-                    # summarize the metadata
-                    key_to_pandas_type = metadata.dtypes.to_dict()
-
-                    key_to_metadata_types = {
-                        key: pandas_type_to_metadata_type[pandas_type]
-                        for key, pandas_type in key_to_pandas_type.items()
-                        if pandas_type in pandas_type_to_metadata_type
-                    }
-
-                    for key, metadata_type in key_to_metadata_types.items():
-                        metadata_col = metadata[key].dropna()
-                        if metadata_col.empty:
-                            continue
-
-                        self._summarize_metadata(
-                            key, metadata_col, metadata_type, doc_id, doc_version
-                        )
+                    # Collect the metadata
+                    new_metadata_keys[(doc_id, doc_version)].update(
+                        metadata.columns.tolist()
+                    )
 
                 output_batches.append(
                     ChunkBatch(
@@ -114,6 +105,22 @@ class PandasChunkStore(ChunkStore):
             # to be None so that it's consistent with the behavior of sqlalchemy.
             self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
             self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
+
+            # summarize the metadata
+            for (doc_id, doc_version), metadata_keys in new_metadata_keys.items():
+                for key in metadata_keys:
+                    metadata_type = pandas_type_to_metadata_type.get(
+                        self.metadata_df[key].dtype, None
+                    )
+                    if metadata_type:
+                        self.document_metadata_summary.summarize_metadata(
+                            key,
+                            new_metadata_keys[key],
+                            metadata_type,
+                            doc_id,
+                            doc_version,
+                            overwrite_type=True,
+                        )
 
         return output_batches, insert_doc_metadata
 

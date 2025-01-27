@@ -44,6 +44,7 @@ from ..core.types import (
     sql_type_mapping,
 )
 from .constraints import Constraint
+from .document_metadata_summary import DocumentMetadataSummary
 
 
 # In sqlite3, foreign keys are not enabled by default.
@@ -214,6 +215,8 @@ class SQLiteChunkStore(ChunkStore):
 
         self.next_id = 0
 
+        self.document_metadata_summary = DocumentMetadataSummary()
+
     def _create_metadata_tables(self, use_metadata_index: bool = False):
         self.metadata_tables = {}
         for metadata_type, sql_type in sql_type_mapping.items():
@@ -304,7 +307,7 @@ class SQLiteChunkStore(ChunkStore):
                     continue
 
                 # summarize the metadata
-                self._summarize_metadata(
+                self.document_metadata_summary.summarize_metadata(
                     key, metadata_col, metadata_type, doc_id, doc_version
                 )
 
@@ -364,6 +367,8 @@ class SQLiteChunkStore(ChunkStore):
                         self._store_metadata(
                             flattened_metadata[[col.name]],
                             flattened_metadata["chunk_id"],
+                            doc_id,
+                            doc_version,
                         )
 
             inserted_doc_metadata.append(
@@ -614,6 +619,7 @@ class SQLiteChunkStore(ChunkStore):
                             and_(
                                 metadata_table.c.chunk_id >= min_chunk_id,
                                 metadata_table.c.chunk_id <= max_chunk_id,
+                                metadata_table.c.value.isnot(None),
                             )
                         )
                         .group_by(metadata_table.c.key)
@@ -645,6 +651,7 @@ class SQLiteChunkStore(ChunkStore):
                             and_(
                                 metadata_table.c.chunk_id >= min_chunk_id,
                                 metadata_table.c.chunk_id <= max_chunk_id,
+                                metadata_table.c.value.isnot(None),
                             )
                         )
                         .group_by(metadata_table.c.key, metadata_table.c.value)
@@ -676,6 +683,7 @@ class SQLiteChunkStore(ChunkStore):
                             and_(
                                 metadata_table.c.chunk_id >= min_chunk_id,
                                 metadata_table.c.chunk_id <= max_chunk_id,
+                                metadata_table.c.value.isnot(None),
                             )
                         )
                         .group_by(metadata_table.c.key, metadata_table.c.value)
