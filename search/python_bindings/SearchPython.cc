@@ -7,15 +7,15 @@
 #include <search/src/inverted_index/FinetunableRetriever.h>
 #include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/InvertedIndex.h>
-#include <search/src/neural_db/Constraints.h>
 #include <stdexcept>
 #include <string>
 #if !_WIN32
 #include <search/src/inverted_index/OnDiskIndex.h>
+#include <search/src/neural_db/Constraints.h>
+#include <search/src/neural_db/NeuralDB.h>
 #include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
 #endif
 #include <search/src/inverted_index/Tokenizer.h>
-#include <search/src/neural_db/NeuralDB.h>
 #include <optional>
 
 namespace thirdai::search::python {
@@ -24,6 +24,7 @@ std::string pyTypeStr(const py::handle& obj) {
   return py::str(obj.get_type()).cast<std::string>();
 }
 
+#if !_WIN32
 ndb::MetadataValue objToMetadataValue(const py::handle& obj) {
   if (py::isinstance<py::bool_>(obj)) {
     return ndb::MetadataValue::Bool(obj.cast<bool>());
@@ -95,6 +96,7 @@ ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
 
   return ndb->insert(chunks, metadata, document, doc_id, doc_version);
 }
+#endif
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
@@ -285,6 +287,7 @@ void createSearchSubmodule(py::module_& module) {
       // This is deprecated, it is only for compatability loading old models.
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 
+#if !_WIN32
   py::class_<ndb::Chunk>(search_submodule, "Chunk")
       .def_readonly("id", &ndb::Chunk::id)
       .def_readonly("text", &ndb::Chunk::text)
@@ -355,10 +358,9 @@ void createSearchSubmodule(py::module_& module) {
            // arg is 'associate_strength' for compatability with regular ndbv2
            py::arg("targets"), py::arg("associate_strength") = 4)
       .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
-           py::arg("doc_version"))
+           py::arg("keep_latest_version") = false)
       .def("sources", &ndb::NeuralDB::sources);
 
-#if !_WIN32
   py::class_<ndb::OnDiskNeuralDB, ndb::NeuralDB,
              std::shared_ptr<ndb::OnDiskNeuralDB>>(search_submodule,
                                                    "OnDiskNeuralDB")

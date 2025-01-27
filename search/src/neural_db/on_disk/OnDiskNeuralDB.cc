@@ -1,4 +1,5 @@
 #include "OnDiskNeuralDB.h"
+#include <archive/src/Archive.h>
 #include <archive/src/Map.h>
 #include <licensing/src/CheckLicense.h>
 #include <rocksdb/db.h>
@@ -7,6 +8,7 @@
 #include <rocksdb/slice.h>
 #include <rocksdb/status.h>
 #include <search/src/inverted_index/BM25.h>
+#include <search/src/inverted_index/IndexConfig.h>
 #include <search/src/inverted_index/Utils.h>
 #include <search/src/neural_db/Chunk.h>
 #include <search/src/neural_db/Constraints.h>
@@ -15,6 +17,7 @@
 #include <search/src/neural_db/on_disk/MergeOperators.h>
 #include <search/src/neural_db/on_disk/RocksDBError.h>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <numeric>
@@ -32,6 +35,8 @@ constexpr size_t QUERY_INDEX_THRESHOLD = 10;
 constexpr size_t TOP_QUERIES = 10;
 constexpr float LAMBDA = 0.6;
 
+constexpr char DOC_VER_DELIMITER = ';';
+
 static std::string dbPath(const std::string& base) {
   return (std::filesystem::path(base) / "model").string();
 }
@@ -41,7 +46,7 @@ static std::string metadataPath(const std::string& base) {
 }
 
 std::string docVersionKey(const std::string& doc_id, uint32_t doc_version) {
-  return doc_id + "_" + std::to_string(doc_version);
+  return doc_id + DOC_VER_DELIMITER + std::to_string(doc_version);
 }
 
 rocksdb::Options dbOptions() {
@@ -76,6 +81,14 @@ std::vector<rocksdb::ColumnFamilyDescriptor> columnFamilies() {
       {"id_map", concat_options},
   };
 }
+
+std::unique_ptr<OnDiskNeuralDB> OnDiskNeuralDB::make(
+    const std::string& save_path) {
+  return std::make_unique<OnDiskNeuralDB>(save_path);
+}
+
+OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path)
+    : OnDiskNeuralDB(save_path, IndexConfig(), false) {}
 
 OnDiskNeuralDB::OnDiskNeuralDB(const std::string& save_path,
                                const IndexConfig& config, bool read_only)
@@ -133,6 +146,13 @@ InsertMetadata OnDiskNeuralDB::insert(const std::vector<std::string>& chunks,
                                       std::optional<uint32_t> doc_version_opt) {
   if (chunks.size() != metadata.size()) {
     throw std::invalid_argument("length of metadata and chunks must match");
+  }
+
+  if (doc_id.find_first_of(DOC_VER_DELIMITER) != std::string::npos) {
+    std::string error = "doc id cannot contain '";
+    error.push_back(DOC_VER_DELIMITER);
+    error.append("'");
+    throw std::invalid_argument(error);
   }
 
   auto initTxn = newTxn();  // this will be committed by the index
@@ -419,7 +439,8 @@ void OnDiskNeuralDB::associate(const std::vector<std::string>& sources,
   finetune(sources, labels);
 }
 
-void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, uint32_t doc_version) {
+void OnDiskNeuralDB::deleteDocVersion(const DocId& doc_id,
+                                      uint32_t doc_version) {
   auto txn = newTxn();
 
   const auto doc_chunks = deleteDocChunkRangesAndName(txn, doc_id, doc_version);
@@ -473,6 +494,75 @@ std::unordered_set<ChunkId> OnDiskNeuralDB::deleteDocChunkRangesAndName(
   return deleted_ids;
 }
 
+void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, bool keep_latest_version) {
+  auto versions = getDocVersions(doc_id);
+
+  if (versions.empty()) {
+    return;
+  }
+
+  uint32_t maxVersion = versions[0];
+  for (uint32_t version : versions) {
+    if (version > maxVersion) {
+      maxVersion = version;
+    }
+  }
+
+  for (uint32_t version : versions) {
+    if (keep_latest_version && version == maxVersion) {
+      continue;
+    }
+
+    try {
+      deleteDocVersion(doc_id, version);
+    } catch (const NeuralDbError& e) {
+      if (e.code() != ErrorCode::DocNotFound) {
+        // DocNotFound is ok, possible with concurrent deletets. Rethrow other
+        // errors.
+        throw;
+      }
+    }
+  }
+}
+
+std::pair<DocId, uint32_t> parseDocIdAndVersion(const std::string& key) {
+  auto loc = key.find_first_of(DOC_VER_DELIMITER);
+  if (loc == std::string::npos) {
+    throw NeuralDbError(ErrorCode::MalformedData,
+                        "invalid document version key");
+  }
+
+  const std::string doc_id = key.substr(0, loc);
+  uint32_t version;
+  try {
+    version = std::stoul(key.substr(loc + 1));
+  } catch (const std::invalid_argument& e) {  // parse error
+    throw NeuralDbError(ErrorCode::MalformedData,
+                        "invalid document version key");
+  }
+
+  return {doc_id, version};
+}
+
+std::vector<uint32_t> OnDiskNeuralDB::getDocVersions(const DocId& doc_id) {
+  auto iter = std::unique_ptr<rocksdb::Iterator>(
+      _db->NewIterator(rocksdb::ReadOptions(), _doc_id_to_name));
+
+  std::vector<uint32_t> versions;
+  for (iter->Seek(doc_id); iter->Valid() && iter->key().starts_with(doc_id);
+       iter->Next()) {
+    auto key = iter->key().ToString();
+
+    const auto [parsed_doc_id, version] = parseDocIdAndVersion(key);
+
+    if (parsed_doc_id == doc_id) {
+      versions.push_back(version);
+    }
+  }
+
+  return versions;
+}
+
 void OnDiskNeuralDB::prune() {
   auto txn = newTxn();
   _chunk_index->prune(txn);  // txn is commit by index
@@ -485,15 +575,7 @@ std::vector<Source> OnDiskNeuralDB::sources() {
   std::vector<Source> sources;
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     auto key = iter->key().ToString();
-    auto loc = key.find_last_of('_');
-    if (loc == std::string::npos) {
-      throw NeuralDbError(ErrorCode::MalformedData,
-                          "invalid document version key");
-    }
-
-    const std::string doc_id = key.substr(0, loc);
-    const uint32_t version = std::stoul(key.substr(loc + 1));
-
+    const auto [doc_id, version] = parseDocIdAndVersion(key);
     sources.emplace_back(iter->value().ToString(), doc_id, version);
   }
 
@@ -505,8 +587,28 @@ void OnDiskNeuralDB::save(const std::string& save_path) const {
 
   createDirectory(save_path);
 
-  std::filesystem::copy(_save_path, save_path,
-                        std::filesystem::copy_options::recursive);
+  /**
+   * The rocksdb checkpoint api will make sure that the save is done safely with
+   * the db while it is open. It also has nice optimizations like the ability to
+   * hard link sst files to the new directory if they are on the same device, so
+   * that they do not have to be copied.
+   */
+  rocksdb::Checkpoint* ckpt_ptr;
+  auto ckpt_create_status = rocksdb::Checkpoint::Create(_db, &ckpt_ptr);
+
+  // Convert to unique pointer for better memory management
+  auto ckpt = std::unique_ptr<rocksdb::Checkpoint>(ckpt_ptr);
+
+  if (!ckpt_create_status.ok()) {
+    throw RocksdbError(ckpt_create_status, "creating checkpoint");
+  }
+
+  auto ckpt_save_status = ckpt->CreateCheckpoint(dbPath(save_path));
+  if (!ckpt_save_status.ok()) {
+    throw RocksdbError(ckpt_save_status, "saving checkpoint");
+  }
+
+  std::filesystem::copy(metadataPath(_save_path), metadataPath(save_path));
 }
 
 std::shared_ptr<OnDiskNeuralDB> OnDiskNeuralDB::load(
