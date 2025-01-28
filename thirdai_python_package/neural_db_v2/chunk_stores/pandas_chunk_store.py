@@ -106,6 +106,10 @@ class PandasChunkStore(ChunkStore):
             self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
             self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
 
+            # Unlike SqliteChunkStore, PandasChunkStore does not raise an error when two documents have the same metadata key
+            # with different data types. As a result, the summarized metadata for such keys in PandasChunkStore might be incorrect.
+            # TODO(anyone): Throw the error in such case, and bind metadata-key with it's (doc_id, doc_version).
+
             # summarize the metadata
             for (doc_id, doc_version), metadata_keys in new_metadata_keys.items():
                 for key in metadata_keys:
