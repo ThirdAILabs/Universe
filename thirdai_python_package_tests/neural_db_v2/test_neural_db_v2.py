@@ -172,6 +172,10 @@ def test_summarized_metadata(chunk_store):
         ]
     )
 
+    # Also check that the loaded chunk_store have the same summarized_metadata
+    save_file = "saved.ndb"
+    db.save(save_file)
+
     summarized_metadata = db.chunk_store.document_metadata_summary.summarized_metadata
 
     for doc_id, csv_path in zip(["a", "b"], [doc_a_path, doc_b_path]):
@@ -181,13 +185,9 @@ def test_summarized_metadata(chunk_store):
             assert df[metadata_col_name].min() == summary.min
             assert df[metadata_col_name].max() == summary.max
 
-        for metadata_col_name in ["string_col", "bool_col"]:
+        for metadata_col_name in [f"{doc_id}_string_col", f"{doc_id}_bool_col"]:
             summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
             assert summary.unique_values.issubset(set(df[metadata_col_name].unique()))
-
-    # Also check that the loaded chunk_store have the same summarized_metadata
-    save_file = "saved.ndb"
-    db.save(save_file)
 
     loaded_db = ndb.NeuralDB.load(save_file)
     loaded_db_summarized_metadata = (
@@ -202,7 +202,7 @@ def test_summarized_metadata(chunk_store):
             assert df[metadata_col_name].min() == summary.min
             assert df[metadata_col_name].max() == summary.max
 
-        for metadata_col_name in ["string_col", "bool_col"]:
+        for metadata_col_name in [f"{doc_id}_string_col", f"{doc_id}_bool_col"]:
             summary = loaded_db_summarized_metadata[(doc_id, 1)][
                 metadata_col_name
             ].summary

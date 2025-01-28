@@ -114,7 +114,8 @@ class PandasChunkStore(ChunkStore):
             for (doc_id, doc_version), metadata_keys in new_metadata_keys.items():
                 for key in metadata_keys:
                     metadata_type = pandas_type_to_metadata_type.get(
-                        self.metadata_df[key].dtype, None
+                        self.metadata_df[key].dropna().infer_objects().dtype,
+                        None,  # first DropNaN because we would have NaN in rows for the other document's metadata key, then infer the type again
                     )
                     if metadata_type:
                         self.document_metadata_summary.summarize_metadata(

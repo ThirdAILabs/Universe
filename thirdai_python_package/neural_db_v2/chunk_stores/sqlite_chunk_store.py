@@ -660,15 +660,19 @@ class SQLiteChunkStore(ChunkStore):
                     )  # Limit to 100 rows per key
 
                     result = conn.execute(stmt).fetchall()
-                    for column_name, col_values in result:
-                        document_summarized_metadata[column_name] = (
-                            ChunkMetaDataSummary(
-                                metadata_type=metadata_type,
-                                summary=StringChunkMetadataSummary(
-                                    unique_values=set(col_values)
-                                ),
+                    for column_name, col_value in result:
+                        if column_name not in document_summarized_metadata:
+                            document_summarized_metadata[column_name] = (
+                                ChunkMetaDataSummary(
+                                    metadata_type=metadata_type,
+                                    summary=StringChunkMetadataSummary(
+                                        unique_values=set()
+                                    ),
+                                )
                             )
-                        )
+                        document_summarized_metadata[
+                            column_name
+                        ].summary.unique_values.add(col_value)
                 else:
                     # Bool metadata type
                     stmt = (
@@ -684,15 +688,19 @@ class SQLiteChunkStore(ChunkStore):
                     )
 
                     result = conn.execute(stmt).fetchall()
-                    for column_name, col_values in result:
-                        document_summarized_metadata[column_name] = (
-                            ChunkMetaDataSummary(
-                                metadata_type=metadata_type,
-                                summary=StringChunkMetadataSummary(
-                                    unique_values=set(col_values)
-                                ),
+                    for column_name, col_value in result:
+                        if column_name not in document_summarized_metadata:
+                            document_summarized_metadata[column_name] = (
+                                ChunkMetaDataSummary(
+                                    metadata_type=metadata_type,
+                                    summary=StringChunkMetadataSummary(
+                                        unique_values=set()
+                                    ),
+                                )
                             )
-                        )
+                        document_summarized_metadata[
+                            column_name
+                        ].summary.unique_values.add(col_value)
 
         return document_summarized_metadata
 
