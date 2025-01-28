@@ -9,6 +9,7 @@ from thirdai.neural_db_v2.chunk_stores.constraints import (
     AnyOf,
     EqualTo,
     GreaterThan,
+    InRange,
     LessThan,
     NoneOf,
     Substring,
@@ -275,6 +276,18 @@ def test_chunk_store_constraints_none_of(chunk_store):
 
     chunk_ids = store.filter_chunk_ids({"number": NoneOf([4, 9])})
     assert chunk_ids == set([2, 3])
+
+    clean_up_sql_lite_db(store)
+
+
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_chunk_store_constraint_in_range(chunk_store):
+    store = get_simple_chunk_store(chunk_store)
+
+    chunk_ids = store.filter_chunk_ids(
+        {"number": InRange(min_value=2, max_value=4, min_inclusive=False)}
+    )
+    assert chunk_ids == set([0, 4])
 
     clean_up_sql_lite_db(store)
 
@@ -629,9 +642,8 @@ def test_encryption():
     store_wo_key = SQLiteChunkStore.load(save_path)
     check_queries(store_wo_key, check_equal=False)
 
-    store_w_wrong_key = SQLiteChunkStore.load(save_path, encryption_key=key + "0")
     with pytest.raises(ValueError, match="Invalid decryption key"):
-        check_queries(store_w_wrong_key, check_equal=False)
+        store_w_wrong_key = SQLiteChunkStore.load(save_path, encryption_key=key + "0")
 
     store_w_key = SQLiteChunkStore.load(save_path, encryption_key=key)
     check_queries(store_w_key, check_equal=True)

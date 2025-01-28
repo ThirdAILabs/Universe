@@ -1,5 +1,5 @@
 import operator
-import os
+from collections import defaultdict
 from functools import reduce
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -9,8 +9,15 @@ from thirdai.neural_db.utils import pickle_to, unpickle_from
 
 from ..core.chunk_store import ChunkStore
 from ..core.documents import Document
-from ..core.types import Chunk, ChunkBatch, ChunkId, InsertedDocMetadata
+from ..core.types import (
+    Chunk,
+    ChunkBatch,
+    ChunkId,
+    InsertedDocMetadata,
+    pandas_type_to_metadata_type,
+)
 from .constraints import Constraint
+from .document_metadata_summary import DocumentMetadataSummary
 
 
 class PandasChunkStore(ChunkStore):
@@ -35,11 +42,14 @@ class PandasChunkStore(ChunkStore):
 
         self.next_id = 0
 
+        self.document_metadata_summary = DocumentMetadataSummary()
+
     def insert(
         self, docs: List[Document], **kwargs
     ) -> Tuple[Iterable[ChunkBatch], List[InsertedDocMetadata]]:
         all_chunks = [self.chunk_df]
         all_metadata = [self.metadata_df]
+        new_metadata_keys = defaultdict(set)
 
         output_batches = []
         insert_doc_metadata = []
@@ -68,6 +78,11 @@ class PandasChunkStore(ChunkStore):
                     metadata["chunk_id"] = chunk_ids
                     all_metadata.append(metadata)
 
+                    # Collect the metadata
+                    new_metadata_keys[(doc_id, doc_version)].update(
+                        metadata.columns.tolist()
+                    )
+
                 output_batches.append(
                     ChunkBatch(
                         chunk_id=chunk_ids, text=batch.text, keywords=batch.keywords
@@ -90,6 +105,27 @@ class PandasChunkStore(ChunkStore):
             # to be None so that it's consistent with the behavior of sqlalchemy.
             self.metadata_df.replace(to_replace=np.nan, value=None, inplace=True)
             self.metadata_df.set_index("chunk_id", inplace=True, drop=False)
+
+            # Unlike SqliteChunkStore, PandasChunkStore does not raise an error when two documents have the same metadata key
+            # with different data types. As a result, the summarized metadata for such keys in PandasChunkStore might be incorrect.
+            # TODO(anyone): Throw the error in such case, and bind metadata-key with it's (doc_id, doc_version).
+
+            # summarize the metadata
+            for (doc_id, doc_version), metadata_keys in new_metadata_keys.items():
+                for key in metadata_keys:
+                    metadata_type = pandas_type_to_metadata_type.get(
+                        self.metadata_df[key].dropna().infer_objects().dtype,
+                        None,  # first DropNaN because we would have NaN in rows for the other document's metadata key, then infer the type again
+                    )
+                    if metadata_type:
+                        self.document_metadata_summary.summarize_metadata(
+                            key,
+                            self.metadata_df[key],
+                            metadata_type,
+                            doc_id,
+                            doc_version,
+                            overwrite_type=True,
+                        )
 
         return output_batches, insert_doc_metadata
 

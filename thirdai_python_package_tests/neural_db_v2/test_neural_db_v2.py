@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 from pathlib import Path
 
@@ -96,6 +97,121 @@ def test_neural_db_v2_supervised_training(chunk_store, retriever, load_chunks):
     os.remove(csv_file_name)
 
     clean_up_sql_lite_db(db.chunk_store)
+
+
+@pytest.mark.release
+@pytest.mark.parametrize("chunk_store", [SQLiteChunkStore, PandasChunkStore])
+def test_summarized_metadata(chunk_store):
+    db = ndb.NeuralDB(chunk_store=chunk_store(), retriever=FinetunableRetriever())
+
+    def generate_metadata_document(n_chunks: int, save_path: str, col_name_prefix: str):
+        # prepare integer col
+        integer_col = [random.randint(-200, 200) for _ in range(n_chunks)]
+
+        # prepare bool col
+        bool_col = random.choice([[True, False], [True], [False]])
+        bool_col = bool_col * (n_chunks // len(bool_col))
+
+        # prepare float col
+        float_col = [random.uniform(-200, 200) for _ in range(n_chunks)]
+
+        # prepare string col
+        values = [
+            "apple",
+            "banana",
+            "cherry",
+            "date",
+            "elderberry",
+            "fig",
+            "grape",
+            "honeydew",
+            "kiwi",
+            "lemon",
+        ]
+        string_col = random.sample(values, k=min(n_chunks, 5))
+
+        if len(string_col) < n_chunks:
+            string_col = string_col * ((n_chunks // len(string_col)) + 1)
+            string_col = random.sample(string_col, k=n_chunks)
+
+        pd.DataFrame(
+            {
+                f"{col_name_prefix}_integer_col": integer_col,
+                f"{col_name_prefix}_float_col": float_col,
+                f"{col_name_prefix}_bool_col": bool_col,
+                f"{col_name_prefix}_string_col": string_col,
+                f"{col_name_prefix}_text_col": ["random text"] * n_chunks,
+                f"{col_name_prefix}_keyword_col": ["random keyword"] * n_chunks,
+            }
+        ).to_csv(save_path, index=False)
+
+    n_chunks = 100
+
+    # create doc_a csv file
+    doc_a_path = "doc_a.csv"
+    generate_metadata_document(n_chunks, doc_a_path, col_name_prefix="a")
+
+    doc_b_path = "doc_b.csv"
+    generate_metadata_document(n_chunks, doc_b_path, col_name_prefix="b")
+
+    db.insert(
+        [
+            ndb.CSV(
+                doc_a_path,
+                text_columns=["a_text_col"],
+                keyword_columns=["a_keyword_col"],
+                doc_id="a",
+            ),
+            ndb.CSV(
+                doc_b_path,
+                text_columns=["b_text_col"],
+                keyword_columns=["b_keyword_col"],
+                doc_id="b",
+            ),
+            # Don't insert any document with same metadata column. Reason: Comment on PandasChunkStore insert function last part.
+        ]
+    )
+
+    summarized_metadata = db.chunk_store.document_metadata_summary.summarized_metadata
+
+    for doc_id, csv_path in zip(["a", "b"], [doc_a_path, doc_b_path]):
+        df = pd.read_csv(csv_path)
+        for metadata_col_name in [f"{doc_id}_integer_col", f"{doc_id}_float_col"]:
+            summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
+            assert df[metadata_col_name].min() == summary.min
+            assert df[metadata_col_name].max() == summary.max
+
+        for metadata_col_name in [f"{doc_id}_string_col", f"{doc_id}_bool_col"]:
+            summary = summarized_metadata[(doc_id, 1)][metadata_col_name].summary
+            assert summary.unique_values.issubset(set(df[metadata_col_name].unique()))
+
+    # Also check that the loaded chunk_store have the same summarized_metadata
+    save_file = "saved.ndb"
+    db.save(save_file)
+
+    loaded_db = ndb.NeuralDB.load(save_file)
+    loaded_db_summarized_metadata = (
+        loaded_db.chunk_store.document_metadata_summary.summarized_metadata
+    )
+    for doc_id, csv_path in zip(["a", "b"], [doc_a_path, doc_b_path]):
+        df = pd.read_csv(csv_path)
+        for metadata_col_name in [f"{doc_id}_integer_col", f"{doc_id}_float_col"]:
+            summary = loaded_db_summarized_metadata[(doc_id, 1)][
+                metadata_col_name
+            ].summary
+            assert df[metadata_col_name].min() == summary.min
+            assert df[metadata_col_name].max() == summary.max
+
+        for metadata_col_name in [f"{doc_id}_string_col", f"{doc_id}_bool_col"]:
+            summary = loaded_db_summarized_metadata[(doc_id, 1)][
+                metadata_col_name
+            ].summary
+            assert summary.unique_values.issubset(set(df[metadata_col_name].unique()))
+
+    clean_up_sql_lite_db(db.chunk_store)
+    shutil.rmtree(save_file)
+    os.remove(doc_a_path)
+    os.remove(doc_b_path)
 
 
 @pytest.mark.release

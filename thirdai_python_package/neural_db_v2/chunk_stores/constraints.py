@@ -92,6 +92,47 @@ class LessThan(Constraint):
         return df[column_name] < self.value
 
 
+class InRange(Constraint):
+    def __init__(
+        self,
+        min_value,
+        max_value,
+        min_inclusive: bool = True,
+        max_inclusive: bool = True,
+    ):
+        super().__init__()
+        self.min_value = min_value
+        self.max_value = max_value
+        self.min_inclusive = min_inclusive
+        self.max_inclusive = max_inclusive
+
+    def sql_condition(self, column_name: str, table: Table):
+        if self.min_inclusive:
+            lower_condition = table.c.value >= self.min_value
+        else:
+            lower_condition = table.c.value > self.min_value
+
+        if self.max_inclusive:
+            upper_condition = table.c.value <= self.max_value
+        else:
+            upper_condition = table.c.value < self.max_value
+
+        return and_(table.c.key == column_name, lower_condition, upper_condition)
+
+    def pd_filter(self, column_name: str, df: pd.DataFrame):
+        if self.min_inclusive:
+            lower_condition = df[column_name] >= self.min_value
+        else:
+            lower_condition = df[column_name] > self.min_value
+
+        if self.max_inclusive:
+            upper_condition = df[column_name] <= self.max_value
+        else:
+            upper_condition = df[column_name] < self.max_value
+
+        return lower_condition & upper_condition
+
+
 class Substring(Constraint):
     def __init__(self, value):
         super().__init__()
