@@ -1,6 +1,7 @@
 #include "Tokenizer.h"
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
+#include <utils/text/Stopwords.h>
 #include <memory>
 #include <regex>
 #include <stdexcept>
@@ -48,6 +49,16 @@ Tokens DefaultTokenizer::tokenize(const std::string& input) const {
     }
   }
 
+  if (_ignore_stopwords) {
+    Tokens non_stopwords;
+    for (const auto& token : tokens) {
+      if (!text::stop_words.count(text::lower(token))) {
+        non_stopwords.push_back(token);
+      }
+    }
+    tokens = std::move(non_stopwords);
+  }
+
   if (_stem) {
     return text::porter_stemmer::stem(tokens, _lowercase);
   }
@@ -67,14 +78,16 @@ ar::ConstArchivePtr DefaultTokenizer::toArchive() const {
   map->set("type", ar::str(type()));
   map->set("stem", ar::boolean(_stem));
   map->set("lowercase", ar::boolean(_lowercase));
+  map->set("ignore_stopwords", ar::boolean(_ignore_stopwords));
 
   return map;
 }
 
 std::shared_ptr<DefaultTokenizer> DefaultTokenizer::fromArchive(
     const ar::Archive& archive) {
-  return std::make_shared<DefaultTokenizer>(archive.boolean("stem"),
-                                            archive.boolean("lowercase"));
+  return std::make_shared<DefaultTokenizer>(
+      archive.boolean("stem"), archive.boolean("lowercase"),
+      archive.getOr<ar::Boolean>("ignore_stopwords", false));
 }
 
 Tokens WordKGrams::tokenize(const std::string& input) const {
