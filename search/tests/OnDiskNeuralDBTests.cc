@@ -291,6 +291,8 @@ TEST_F(OnDiskNeuralDbTests, ReturnsCorrectChunkData) {
     ASSERT_EQ(sources[i].document, "document_" + std::to_string(i));
     ASSERT_EQ(sources[i].doc_version, 1);
   }
+
+  ASSERT_EQ(db.getChunksInRange(0, 20).size(), 40)
 }
 
 TEST_F(OnDiskNeuralDbTests, Finetuning) {

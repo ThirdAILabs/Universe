@@ -62,6 +62,8 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   size_t finetuneCount();
 
+  std::vector<Chunk> getChunksInRange(ChunkId start, ChunkId end);
+
   void save(const std::string& save_path) const;
 
   static std::shared_ptr<OnDiskNeuralDB> load(const std::string& save_path,

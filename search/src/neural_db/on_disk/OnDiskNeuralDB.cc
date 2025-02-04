@@ -525,7 +525,8 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, bool keep_latest_version) {
   }
 }
 
-void OnDiskNeuralDB::deleteChunks(const std::unordered_set<ChunkId>& chunk_ids) {
+void OnDiskNeuralDB::deleteChunks(
+    const std::unordered_set<ChunkId>& chunk_ids) {
   auto txn = newTxn();
 
   _chunk_data->remove(txn, chunk_ids);
@@ -597,14 +598,36 @@ std::vector<Source> OnDiskNeuralDB::sources() {
   return sources;
 }
 
-size_t OnDiskNeuralDB::numChunks() {
-  return _chunk_index->size();
-}
+size_t OnDiskNeuralDB::numChunks() { return _chunk_index->size(); }
 
-size_t OnDiskNeuralDB::finetuneCount() {
-  return _query_to_chunks->size();
-}
+size_t OnDiskNeuralDB::finetuneCount() { return _query_to_chunks->size(); }
 
+std::vector<Chunk> OnDiskNeuralDB::getChunksInRange(ChunkId start,
+                                                    ChunkId end) {
+  if (start >= end) {
+    return {};
+  }
+
+  std::vector<ChunkId> chunk_ids;
+  chunk_ids.reserve(end - start);
+  for (ChunkId id = start; id < end; ++id) {
+    chunk_ids.push_back(id);
+  }
+
+  auto data_vec = _chunk_data->get(chunk_ids);
+  auto meta_vec = _chunk_metadata->get(chunk_ids);
+
+  std::vector<Chunk> chunks;
+  for (size_t i = 0; i < chunk_ids.size(); ++i) {
+    if (data_vec[i] && meta_vec[i]) {
+      const auto& data = data_vec[i].value();
+      const auto& meta = meta_vec[i].value();
+      chunks.emplace_back(chunk_ids[i], data.text, data.document, data.doc_id,
+                          data.doc_version, meta);
+    }
+  }
+  return chunks;
+}
 
 void OnDiskNeuralDB::save(const std::string& save_path) const {
   licensing::entitlements().verifySaveLoad();
