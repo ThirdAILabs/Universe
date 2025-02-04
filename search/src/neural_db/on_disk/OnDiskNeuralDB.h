@@ -52,9 +52,15 @@ class OnDiskNeuralDB final : public NeuralDB {
 
   void deleteDoc(const DocId& doc_id, bool keep_latest_version) final;
 
+  void deleteChunks(const std::unordered_set<ChunkId>& chunk_ids);
+
   void prune() final;
 
   std::vector<Source> sources() final;
+
+  size_t numChunks();
+
+  size_t finetuneCount();
 
   void save(const std::string& save_path) const;
 

@@ -19,6 +19,8 @@ class QueryToChunks {
 
   void deleteChunks(TxnPtr& txn, const std::unordered_set<ChunkId>& chunks);
 
+  size_t size();
+
   ~QueryToChunks() { _db->DestroyColumnFamilyHandle(_column); }
 
  private:

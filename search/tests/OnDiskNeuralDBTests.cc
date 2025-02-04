@@ -323,12 +323,14 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
   db.insert({intString(0, 8), intString(10, 20), intString(20, 30)},
             {{}, {}, {}}, "doc_2", "22", std::nullopt);
   db.insert({intString(0, 9)}, {{}}, "doc_3", "33", std::nullopt);
+  ASSERT_EQ(db.numChunks(), 6);
 
   std::string query = intString(0, 10) + "x y z";
 
   checkNdbQuery(db, query, {0, 5, 2});
 
   db.finetune({"o p", "x y z", "t q v"}, {{4}, {2}, {3}});
+  ASSERT_EQ(db.finetuneCount(), 3);
 
   checkNdbQuery(db, query, {2, 0, 5});
 
@@ -337,6 +339,9 @@ TEST_F(OnDiskNeuralDbTests, Deletion) {
 
   db.deleteDocVersion("22", 1);
   checkNdbQuery(db, query, {5});
+
+  db.deleteChunks({5});
+  ASSERT_EQ(db.numChunks(), 0);
 }
 
 TEST_F(OnDiskNeuralDbTests, DeleteDoc) {

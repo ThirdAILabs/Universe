@@ -525,6 +525,21 @@ void OnDiskNeuralDB::deleteDoc(const DocId& doc_id, bool keep_latest_version) {
   }
 }
 
+void OnDiskNeuralDB::deleteChunks(const std::unordered_set<ChunkId>& chunk_ids) {
+  auto txn = newTxn();
+
+  _chunk_data->remove(txn, chunk_ids);
+  _chunk_metadata->remove(txn, chunk_ids);
+
+  _chunk_index->deleteChunks(txn, chunk_ids);
+  _query_to_chunks->deleteChunks(txn, chunk_ids);
+
+  auto commit = txn->Commit();
+  if (!commit.ok()) {
+    throw RocksdbError(commit, "committing chunk deletion");
+  }
+}
+
 std::pair<DocId, uint32_t> parseDocIdAndVersion(const std::string& key) {
   auto loc = key.find_first_of(DOC_VER_DELIMITER);
   if (loc == std::string::npos) {
@@ -581,6 +596,15 @@ std::vector<Source> OnDiskNeuralDB::sources() {
 
   return sources;
 }
+
+size_t OnDiskNeuralDB::numChunks() {
+  return _chunk_index->size();
+}
+
+size_t OnDiskNeuralDB::finetuneCount() {
+  return _query_to_chunks->size();
+}
+
 
 void OnDiskNeuralDB::save(const std::string& save_path) const {
   licensing::entitlements().verifySaveLoad();
