@@ -1,107 +1,209 @@
-# Universe 
-Main Repository (follow monorepositry) 
+# ThirdAI Platform Driver Script
 
-[Repository Setup Instructions](https://www.notion.so/Universe-Setup-ed71176c2cf44b038ece8aee9fb64d35)
+This repository contains a script, `driver.sh`, which automates the deployment of the ThirdAI platform using Ansible. This document provides instructions on how to use the script and what it does.
 
-## Development Scripts
-There are some script in the bin folder that allow you to easily build, test,
-and lint you code.
-1. Run `$ bin/build.py` from anywhere to have cmake build everything in universe.
-All executables will be in their corresponding directory within the build 
-directory. e.g. the mpi_example executable will be in 
-`Universe/build/examples/mpi-example/mpi_example`. By default this will
-run in parallel and build all unbuilt targets or targets whose component source
-files have been updated. You can pass in parameters to run in serial and
-build in other build modes (Debug, etc.). Run bin/build.py -h for more info. 
-This will also install the thirdai package using pip.
-2. Run `$ bin/cpp-test.sh` after running `bin/build.py` from anywhere to have 
-cmake run all c++ tests. To run specific tests, you can also pass a regular 
-expression to filter tests (or provide an explicit test name):
-`$ bin/cpp-test.sh -R <test filter expression>`.
-Note you can actually pass any arguments you would pass to ctest to this
-script and it will forward them. 
-3. Run `$ bin/python-test.sh` from anywhere to run all python tests. To run specific
-tests, you can also pass a regular expression to filter tests 
-(or provide an explicit test name):
-`$ bin/python-test.sh -R <test filter expression>`.
-You can also filter to unit, release, or distributed tests by running e.g.
-`$ bin/python-test.sh -m unit`.
-Note you can actually pass any arguments you would pass to pytest to this
-script and it will forward them, see https://docs.pytest.org/en/6.2.x/usage.html.
-You can also directly run tests using pytest, but this script will also make 
-sure that all python testing files are visible from all tests, which is needed
-for some tests.
-4. Run `$ bin/cpp-format.sh` from anywhere to format all C++ code.
-5. Run `$ bin/python-format.sh` from anywhere to format all Python code.
-6. Run `$ bin/lint.py` from anywhere to run linting on all code (primarily 
-these are clang-tidy checks).
-7. Run `$ bin/generate_compile_commands.sh` from anywhere to generate the compile
-commands database (you shouldn't often need to do this manually, but try it
-if your intellisense is acting strangely).
+## Prerequisites
 
-## Docker
-1. You can run all of the above scripts, including building and testing your
-code, in our development docker container. To do this, you can create the 
-development docker container by running `$ bin/docker-build.sh` and enter
-a bash shell in the container by running `$ bin/docker-run.sh`. Universe will
-be mounted as a folder in the root of the container. Note that there may be 
-some issues with existing cache information if you have last build on your local
-machine, and you may need to run a clean build or delete your build folder.
+Before running the script, ensure the following are installed on your machine:
 
-## Feature Flags
-See https://www.notion.so/Feature-Flags-dbff0b88985242b8a07cc58a9261a1e2 for
-information about creating and using feature flags, and 
-https://www.notion.so/Feature-Flag-List-e006f6be1abe4d46bde97cf63c97a0f5
-for a current list of feature flags and what they do. Please update the list
-whenever you add a new feature flag.
+1. **Ansible**: The script automatically installs Ansible if it's not already installed.
+2. **Bash**: Ensure you have a Bash shell environment available to run the script.
+3. **Configuration File**: A `config.yml` file is required to provide necessary configurations for the Ansible playbooks.
 
-## Debugging your Pybound C++ code from python
-1. Simply build the code in RelWithDebInfo or Debug mode, and
-run your python code with perf or gdb. To run with gdb, run `gdb python3` and then
-`run your_py_script.py` (and feel free to set breakpoints in C++ code). You can
-also debug with lldb on mac, you will just additionally need to type `continue`
-after running `run your_py_script.py`.
+## Files in the Package
 
-2. You can also now run performance profile your python code. To run with
-perf, simply run normal perf commands attached to your python process. 
-2. Debugging Pybound code with ASan isn't supported anymore, if you really need
-it we can add it back.
+- `driver.sh`: The main script to automate the deployment.
+- `config.yml`: The configuration file required for Ansible to deploy the platform.
+- `models/Llama-3.2-1B-Instruct-f16.gguf`: The generation model used by the platform.
+- `platform`: This contains Ansible playbooks and other necessary files.
 
-## Debugging your C++ code
-1. The simplest way it to build your code in RelWithDebInfo or Debug mode and 
-then run gdb.
-2. If you want to run with ASan (an adress sanitizier), build with RelWithAsan
-or DebugWithAsan.
+## How to Run `driver.sh`
 
-## Manual building and testing (DEPRECATED, use scripts in bin, see above)
-1. Clone this repository and navigate into it.
-2. `$ mkdir build && cd build`
-3. `$ cmake ..` - this will generate the makefile that can be used to compile the code. 
-4. `$ make all` will compile all targets. Or you can use `$ make <target name>` to build a specific target. Run with -j$NUM_JOBS
-to build in parallel ($NUM_JOBS should be ~1.5 times the total number of threads on your machine
-for best performance).
-5. All executables will be in their corresponding directory within the build directory. e.g. the mpi_example executable will be in `Universe/build/examples/mpi-example/mpi_example`.
-6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
+### Step-by-Step Instructions
 
-## Installing python bindings
-1. Running `bin/build.py` as normal will install python bindings on your machine
-automatically using pip.
-2. To build a wheel, run `python3 setup.py bdist_wheel`. This will generate a
-.whl file in the dist folder specific to your architecture and operating system.
-Note that this will do a release build with release flags; to build a wheel
-with other flags, you need to set environment variables (see setup.py for more
-details). In fact, `bin/build.py` sets environment variables in its process 
-namespace and then calls setup.py internally. You can then install 
-the wheel by running `pip3 install dist/<wheel>`. You can also upload whl files
-to pypi, but this should only be done with a release build, ideally as part of
-a CI pipeline.
+1. **Download and Extract the Package**:
+   
+   After downloading the `thirdai-platform-package.tar.gz`, extract it:
 
-## Using cmake
-To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
-1. `add_library` - this creates a library of the specified name using the given targets. The `SHARED` or `STATIC` identifier means that the library will be either shared and dynamically loaded or static and linked in to other binaries that depend on it. For our purposes we should probably just use `STATIC`. 
-2. `target_link_libraries` - this links a specified library to another target, either a library or an executable.
-3. `add_executable` - creates an executable from the given files. 
-4. `add_subdirectory` - cmake starts at the CMakeLists.txt in the root of the project and traverses down, this command basically tells cmake that it must look in the given subdirectory to find more build targets. 
-5. `enable_testing` - this allows cmake to find the tests in the build targets. Every intermediate directory between the root directory and the directory containing the tests must have this in its CMakeLists.txt in order for cmake to find the tests. 
-6. `include(GoogleTest)` and `gtest_discover_tests` - this imports googletest and tells it to find all of the tests in the specified target for cmake. For an example please see `examples/test`.
-7. `find_package(MPI)` and `target_link_libraries(<some target> PRIVATE MPI::MPI_CXX)` this finds the mpi library and links it with the given target. For an example please see `examples/mpi-example`.
+   ```bash
+   mkdir -p my_folder
+   tar -xzvf thirdai-platform-package.tar.gz -C my_folder
+   ```
+
+   This will extract the following files and directories:
+   - `driver.sh`
+   - `config.yml`
+   - `platform/`
+   - `models/Llama-3.2-1B-Instruct-f16.gguf`
+
+
+2. **Run the Script with Various Options**:
+   
+   The `driver.sh` script supports several options to customize its behavior. Below are the available options and examples of how to use them:
+
+   - **Basic Usage**:
+     
+     Run the script with the default configuration:
+
+     ```bash
+     ./driver.sh ./config.yml
+     ```
+
+   - **Enable Verbose Mode**:
+     
+     Use the `-v` or `--verbose` flag to enable verbose output, which provides more detailed logs during execution.
+
+     ```bash
+     ./driver.sh --verbose ./config.yml
+     ```
+
+     Or using the short flag:
+
+     ```bash
+     ./driver.sh -v ./config.yml
+     ```
+
+   - **Run Cleanup Operations**:
+     
+     Use the `--cleanup` flag to run the cleanup playbook, which removes existing deployments or resources as defined in the playbook.
+
+     ```bash
+     ./driver.sh --cleanup ./config.yml
+     ```
+
+   - **Onboard New Clients**:
+     
+     Use the `--onboard_clients` flag to run the onboarding playbook, which sets up new client configurations. You will be prompted to provide the path to the new client configuration file.
+
+     ```bash
+     ./driver.sh --onboard_clients ./config.yml
+     ```
+
+   - **Combine Multiple Options**:
+     
+     You can combine multiple options to perform more complex operations. For example, to run the onboarding playbook in verbose mode:
+
+     ```bash
+     ./driver.sh --onboard_clients --verbose ./config.yml
+     ```
+
+     Or to enable cleanup with verbose output:
+
+     ```bash
+     ./driver.sh --cleanup --verbose ./config.yml
+     ```
+
+3. **Understanding the Script Flags and Behavior**
+   
+   - **Verbose Mode (`-v` or `--verbose`)**:
+     
+     When enabled, the script provides detailed logs (`-vvvv` level) during the execution of Ansible playbooks. This is useful for debugging and understanding the steps being performed.
+
+   - **Cleanup Mode (`--cleanup`)**:
+     
+     Triggers the execution of the `test_cleanup.yml` Ansible playbook, which is designed to remove existing deployments or resources. This is useful for resetting the environment before a fresh deployment.
+
+   - **Onboard Clients (`--onboard_clients`)**:
+     
+     Initiates the onboarding process for new clients by running the `onboard_clients.yml` Ansible playbook. The script will prompt you to provide the path to the new client configuration file (`new_client_config.yml`).
+
+4. **Examples of Common Use Cases**
+
+   - **Deploy with Default Settings**:
+
+     ```bash
+     ./driver.sh ./config.yml
+     ```
+
+   - **Deploy with Verbose Output**:
+
+     ```bash
+     ./driver.sh --verbose ./config.yml
+     ```
+
+   - **Clean Up Existing Deployments**:
+
+     ```bash
+     ./driver.sh --cleanup ./config.yml
+     ```
+
+   - **Onboard New Clients with Verbose Output**:
+
+     ```bash
+     ./driver.sh --onboard_clients --verbose ./config.yml
+     ```
+
+   - **Full Operation: Onboard Clients and Enable Verbose**:
+
+     ```bash
+     ./driver.sh --onboard_clients --verbose ./config.yml
+     ```
+
+5. **Additional Notes**
+
+   - **Configuration File**:
+     
+     Ensure that the `config.yml` file is correctly configured with all necessary settings for your deployment. You can use the default `config.yml` provided or supply your own.
+
+   - **Model Files**:
+     
+     The script checks for the presence of model files in the `pretrained-models/` directory. If not found, it will proceed without them but will issue a warning.
+
+   - **Docker Images**:
+     
+     The script searches for a `docker_images-*` directory. If not found, it will proceed without Docker images and issue a warning.
+
+   - **Ansible Dependencies**:
+     
+     The `driver.sh` script ensures that Ansible and the required Ansible Galaxy collections are installed before proceeding. If Ansible is not found, it attempts to install it based on the operating system.
+
+By following these instructions and utilizing the available options, you can effectively manage deployments, perform cleanups, and onboard new clients using the `driver.sh` script.
+
+
+### Instruction to migrating to a different public IP/DNS
+
+When changing the public IP of your Cluster, follow these steps to update the settings and ensure proper functionality:
+
+---
+
+4. **Steps to Update Frontend URL**
+
+   - To access the admin console, follow these steps:
+
+      1. **Set up Port Forwarding**  
+         Open a terminal on your local machine and run the following command:  
+         ```bash
+         sudo ssh -i <public-key> -L 443:<PRIVATE_IP_OF_MACHINE>:443 <USERNAME>@<NEW_PUBLIC_IP>
+         ```  
+
+      2. **Access the Admin Console**  
+         Once port forwarding is successfully set up, open your browser on the local machine and navigate to:  
+         ```  
+         https://localhost/keycloak/admin/master/console/  
+         ```  
+
+         You should now be redirected to the admin console.
+
+   - In the **Keycloak Admin Console**, go to:
+      - Select the realm: `Thirdai-Platform`.
+      - Navigate to **Realm Settings → General**.
+
+   - Update the **Frontend URL** to:
+     ```
+     https://{newPublicIP}/keycloak
+     ```
+   - If you dont have the access to older admin console, then you may need to do change the env var `KC_HOSTNAME` and `KC_HOSTNAME_ADMIN` to new public IP in the Keycloak Job, restart it before seeing the change. 
+
+
+5. **What Happens During Execution**:
+   
+   - The script checks for the installation of Ansible. If Ansible is not installed, the script will install it automatically.
+   - The script verifies if the model folder (`gen-ai-models/`) is present. If the folder is not found, the script issues a warning but proceeds with the playbook execution.
+   - The script searches for a `docker_images` folder and warns if it's not found, but proceeds with the playbook execution.
+   - The script then navigates to the `platform/` directory and runs the `test_deploy.yml` Ansible playbook using the provided `config.yml`, the model path, the Docker images path as extra variables.
+
+### Troubleshooting
+
+- **Permission Denied**: If you encounter a "permission denied" error while running the script, ensure that the script has executable permissions by running the `chmod +x driver.sh` command. If you are using a `.pem` key for SSH, make sure the key file's permission is set to `400` by running `chmod 400 your-key.pem`.
+- **Config File Not Found**: Ensure that the path to the `config.yml` file is correct and that the file exists at the specified location.
+- **Ansible Errors**: If Ansible encounters errors during execution, review the output carefully. Ensure that your system has internet access for package installation and model downloading.
