@@ -5,9 +5,11 @@
 #include <hashing/src/MinHash.h>
 #include <archive/src/Archive.h>
 #include <archive/src/Map.h>
+#include <auto_ml/src/Aliases.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/config/FlashConfig.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -22,6 +24,7 @@
 #include <licensing/src/CheckLicense.h>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -78,6 +81,10 @@ std::unique_ptr<Flash> Flash::make(
 
   return std::make_unique<Flash>(input_column, target_column, ',', std::nullopt,
                                  args);
+}
+
+void Flash::trainOnFile(const std::string& filename) {
+  train(dataset::FileDataSource::make(filename), std::nullopt, true);
 }
 
 void Flash::train(const dataset::DataSourcePtr& data,
@@ -274,6 +281,12 @@ IdScorePairs Flash::queryBatchResults(const MapInputBatch& sample,
   return std::pair(phrase_ids, phrase_scores);
 }
 
+std::vector<std::string> Flash::predictSimple(const std::string& sample,
+                                              uint32_t top_k) {
+  auto results = predictBatch(MapInputBatch{{{"phrase", sample}}}, top_k);
+  return results.first.at(0);
+}
+
 std::pair<std::vector<std::vector<string>>, std::vector<std::vector<float>>>
 Flash::predictBatch(const MapInputBatch& sample,
                     std::optional<uint32_t> top_k) {
@@ -285,7 +298,8 @@ Flash::predictBatch(const MapInputBatch& sample,
 
   std::vector<std::vector<std::string>> phrases(phrase_ids.size());
 
-#pragma omp parallel for default(none) shared(phrase_ids, phrases)
+#pragma omp parallel for default(none) \
+    shared(phrase_ids, phrases) if (phrase_ids.size() > 1)
   for (uint32_t sample_idx = 0; sample_idx < phrase_ids.size(); sample_idx++) {
     phrases[sample_idx] = idsToPhrase(phrase_ids[sample_idx]);
   }

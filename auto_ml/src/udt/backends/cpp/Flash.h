@@ -33,11 +33,16 @@ class Flash {
 
   explicit Flash(const ar::Archive& archive);
 
+  void trainOnFile(const std::string& filename);
+
   void train(const dataset::DataSourcePtr& data,
              std::optional<size_t> batch_size, bool verbose);
 
   std::unordered_map<std::string, std::vector<float>> evaluate(
       const dataset::DataSourcePtr& data, uint32_t top_k, bool verbose);
+
+  std::vector<std::string> predictSimple(const std::string& sample,
+                                         uint32_t top_k);
 
   std::pair<std::vector<std::vector<string>>, std::vector<std::vector<float>>>
   predictBatch(const MapInputBatch& sample, std::optional<uint32_t> top_k);
