@@ -67,5 +67,5 @@ class DocumentMetadataSummary:
             self.summarized_metadata[(doc_id, doc_version)][
                 key
             ].summary.unique_values = set(
-                random.sample(set(unique_values), k=min(100, len(unique_values)))
+                random.sample(list(unique_values), k=min(100, len(unique_values)))
             )
