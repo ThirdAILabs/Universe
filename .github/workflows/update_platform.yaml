@@ -1,0 +1,58 @@
+name: Update Platform Static Libraries
+
+# Kills old jobs from the same pr if we push a new commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Only run on release
+on:
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  update-platform-artifacts:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Universe
+        uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          path: ./Universe
+
+      - name: Checkout Platform
+        uses: actions/checkout@v2
+        with:
+          repository: ThirdAILabs/Thirdai-Platform-v2
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          path: ./platform
+
+      - name: Create and checkout artifacts branch
+        run: |
+          cd ./platform
+          git checkout -b artifacts-update-from-universe
+
+      - name: Build universe library
+        run: |
+          cd ./Universe
+          bin/build.py -f THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE
+
+      - name: Copy libraries to Platform
+        run: |
+          mkdir -p ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/libthirdai.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/rocksdb/librocksdb.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/utf8proc/libutf8proc.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/cryptopp-cmake/cryptopp/libcryptopp.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+
+      - name: Commit and push changes
+        run: |
+          cd ./platform
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add thirdai_platform/search/ndb/lib/linux_x64/* -f
+          git commit -m "Update artifacts from Universe release ${{ github.event.release.tag_name }}"
+          git push origin artifacts-update-from-universe --force
