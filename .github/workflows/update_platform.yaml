@@ -22,8 +22,6 @@ jobs:
           submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           path: ./Universe
-          fetch-depth: 0
-          fetch-tags: true
 
       - name: Checkout Platform
         uses: actions/checkout@v2
