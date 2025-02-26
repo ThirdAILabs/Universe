@@ -30,11 +30,6 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           path: ./platform
 
-      - name: Create and checkout artifacts branch
-        run: |
-          cd ./platform
-          git checkout -b artifacts-update-from-universe
-
       - name: Build universe library
         run: |
           cd ./Universe
@@ -48,11 +43,38 @@ jobs:
           cp ./Universe/build/deps/utf8proc/libutf8proc.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
           cp ./Universe/build/deps/cryptopp-cmake/cryptopp/libcryptopp.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
 
+      - name: Create version.yaml
+        run: |
+          cd ./Universe
+          COMMIT_HASH=$(git rev-parse HEAD)
+          COMMIT_DATE=$(git show -s --format=%cd --date=format:'%Y-%m-%d' HEAD)
+          UNIVERSE_VERSION=$(git describe --tags --abbrev=0 || echo "unknown")
+          OPENSSL_VERSION=$(openssl version | cut -d' ' -f2)
+
+          cat > ../platform/thirdai_platform/search/ndb/lib/linux_x64/version.yaml << EOF
+          commit_hash: ${COMMIT_HASH}
+          commit_date: ${COMMIT_DATE}
+          universe_version: ${UNIVERSE_VERSION}
+          openssl_version: ${OPENSSL_VERSION}
+          EOF
+
       - name: Commit and push changes
         run: |
           cd ./platform
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
+          git checkout -b artifacts-update-from-universe-${UNIVERSE_VERSION}
           git add thirdai_platform/search/ndb/lib/linux_x64/* -f
-          git commit -m "Update artifacts from Universe release ${{ github.event.release.tag_name }}"
-          git push origin artifacts-update-from-universe --force
+          git commit -m "Update artifacts from Universe Version ${UNIVERSE_VERSION}"
+          git push origin artifacts-update-from-universe-${UNIVERSE_VERSION} --force
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        run: |
+          gh pr create \
+            --repo ThirdAILabs/Thirdai-Platform-v2 \
+            --base main \
+            --head artifacts-update-from-universe-${UNIVERSE_VERSION} \
+            --title "Update artifacts from Universe Version ${UNIVERSE_VERSION}" \
+            --body "Automated PR to update static libraries from Universe ${UNIVERSE_VERSION}"
