@@ -22,6 +22,8 @@ jobs:
           submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           path: ./Universe
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Checkout Platform
         uses: actions/checkout@v2
@@ -48,7 +50,7 @@ jobs:
           cd ./Universe
           COMMIT_HASH=$(git rev-parse HEAD)
           COMMIT_DATE=$(git show -s --format=%cd --date=format:'%Y-%m-%d' HEAD)
-          UNIVERSE_VERSION=$(git describe --tags --abbrev=0 || echo "unknown")
+          UNIVERSE_VERSION=$(cat thirdai.version)
           OPENSSL_VERSION=$(openssl version | cut -d' ' -f2)
 
           cat > ../platform/thirdai_platform/search/ndb/lib/linux_x64/version.yaml << EOF
