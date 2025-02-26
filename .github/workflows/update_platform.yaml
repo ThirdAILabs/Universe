@@ -14,7 +14,7 @@ on:
 
 jobs:
   update-platform-artifacts:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-16-cores
     steps:
       - name: Checkout Universe
         uses: actions/checkout@v2
