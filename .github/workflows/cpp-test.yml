@@ -11,8 +11,8 @@ on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
     branches: [main]
-  # pull_request:
-  #   branches: [main]
+  pull_request:
+    branches: [main]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,19 +28,19 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
+          
       - name: Run all c++ tests
         run: |
           export CC=/usr/bin/gcc-11
           export CXX=/usr/bin/g++-11
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE
           bin/cpp-test.sh -V
-
+          
   cpp-asan-tests:
-    runs-on:
+    runs-on: 
       labels: ubuntu-22.04-8-cores
     steps:
       - name: install gcc-11
@@ -49,8 +49,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
       - name: Fix kernel mmap rnd bits
         # Asan in llvm 14 provided in ubuntu 22.04 is incompatible with
@@ -74,10 +74,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
+          
       - name: Run all c++ tests
         run: |
           export CC=/usr/bin/gcc-11

@@ -5,14 +5,14 @@ name: Run Python Tests
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+  
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
     branches: [main]
-  # pull_request:
-  #   branches: [main]
+  pull_request:
+    branches: [main]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -25,10 +25,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
+        
       - name: Build python package and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-
+      
       # Install teserract
       - name: Install Tesseract OCR
         run: |
@@ -58,10 +58,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
+        
       - name: Build python package release version and install test dependencies
         # Issue: https://github.com/pypa/pip/issues/10851
         run: |
@@ -84,8 +84,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-        with:
-          submodules: "recursive"
+        with:           
+          submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build python package and install test dependencies
