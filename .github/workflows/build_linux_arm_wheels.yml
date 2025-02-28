@@ -1,6 +1,6 @@
-name: Build Linux x86_64 Wheels
+name: Build Linux ARM Wheels
 
-# Kills old jobs from the same pr if we push a new commit
+# Kills old jobs from the same PR if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -8,7 +8,7 @@ concurrency:
 
 # Run on pushes and releases. The actual upload will only happen on a
 # release.
-# Note this action does not ever upload to the main Pypi repo. For now, do that
+# Note this action does not ever upload to the main PyPI repo. For now, do that
 # by downloading the build artifacts and doing it manually. See
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
@@ -20,7 +20,7 @@ on:
 
 jobs:
   build_wheels:
-    runs-on: ubuntu-22.04-8-cores-arm
+    runs-on: ubuntu-22.04-arm
 
     steps:
       - uses: actions/checkout@v2
@@ -37,7 +37,7 @@ jobs:
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
-          # We need this to get Openssl working on Manylinux (which has a
+          # We need this to get OpenSSL working on Manylinux (which has a
           # CentOS base image). See
           # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
@@ -46,7 +46,7 @@ jobs:
             OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
 
           # TODO: Upgrade distro to supported version.
-          # CentOS 7 is deprecated, and the sed commmands are a workaround to still use that version.
+          # CentOS 7 is deprecated, and the sed commands are a workaround to still use that version.
           # https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve
           #
           # We install OpenSSL 3 since OpenSSL 1.1.1 is not FIPS certified. This
@@ -72,11 +72,10 @@ jobs:
             ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
             yum install -y libxslt-devel libxml2-devel
 
-          # Online compile cpython wheels (pytorch does this too), no big
-          # advantage to JIT compilation of python since most of our processing
-          # happens in C++ (it can actually make it slower!). Also, on some
-          # platforms numpy isn't available so our tests don't work.
-          CIBW_BUILD: "cp*manylinux_x86_64"
+          # Online compile CPython wheels (pytorch does this too). There’s little advantage
+          # to JIT compilation of Python since most of our processing happens in C++.
+          # Also, on some platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*manylinux_aarch64"
           CIBW_BUILD_VERBOSITY: 3
 
           CIBW_BEFORE_TEST_LINUX: |
@@ -85,7 +84,7 @@ jobs:
           CIBW_TEST_EXTRAS: "test"
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
-          # Skip building on CPython <3.8 on the Mac
+          # Skip building on CPython <3.8 on the Mac.
           # 3.11 (brought about by cibuildwheel upgrade to 2.9.0) is skipped as
           # of now because ray is unsupported. We expect ray to be present to
           # test our distributed pipeline.
