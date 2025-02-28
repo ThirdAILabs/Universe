@@ -1,0 +1,73 @@
+name: Update Platform Static Libraries
+
+# Kills old jobs from the same pr if we push a new commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Only run on release
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-platform-artifacts:
+    runs-on: ubuntu-22.04-16-cores
+    steps:
+      - name: Checkout Universe
+        uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          path: ./Universe
+
+      - name: Checkout Platform
+        uses: actions/checkout@v2
+        with:
+          repository: ThirdAILabs/Thirdai-Platform-v2
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          path: ./platform
+
+      - name: Build universe library
+        run: |
+          cd ./Universe
+          bin/build.py -f THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE
+
+      - name: Copy libraries to Platform
+        run: |
+          mkdir -p ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/libthirdai.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/rocksdb/librocksdb.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/utf8proc/libutf8proc.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+          cp ./Universe/build/deps/cryptopp-cmake/cryptopp/libcryptopp.a ./platform/thirdai_platform/search/ndb/lib/linux_x64
+
+      - name: Create version.yaml and Create PR
+        env:
+          GH_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        run: |
+          cd ./Universe
+          COMMIT_DATE=$(git show -s --format=%cd --date=format:'%Y-%m-%d' HEAD)
+          UNIVERSE_VERSION=$(cat thirdai.version)
+          OPENSSL_VERSION=$(openssl version | cut -d' ' -f2)
+
+          cat > ../platform/thirdai_platform/search/ndb/lib/linux_x64/version.yaml << EOF
+          ref: ${{github.ref}}
+          commit_date: ${COMMIT_DATE}
+          universe_version: ${UNIVERSE_VERSION}
+          openssl_version: ${OPENSSL_VERSION}
+          EOF
+
+          cd ../platform
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git checkout -b artifacts-update-from-universe-${UNIVERSE_VERSION}
+          git add thirdai_platform/search/ndb/lib/linux_x64/* -f
+          git commit -m "Update static libraries from Universe Version ${UNIVERSE_VERSION}"
+          git push origin artifacts-update-from-universe-${UNIVERSE_VERSION} --force
+
+          gh pr create \
+            --repo ThirdAILabs/Thirdai-Platform-v2 \
+            --base main \
+            --head artifacts-update-from-universe-${UNIVERSE_VERSION} \
+            --title "Update static libraries from Universe Version ${UNIVERSE_VERSION}" \
+            --body "Automated PR to update static libraries from Universe ${UNIVERSE_VERSION}"
