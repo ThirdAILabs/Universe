@@ -444,21 +444,21 @@ set(THIRDAI_SOURCES
     licensing/src/entitlements/Entitlements.cc
     versioning/src/Versions.cc)
 
-if(NOT WIN32)
-  # The OnDiskIndex doesn't work on windows because the bitfields for the
-  # DocCount struct still result in a size of > 8 bytes, so it will not be
-  # compatible with indexes created on mac/linux.
-  set(THIRDAI_SOURCES
-      ${THIRDAI_SOURCES}
-      search/src/inverted_index/OnDiskIndex.cc
-      search/src/inverted_index/id_map/OnDiskIdMap.cc
-      search/src/neural_db/Constraints.cc
-      search/src/neural_db/TextProcessor.cc
-      search/src/neural_db/on_disk/InvertedIndex.cc
-      search/src/neural_db/on_disk/QueryToChunks.cc
-      search/src/neural_db/on_disk/ChunkDataColumn.cc
-      search/src/neural_db/on_disk/OnDiskNeuralDB.cc)
-endif()
+# if(NOT WIN32)
+#   # The OnDiskIndex doesn't work on windows because the bitfields for the
+#   # DocCount struct still result in a size of > 8 bytes, so it will not be
+#   # compatible with indexes created on mac/linux.
+#   set(THIRDAI_SOURCES
+#       ${THIRDAI_SOURCES}
+#       search/src/inverted_index/OnDiskIndex.cc
+#       search/src/inverted_index/id_map/OnDiskIdMap.cc
+#       search/src/neural_db/Constraints.cc
+#       search/src/neural_db/TextProcessor.cc
+#       search/src/neural_db/on_disk/InvertedIndex.cc
+#       search/src/neural_db/on_disk/QueryToChunks.cc
+#       search/src/neural_db/on_disk/ChunkDataColumn.cc
+#       search/src/neural_db/on_disk/OnDiskNeuralDB.cc)
+# endif()
 
 # Only add the licensing subdirectory and licensing cc files if the
 # corresponding flag is set
@@ -496,9 +496,9 @@ target_link_libraries(
   thirdai_core
   PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
          utf8proc nlohmann_json::nlohmann_json)
-if(NOT WIN32)
-  target_link_libraries(thirdai_core PUBLIC rocksdb)
-endif()
+# if(NOT WIN32)
+#   target_link_libraries(thirdai_core PUBLIC rocksdb)
+# endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai_core PUBLIC cryptopp::cryptopp OpenSSL::Crypto

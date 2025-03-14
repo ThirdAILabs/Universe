@@ -210,12 +210,13 @@ setup(
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     install_requires=[
-        "numpy",
-        "typing_extensions",
-        "requests",
-        "pandas>=2.0.0",
+        # "numpy",
+        # "typing_extensions",
+        # "requests",
+        # "pandas>=2.0.0",
     ]
-    + neural_db_deps,
+    # + neural_db_deps,
+    ,
     extras_require={
         # separate neural_db_deps not needed anymore, kept for backwards compatibility
         "neural_db": neural_db_deps,
