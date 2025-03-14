@@ -480,9 +480,9 @@ add_library(thirdai STATIC ${THIRDAI_SOURCES})
 target_link_libraries(
   thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
                  prometheus-cpp::pull utf8proc)
-if(NOT WIN32)
-  target_link_libraries(thirdai PUBLIC rocksdb)
-endif()
+# if(NOT WIN32)
+#   target_link_libraries(thirdai PUBLIC rocksdb)
+# endif()
 
 if(${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PUBLIC cryptopp::cryptopp OpenSSL::Crypto
