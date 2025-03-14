@@ -89,13 +89,7 @@ struct CategoricalDataType final : public DataType {
     return n_classes.value();
   }
 
-  std::string toString() const final {
-    if (delimiter.has_value()) {
-      return fmt::format(R"({{"type": "categorical", "delimiter": "{}"}})",
-                         delimiter.value());
-    }
-    return fmt::format(R"({{"type": "categorical"}})");
-  }
+  std::string toString() const final { return R"({{"type": "categorical"}})"; }
 
   std::string typeName() const final { return "categorical"; }
 
@@ -164,11 +158,7 @@ struct NumericalDataType final : public DataType {
 
   NumericalDataType() {}
 
-  std::string toString() const final {
-    return fmt::format(
-        R"({{"type": "numerical", "range": [{}, {}], "granularity": "{}"}})",
-        range.first, range.second, granularity);
-  }
+  std::string toString() const final { return R"({{"type": "numerical"}})"; }
 
   uint32_t numBins() const;
 

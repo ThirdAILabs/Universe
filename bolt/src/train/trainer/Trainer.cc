@@ -9,6 +9,7 @@
 #include <chrono>
 #include <limits>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -51,12 +52,12 @@ void Trainer::trainOnBatches(
     num_batches = comm->minNumBatches(num_batches);
   }
   if (_gradient_update_interval > num_batches) {
-    std::string error_message = fmt::format(
-        "Error: gradient_update_interval ({}) exceeds num_batches ({}). "
-        "Model parameters will not be updated under this condition.",
-        _gradient_update_interval, num_batches);
+    std::stringstream ss;
+    ss << "Error: gradient_update_interval (" << _gradient_update_interval
+       << ") exceeds num_batches (" << num_batches
+       << "). Model parameters will not be updated under this condition.";
 
-    throw std::runtime_error(error_message);
+    throw std::runtime_error(ss.str());
   }
   auto bar = ProgressBar::makeOptional(verbose, "train", num_batches);
 
@@ -473,40 +474,42 @@ void Trainer::verifyNumBatchesMatch(const LabeledDataset& data) {
 
 std::string Trainer::formatTrainLogLine(const std::string& metric_summary,
                                         uint32_t batches, double time) {
-  std::string logline = fmt::format(
-      "train | epoch {} | train_steps {} | {} | train_batches {} | time "
-      "{:.3f}s",
-      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
+  std::stringstream ss;
+  ss << "train | epoch " << _model->epochs() << " | train_steps "
+     << _model->trainSteps() << " | " << metric_summary << " | train_batches "
+     << batches << " | time " << time << "s";
 
-  return logline;
+  return ss.str();
 }
 
 std::string Trainer::formatFuncCallLogLine(const std::string& func_call,
                                            uint32_t batches, int64_t time) {
-  std::string logline = fmt::format(
-      "func {} | epoch {} | train_steps {} | train_batches {} | time {} ms",
-      func_call, _model->epochs(), _model->trainSteps(), batches, time);
+  std::stringstream ss;
 
-  return logline;
+  ss << "func " << func_call << " | epoch " << _model->epochs()
+     << " | train_steps " << _model->trainSteps() << " | train_batches "
+     << batches << " | time " << time << "ms";
+
+  return ss.str();
 }
 
 std::string Trainer::formatIntermediateLogLine(
     const std::string& metric_summary) {
-  std::string logline =
-      fmt::format("train | epoch {} | train_steps {} | {}", _model->epochs(),
-                  _model->trainSteps(), metric_summary);
+  std::stringstream ss;
+  ss << "train | epoch " << _model->epochs() << " | train_steps "
+     << _model->trainSteps() << " | " << metric_summary;
 
-  return logline;
+  return ss.str();
 }
 
 std::string Trainer::formatValidateLogLine(const std::string& metric_summary,
                                            uint32_t batches, double time) {
-  std::string logline = fmt::format(
-      "validate | epoch {} | train_steps {} | {} | val_batches {} | time "
-      "{:.3f}s",
-      _model->epochs(), _model->trainSteps(), metric_summary, batches, time);
+  std::stringstream ss;
+  ss << "validate | epoch " << _model->epochs() << " | train_steps "
+     << _model->trainSteps() << " | " << metric_summary << " | val_batches "
+     << batches << " | time " << time << "s";
 
-  return logline;
+  return ss.str();
 }
 
 void Trainer::autotuneRehashRebuild(uint32_t num_batches, uint32_t batch_size) {

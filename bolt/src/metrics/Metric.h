@@ -117,7 +117,7 @@ class CategoricalCrossEntropy final : public Metric {
   std::string name() final { return NAME; }
 
   std::string summary() final {
-    return fmt::format("{}: {:.3f}", NAME, value());
+    return std::string(NAME) + ": " + std::to_string(value());
   }
 
  private:
