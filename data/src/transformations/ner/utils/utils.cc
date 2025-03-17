@@ -1,7 +1,7 @@
 #include "utils.h"
 #include <algorithm>
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 namespace thirdai::data::ner::utils {
 
@@ -102,13 +102,13 @@ bool luhnCheck(const std::string& number) {
 }
 
 std::string findContiguousNumbers(const std::vector<std::string>& v,
-                                  unsigned int index, unsigned int k) {
+                                  uint32_t index, uint32_t k) {
   /*
    * Returns the surrounding numbers around the target token as a space
    * seperated string. This is useful when we have tokens of the form 1234 5678
    * 9101.
    */
-  if (index >= static_cast<unsigned int>(v.size())) {
+  if (index >= static_cast<uint32_t>(v.size())) {
     return "";
   }
 
@@ -119,7 +119,7 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
   }
 
   int start = index > k ? index - k : 0;
-  int end = std::min(static_cast<unsigned int>(v.size()) - 1, index + k);
+  int end = std::min(static_cast<uint32_t>(v.size()) - 1, index + k);
 
   std::vector<std::string> left_window, right_window;
   for (int i = index - 1; i >= start; --i) {
@@ -155,8 +155,8 @@ std::string findContiguousNumbers(const std::vector<std::string>& v,
   return result;
 }
 
-unsigned int findMaxContiguousWindow(const SentenceTags& sentence_tags,
-                                unsigned int index,
+uint32_t findMaxContiguousWindow(const SentenceTags& sentence_tags,
+                                 uint32_t index,
                                  const std::string& tag_to_find) {
   int count = 0;
 
