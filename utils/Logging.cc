@@ -46,7 +46,7 @@ void setup(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
 
     // This ensures that logs are periodically flushed.
     spdlog::flush_every(std::chrono::seconds(flush_interval));
-
+/*
     // Convert a supplied string level into the corresponding
     // spdlog level and configures the logger accordingly.
     if (level == "trace") {
@@ -71,7 +71,8 @@ void setup(bool log_to_stderr /*= DEFAULT_LOG_TO_STDERR*/,
     if (logger) {
       logger->info("thirdai {}", version());
     }
-
+*/
+    std::cerr << level << std::endl; 
   } catch (const spdlog::spdlog_ex& exception) {
     std::cerr << "Failed to initialize logger: " << exception.what()
               << std::endl;

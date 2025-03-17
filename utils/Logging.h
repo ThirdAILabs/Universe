@@ -39,7 +39,7 @@ void setup(bool log_to_stderr = DEFAULT_LOG_TO_STDERR,
     if (!logger) {                                        \
       return;                                             \
     }                                                     \
-    logger->function(args...);                            \
+    ((std::cerr << args << " "), ...);			  \
   }
 
 // Function definitions via macros

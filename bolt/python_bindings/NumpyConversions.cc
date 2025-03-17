@@ -60,7 +60,7 @@ py::object tensorToNumpy(const TensorPtr& tensor, bool single_row_to_vector) {
         py::make_tuple(std::move(active_neurons), std::move(activations)));
   }
 
-  return std::move(activations);
+  return py::object(std::move(activations));
 }
 
 py::object tensorToNumpyTopK(const TensorPtr& tensor, bool single_row_to_vector,

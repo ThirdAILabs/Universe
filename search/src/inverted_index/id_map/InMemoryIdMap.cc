@@ -25,7 +25,7 @@ std::vector<uint64_t> InMemoryIdMap::deleteValue(uint64_t value) {
   }
 
   std::vector<uint64_t> empty_keys;
-  for (const auto& key : _value_to_keys.at(value)) {
+  /*for (const auto& key : _value_to_keys.at(value)) {
     auto& values = _key_to_values.at(key);
 
     auto loc = std::find(values.begin(), values.end(), value);
@@ -36,7 +36,7 @@ std::vector<uint64_t> InMemoryIdMap::deleteValue(uint64_t value) {
       _key_to_values.erase(key);
       empty_keys.push_back(key);
     }
-  }
+  }*/
 
   _value_to_keys.erase(value);
 

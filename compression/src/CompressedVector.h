@@ -28,7 +28,7 @@ inline CompressionScheme convertStringToEnum(
 template <class T>
 class CompressedVector {
  public:
-  CompressedVector<T>() {}
+  CompressedVector() {}
 
   /*
    * Index refers to the index in the uncompressed_vector.

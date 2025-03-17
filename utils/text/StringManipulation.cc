@@ -117,8 +117,10 @@ std::vector<std::string> tokenizeSentenceUnicodeSafe(
 
   while (iter != end) {
     std::wcmatch match = *iter;
-    std::wstring token = sentence.substr(match.position(), match.length());
-    tokens.push_back(text::fromUnicode(token));
+    if (match.ready() && match.size() > 0) {
+	std::wstring token = sentence.substr(match.position(), match.length());
+	tokens.push_back(text::fromUnicode(token));
+    }
     ++iter;
   }
 

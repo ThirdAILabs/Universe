@@ -71,7 +71,7 @@ class SizeVisitor {
 template <class T>
 class SerializeVisitor {
  public:
-  explicit SerializeVisitor<T>(char* pointer_to_write_to)
+  explicit SerializeVisitor(char* pointer_to_write_to)
       : _serialized_data(pointer_to_write_to) {}
 
   void operator()(const DragonVector<T>& dragon_vector) {
