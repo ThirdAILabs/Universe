@@ -3,9 +3,9 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <search/src/inverted_index/IndexConfig.h>
-#if !_WIN32
-#include <search/src/inverted_index/OnDiskIndex.h>
-#endif
+// #if !_WIN32
+// #include <search/src/inverted_index/OnDiskIndex.h>
+// #endif
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <search/src/inverted_index/Retriever.h>
 #include <search/src/inverted_index/Utils.h>
@@ -24,33 +24,33 @@ std::string shardName(size_t shard_id) {
 
 }  // namespace
 
-#if !_WIN32
-class OnDiskFactory final : public RetrieverFactory {
- public:
-  explicit OnDiskFactory(std::string save_path, bool read_only)
-      : _save_path(std::move(save_path)), _read_only(read_only) {}
+// #if !_WIN32
+// class OnDiskFactory final : public RetrieverFactory {
+//  public:
+//   explicit OnDiskFactory(std::string save_path, bool read_only)
+//       : _save_path(std::move(save_path)), _read_only(read_only) {}
 
-  std::shared_ptr<Retriever> create(const IndexConfig& config,
-                                    size_t shard_id) const final {
-    if (_read_only) {
-      throw std::invalid_argument(
-          "Cannot create new shards in read only mode.");
-    }
-    return std::make_shared<OnDiskIndex>(
-        std::filesystem::path(_save_path) / shardName(shard_id), config);
-  }
+//   std::shared_ptr<Retriever> create(const IndexConfig& config,
+//                                     size_t shard_id) const final {
+//     if (_read_only) {
+//       throw std::invalid_argument(
+//           "Cannot create new shards in read only mode.");
+//     }
+//     return std::make_shared<OnDiskIndex>(
+//         std::filesystem::path(_save_path) / shardName(shard_id), config);
+//   }
 
-  std::shared_ptr<Retriever> load(const std::string& path) const final {
-    return OnDiskIndex::load(path, _read_only);
-  }
+//   std::shared_ptr<Retriever> load(const std::string& path) const final {
+//     return OnDiskIndex::load(path, _read_only);
+//   }
 
-  std::string type() const final { return OnDiskIndex::typeName(); }
+//   std::string type() const final { return OnDiskIndex::typeName(); }
 
- private:
-  std::string _save_path;
-  bool _read_only;
-};
-#endif
+//  private:
+//   std::string _save_path;
+//   bool _read_only;
+// };
+// #endif
 
 class InMemoryFactory final : public RetrieverFactory {
  public:
@@ -78,25 +78,25 @@ std::string metadataPath(const std::string& save_path) {
 ShardedRetriever::ShardedRetriever(IndexConfig config,
                                    const std::optional<std::string>& save_path)
     : _config(std::move(config)), _shard_size(config.shard_size) {
-#if !_WIN32
-  if (save_path) {
-    createDirectory(*save_path);
+// #if !_WIN32
+//   if (save_path) {
+//     createDirectory(*save_path);
 
-    _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
+//     _factory = std::make_shared<OnDiskFactory>(*save_path, /*read_only=*/false);
 
-    auto metadata_file =
-        dataset::SafeFileIO::ofstream(metadataPath(*save_path));
-    ar::serialize(metadataToArchive(), metadata_file);
-  } else {
-    _factory = std::make_shared<InMemoryFactory>();
-  }
-#else
+//     auto metadata_file =
+//         dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+//     ar::serialize(metadataToArchive(), metadata_file);
+//   } else {
+//     _factory = std::make_shared<InMemoryFactory>();
+//   }
+// #else
   _factory = std::make_shared<InMemoryFactory>();
   if (save_path) {
     throw std::invalid_argument("on-disk is not supported for windows.");
   }
 
-#endif
+// #endif
   _shards.push_back(_factory->create(_config, /*shard_id=*/0));
 }
 
@@ -249,11 +249,11 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
   if (type == InvertedIndex::typeName()) {
     _factory = std::make_shared<InMemoryFactory>();
   }
-#if !_WIN32
-  else if (type == OnDiskIndex::typeName()) {
-    _factory = std::make_shared<OnDiskFactory>(save_path, read_only);
-  }
-#endif
+// #if !_WIN32
+//   else if (type == OnDiskIndex::typeName()) {
+//     _factory = std::make_shared<OnDiskFactory>(save_path, read_only);
+//   }
+// #endif
   else {
     throw std::invalid_argument("Invalid factory type: '" + type + "'.");
   }
@@ -273,9 +273,9 @@ ShardedRetriever::ShardedRetriever(const std::string& save_path,
     throw std::invalid_argument("No shards found, db is in invalid state.");
   }
 
-#if _WIN32
+// #if _WIN32
   (void)read_only;
-#endif
+// #endif
 }
 
 std::shared_ptr<ShardedRetriever> ShardedRetriever::load(

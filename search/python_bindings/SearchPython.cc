@@ -9,12 +9,12 @@
 #include <search/src/inverted_index/InvertedIndex.h>
 #include <stdexcept>
 #include <string>
-#if !_WIN32
-#include <search/src/inverted_index/OnDiskIndex.h>
-#include <search/src/neural_db/Constraints.h>
-#include <search/src/neural_db/NeuralDB.h>
-#include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
-#endif
+// #if !_WIN32
+// #include <search/src/inverted_index/OnDiskIndex.h>
+// #include <search/src/neural_db/Constraints.h>
+// #include <search/src/neural_db/NeuralDB.h>
+// #include <search/src/neural_db/on_disk/OnDiskNeuralDB.h>
+// #endif
 #include <search/src/inverted_index/Tokenizer.h>
 #include <optional>
 
@@ -24,79 +24,79 @@ std::string pyTypeStr(const py::handle& obj) {
   return py::str(obj.get_type()).cast<std::string>();
 }
 
-#if !_WIN32
-ndb::MetadataValue objToMetadataValue(const py::handle& obj) {
-  if (py::isinstance<py::bool_>(obj)) {
-    return ndb::MetadataValue::Bool(obj.cast<bool>());
-  }
-  if (py::isinstance<py::int_>(obj)) {
-    return ndb::MetadataValue::Int(obj.cast<int>());
-  }
-  if (py::isinstance<py::float_>(obj)) {
-    return ndb::MetadataValue::Float(obj.cast<float>());
-  }
-  if (py::isinstance<py::str>(obj)) {
-    return ndb::MetadataValue::Str(obj.cast<std::string>());
-  }
-  throw std::invalid_argument("invalid type " + pyTypeStr(obj) +
-                              " expected bool, int, float, or str");
-}
+// #if !_WIN32
+// ndb::MetadataValue objToMetadataValue(const py::handle& obj) {
+//   if (py::isinstance<py::bool_>(obj)) {
+//     return ndb::MetadataValue::Bool(obj.cast<bool>());
+//   }
+//   if (py::isinstance<py::int_>(obj)) {
+//     return ndb::MetadataValue::Int(obj.cast<int>());
+//   }
+//   if (py::isinstance<py::float_>(obj)) {
+//     return ndb::MetadataValue::Float(obj.cast<float>());
+//   }
+//   if (py::isinstance<py::str>(obj)) {
+//     return ndb::MetadataValue::Str(obj.cast<std::string>());
+//   }
+//   throw std::invalid_argument("invalid type " + pyTypeStr(obj) +
+//                               " expected bool, int, float, or str");
+// }
 
-ndb::MetadataMap dictToMetadata(const py::dict& dict) {
-  ndb::MetadataMap map;
-  map.reserve(dict.size());
-  for (const auto& [k, v] : dict) {
-    if (!py::isinstance<py::str>(k)) {
-      throw std::invalid_argument("metadata keys must be strings, found type " +
-                                  pyTypeStr(k));
-    }
-    map[k.cast<std::string>()] = objToMetadataValue(v);
-  }
-  return map;
-}
+// ndb::MetadataMap dictToMetadata(const py::dict& dict) {
+//   ndb::MetadataMap map;
+//   map.reserve(dict.size());
+//   for (const auto& [k, v] : dict) {
+//     if (!py::isinstance<py::str>(k)) {
+//       throw std::invalid_argument("metadata keys must be strings, found type " +
+//                                   pyTypeStr(k));
+//     }
+//     map[k.cast<std::string>()] = objToMetadataValue(v);
+//   }
+//   return map;
+// }
 
-py::object metadataValueToObj(const ndb::MetadataValue& value) {
-  switch (value.type()) {
-    case ndb::MetadataType::Bool:
-      return py::cast(value.asBool());
-    case ndb::MetadataType::Int:
-      return py::cast(value.asInt());
-    case ndb::MetadataType::Float:
-      return py::cast(value.asFloat());
-    case ndb::MetadataType::Str:
-      return py::cast(value.asStr());
-    default:
-      return py::none();
-  }
-}
+// py::object metadataValueToObj(const ndb::MetadataValue& value) {
+//   switch (value.type()) {
+//     case ndb::MetadataType::Bool:
+//       return py::cast(value.asBool());
+//     case ndb::MetadataType::Int:
+//       return py::cast(value.asInt());
+//     case ndb::MetadataType::Float:
+//       return py::cast(value.asFloat());
+//     case ndb::MetadataType::Str:
+//       return py::cast(value.asStr());
+//     default:
+//       return py::none();
+//   }
+// }
 
-py::dict metadataToDict(const ndb::MetadataMap& map) {
-  py::dict dict;
-  for (const auto& [k, v] : map) {
-    dict[py::str(k)] = metadataValueToObj(v);
-  }
-  return dict;
-}
+// py::dict metadataToDict(const ndb::MetadataMap& map) {
+//   py::dict dict;
+//   for (const auto& [k, v] : map) {
+//     dict[py::str(k)] = metadataValueToObj(v);
+//   }
+//   return dict;
+// }
 
-ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
-                                  const std::vector<std::string>& chunks,
-                                  const std::vector<py::dict>& py_metadata,
-                                  const std::string& document,
-                                  const std::string& doc_id,
-                                  std::optional<uint32_t> doc_version) {
-  std::vector<ndb::MetadataMap> metadata;
-  if (!py_metadata.empty()) {
-    metadata.reserve(py_metadata.size());
-    for (const auto& dict : py_metadata) {
-      metadata.emplace_back(dictToMetadata(dict));
-    }
-  } else {
-    metadata.resize(chunks.size());
-  }
+// ndb::InsertMetadata wrappedInsert(const std::shared_ptr<ndb::NeuralDB>& ndb,
+//                                   const std::vector<std::string>& chunks,
+//                                   const std::vector<py::dict>& py_metadata,
+//                                   const std::string& document,
+//                                   const std::string& doc_id,
+//                                   std::optional<uint32_t> doc_version) {
+//   std::vector<ndb::MetadataMap> metadata;
+//   if (!py_metadata.empty()) {
+//     metadata.reserve(py_metadata.size());
+//     for (const auto& dict : py_metadata) {
+//       metadata.emplace_back(dictToMetadata(dict));
+//     }
+//   } else {
+//     metadata.resize(chunks.size());
+//   }
 
-  return ndb->insert(chunks, metadata, document, doc_id, doc_version);
-}
-#endif
+//   return ndb->insert(chunks, metadata, document, doc_id, doc_version);
+// }
+// #endif
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
@@ -239,19 +239,19 @@ void createSearchSubmodule(py::module_& module) {
             }
           }));
 
-#if !_WIN32
-  py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
-                                                        "OnDiskIndex")
-      .def(py::init<const std::string&, const IndexConfig&>(),
-           py::arg("save_path"), py::arg("config") = IndexConfig())
-      .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
-      .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
-           py::arg("parallelize") = false)
-      .def("prune", &OnDiskIndex::prune)
-      .def("save", &OnDiskIndex::save, py::arg("filename"))
-      .def_static("load", &OnDiskIndex::load, py::arg("filename"),
-                  py::arg("read_only") = false);
-#endif
+// #if !_WIN32
+//   py::class_<OnDiskIndex, std::shared_ptr<OnDiskIndex>>(search_submodule,
+//                                                         "OnDiskIndex")
+//       .def(py::init<const std::string&, const IndexConfig&>(),
+//            py::arg("save_path"), py::arg("config") = IndexConfig())
+//       .def("index", &OnDiskIndex::index, py::arg("ids"), py::arg("docs"))
+//       .def("query", &OnDiskIndex::query, py::arg("query"), py::arg("k"),
+//            py::arg("parallelize") = false)
+//       .def("prune", &OnDiskIndex::prune)
+//       .def("save", &OnDiskIndex::save, py::arg("filename"))
+//       .def_static("load", &OnDiskIndex::load, py::arg("filename"),
+//                   py::arg("read_only") = false);
+// #endif
 
   py::class_<FinetunableRetriever, std::shared_ptr<FinetunableRetriever>>(
       search_submodule, "FinetunableRetriever")
@@ -287,90 +287,90 @@ void createSearchSubmodule(py::module_& module) {
       // This is deprecated, it is only for compatability loading old models.
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 
-#if !_WIN32
-  py::class_<ndb::Chunk>(search_submodule, "Chunk")
-      .def_readonly("id", &ndb::Chunk::id)
-      .def_readonly("text", &ndb::Chunk::text)
-      .def_readonly("document", &ndb::Chunk::document)
-      .def_readonly("doc_id", &ndb::Chunk::doc_id)
-      .def_readonly("doc_version", &ndb::Chunk::doc_version)
-      .def_property_readonly("metadata", [](const ndb::Chunk& chunk) {
-        return metadataToDict(chunk.metadata);
-      });
+// #if !_WIN32
+//   py::class_<ndb::Chunk>(search_submodule, "Chunk")
+//       .def_readonly("id", &ndb::Chunk::id)
+//       .def_readonly("text", &ndb::Chunk::text)
+//       .def_readonly("document", &ndb::Chunk::document)
+//       .def_readonly("doc_id", &ndb::Chunk::doc_id)
+//       .def_readonly("doc_version", &ndb::Chunk::doc_version)
+//       .def_property_readonly("metadata", [](const ndb::Chunk& chunk) {
+//         return metadataToDict(chunk.metadata);
+//       });
 
-  py::class_<ndb::InsertMetadata>(search_submodule, "InsertMetadata")
-      .def_readonly("doc_id", &ndb::InsertMetadata::doc_id)
-      .def_readonly("doc_version", &ndb::InsertMetadata::doc_version)
-      .def_readonly("start_id", &ndb::InsertMetadata::start_id)
-      .def_readonly("end_id", &ndb::InsertMetadata::end_id);
+//   py::class_<ndb::InsertMetadata>(search_submodule, "InsertMetadata")
+//       .def_readonly("doc_id", &ndb::InsertMetadata::doc_id)
+//       .def_readonly("doc_version", &ndb::InsertMetadata::doc_version)
+//       .def_readonly("start_id", &ndb::InsertMetadata::start_id)
+//       .def_readonly("end_id", &ndb::InsertMetadata::end_id);
 
-  py::class_<ndb::Source>(search_submodule, "Source")
-      .def_readonly("document", &ndb::Source::document)
-      .def_readonly("doc_id", &ndb::Source::doc_id)
-      .def_readonly("doc_version", &ndb::Source::doc_version);
+//   py::class_<ndb::Source>(search_submodule, "Source")
+//       .def_readonly("document", &ndb::Source::document)
+//       .def_readonly("doc_id", &ndb::Source::doc_id)
+//       .def_readonly("doc_version", &ndb::Source::doc_version);
 
-  // NOLINTNEXTLINE (temporary object warning)
-  py::class_<ndb::Constraint, std::shared_ptr<ndb::Constraint>>(
-      search_submodule, "Constraint");
+//   // NOLINTNEXTLINE (temporary object warning)
+//   py::class_<ndb::Constraint, std::shared_ptr<ndb::Constraint>>(
+//       search_submodule, "Constraint");
 
-  py::class_<ndb::EqualTo, ndb::Constraint, std::shared_ptr<ndb::EqualTo>>(
-      search_submodule, "EqualTo")
-      .def(py::init([](const py::object& value) {
-        return ndb::EqualTo::make(objToMetadataValue(value));
-      }));
+//   py::class_<ndb::EqualTo, ndb::Constraint, std::shared_ptr<ndb::EqualTo>>(
+//       search_submodule, "EqualTo")
+//       .def(py::init([](const py::object& value) {
+//         return ndb::EqualTo::make(objToMetadataValue(value));
+//       }));
 
-  py::class_<ndb::AnyOf, ndb::Constraint, std::shared_ptr<ndb::AnyOf>>(
-      search_submodule, "AnyOf")
-      .def(py::init([](const std::vector<py::object>& py_values) {
-        std::vector<ndb::MetadataValue> values;
-        values.reserve(py_values.size());
-        for (const auto& obj : py_values) {
-          values.push_back(objToMetadataValue(obj));
-        }
-        return ndb::AnyOf::make(values);
-      }));
+//   py::class_<ndb::AnyOf, ndb::Constraint, std::shared_ptr<ndb::AnyOf>>(
+//       search_submodule, "AnyOf")
+//       .def(py::init([](const std::vector<py::object>& py_values) {
+//         std::vector<ndb::MetadataValue> values;
+//         values.reserve(py_values.size());
+//         for (const auto& obj : py_values) {
+//           values.push_back(objToMetadataValue(obj));
+//         }
+//         return ndb::AnyOf::make(values);
+//       }));
 
-  py::class_<ndb::LessThan, ndb::Constraint, std::shared_ptr<ndb::LessThan>>(
-      search_submodule, "LessThan")
-      .def(py::init([](const py::object& value) {
-        return ndb::LessThan::make(objToMetadataValue(value));
-      }));
+//   py::class_<ndb::LessThan, ndb::Constraint, std::shared_ptr<ndb::LessThan>>(
+//       search_submodule, "LessThan")
+//       .def(py::init([](const py::object& value) {
+//         return ndb::LessThan::make(objToMetadataValue(value));
+//       }));
 
-  py::class_<ndb::GreaterThan, ndb::Constraint,
-             std::shared_ptr<ndb::GreaterThan>>(search_submodule, "GreaterThan")
-      .def(py::init([](const py::object& value) {
-        return ndb::GreaterThan::make(objToMetadataValue(value));
-      }));
+//   py::class_<ndb::GreaterThan, ndb::Constraint,
+//              std::shared_ptr<ndb::GreaterThan>>(search_submodule, "GreaterThan")
+//       .def(py::init([](const py::object& value) {
+//         return ndb::GreaterThan::make(objToMetadataValue(value));
+//       }));
 
-  py::class_<ndb::NeuralDB, std::shared_ptr<ndb::NeuralDB>>(search_submodule,
-                                                            "NeuralDB")
-      .def("insert", &wrappedInsert, py::arg("chunks"),
-           py::arg("metadata") = std::vector<py::dict>{}, py::arg("document"),
-           py::arg("doc_id"), py::arg("doc_version") = std::nullopt)
-      .def("query", &ndb::NeuralDB::query, py::arg("query"),
-           py::arg("top_k") = 5)
-      .def("rank", &ndb::NeuralDB::rank, py::arg("query"),
-           py::arg("constraints"), py::arg("top_k") = 5)
-      .def("prune", &ndb::NeuralDB::prune)
-      .def("finetune", &ndb::NeuralDB::finetune, py::arg("queries"),
-           py::arg("chunk_ids"))
-      .def("associate", &ndb::NeuralDB::associate, py::arg("sources"),
-           // arg is 'associate_strength' for compatability with regular ndbv2
-           py::arg("targets"), py::arg("associate_strength") = 4)
-      .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
-           py::arg("keep_latest_version") = false)
-      .def("sources", &ndb::NeuralDB::sources);
+//   py::class_<ndb::NeuralDB, std::shared_ptr<ndb::NeuralDB>>(search_submodule,
+//                                                             "NeuralDB")
+//       .def("insert", &wrappedInsert, py::arg("chunks"),
+//            py::arg("metadata") = std::vector<py::dict>{}, py::arg("document"),
+//            py::arg("doc_id"), py::arg("doc_version") = std::nullopt)
+//       .def("query", &ndb::NeuralDB::query, py::arg("query"),
+//            py::arg("top_k") = 5)
+//       .def("rank", &ndb::NeuralDB::rank, py::arg("query"),
+//            py::arg("constraints"), py::arg("top_k") = 5)
+//       .def("prune", &ndb::NeuralDB::prune)
+//       .def("finetune", &ndb::NeuralDB::finetune, py::arg("queries"),
+//            py::arg("chunk_ids"))
+//       .def("associate", &ndb::NeuralDB::associate, py::arg("sources"),
+//            // arg is 'associate_strength' for compatability with regular ndbv2
+//            py::arg("targets"), py::arg("associate_strength") = 4)
+//       .def("delete_doc", &ndb::NeuralDB::deleteDoc, py::arg("doc_id"),
+//            py::arg("keep_latest_version") = false)
+//       .def("sources", &ndb::NeuralDB::sources);
 
-  py::class_<ndb::OnDiskNeuralDB, ndb::NeuralDB,
-             std::shared_ptr<ndb::OnDiskNeuralDB>>(search_submodule,
-                                                   "OnDiskNeuralDB")
-      .def(py::init<const std::string&, const IndexConfig&, bool>(),
-           py::arg("save_path"), py::arg("config") = IndexConfig(),
-           py::arg("read_only") = false)
-      .def("save", &ndb::OnDiskNeuralDB::save, py::arg("save_path"))
-      .def_static("load", &ndb::OnDiskNeuralDB::load, py::arg("save_path"),
-                  py::arg("read_only"));
-#endif
+//   py::class_<ndb::OnDiskNeuralDB, ndb::NeuralDB,
+//              std::shared_ptr<ndb::OnDiskNeuralDB>>(search_submodule,
+//                                                    "OnDiskNeuralDB")
+//       .def(py::init<const std::string&, const IndexConfig&, bool>(),
+//            py::arg("save_path"), py::arg("config") = IndexConfig(),
+//            py::arg("read_only") = false)
+//       .def("save", &ndb::OnDiskNeuralDB::save, py::arg("save_path"))
+//       .def_static("load", &ndb::OnDiskNeuralDB::load, py::arg("save_path"),
+//                   py::arg("read_only"));
+// #endif
 }
 
 }  // namespace thirdai::search::python

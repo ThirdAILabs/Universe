@@ -3,10 +3,10 @@
 #include <archive/src/Map.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <search/src/inverted_index/id_map/InMemoryIdMap.h>
-#if !_WIN32
-#include <search/src/inverted_index/OnDiskIndex.h>
-#include <search/src/inverted_index/id_map/OnDiskIdMap.h>
-#endif
+// #if !_WIN32
+// #include <search/src/inverted_index/OnDiskIndex.h>
+// #include <search/src/inverted_index/id_map/OnDiskIdMap.h>
+// #endif
 #include <search/src/inverted_index/ShardedRetriever.h>
 #include <search/src/inverted_index/Tokenizer.h>
 #include <search/src/inverted_index/Utils.h>
@@ -56,26 +56,26 @@ FinetunableRetriever::FinetunableRetriever(
     float lambda, uint32_t min_top_docs, uint32_t top_queries,
     const IndexConfig& config, const std::optional<std::string>& save_path)
     : _lambda(lambda), _min_top_docs(min_top_docs), _top_queries(top_queries) {
-#if !_WIN32
-  if (save_path) {
-    createDirectory(*save_path);
+// #if !_WIN32
+//   if (save_path) {
+//     createDirectory(*save_path);
 
-    _doc_index =
-        std::make_shared<ShardedRetriever>(config, docIndexPath(*save_path));
-    _query_index =
-        std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
+//     _doc_index =
+//         std::make_shared<ShardedRetriever>(config, docIndexPath(*save_path));
+//     _query_index =
+//         std::make_shared<OnDiskIndex>(queryIndexPath(*save_path), config);
 
-    _query_to_docs = std::make_unique<OnDiskIdMap>(queryToDocsPath(*save_path));
+//     _query_to_docs = std::make_unique<OnDiskIdMap>(queryToDocsPath(*save_path));
 
-    auto metadata = dataset::SafeFileIO::ofstream(metadataPath(*save_path));
-    ar::serialize(metadataToArchive(), metadata);
-  } else {
-    _doc_index = std::make_shared<InvertedIndex>(config);
-    _query_index = std::make_shared<InvertedIndex>(config);
+//     auto metadata = dataset::SafeFileIO::ofstream(metadataPath(*save_path));
+//     ar::serialize(metadataToArchive(), metadata);
+//   } else {
+//     _doc_index = std::make_shared<InvertedIndex>(config);
+//     _query_index = std::make_shared<InvertedIndex>(config);
 
-    _query_to_docs = std::make_unique<InMemoryIdMap>();
-  }
-#else
+//     _query_to_docs = std::make_unique<InMemoryIdMap>();
+//   }
+// #else
   if (save_path) {
     throw std::invalid_argument("on-disk is not supported for windows.");
   }
@@ -83,7 +83,7 @@ FinetunableRetriever::FinetunableRetriever(
   _query_index = std::make_shared<InvertedIndex>(config);
 
   _query_to_docs = std::make_unique<InMemoryIdMap>();
-#endif
+// #endif
 }
 
 void FinetunableRetriever::index(const std::vector<DocId>& ids,
@@ -273,11 +273,11 @@ std::shared_ptr<Retriever> loadIndex(const std::string& type,
   if (type == InvertedIndex::typeName()) {
     return InvertedIndex::load(path);
   }
-#if !_WIN32
-  if (type == OnDiskIndex::typeName()) {
-    return OnDiskIndex::load(path, read_only);
-  }
-#endif
+// #if !_WIN32
+//   if (type == OnDiskIndex::typeName()) {
+//     return OnDiskIndex::load(path, read_only);
+//   }
+// #endif
   if (type == ShardedRetriever::typeName()) {
     return ShardedRetriever::load(path, read_only);
   }
@@ -289,13 +289,13 @@ std::unique_ptr<IdMap> loadIdMap(const std::string& type,
   if (type == InMemoryIdMap::typeName()) {
     return InMemoryIdMap::load(path);
   }
-#if !_WIN32
-  if (type == OnDiskIdMap::typeName()) {
-    return OnDiskIdMap::load(path, read_only);
-  }
-#else
+// #if !_WIN32
+//   if (type == OnDiskIdMap::typeName()) {
+//     return OnDiskIdMap::load(path, read_only);
+//   }
+// #else
   (void)read_only;
-#endif
+// #endif
   throw std::invalid_argument("Invalid id map type '" + type + "'.");
 }
 
