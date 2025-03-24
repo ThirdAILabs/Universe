@@ -8,10 +8,10 @@ concurrency:
 
 # Controls when the workflow will run
 on:
-  schedule:
+  # schedule:
       # Sets the workflow to run at the end of every day
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 0 * * *"       
+      # - cron: "0 0 * * *"       
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
