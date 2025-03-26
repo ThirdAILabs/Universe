@@ -192,6 +192,23 @@ class EqualTo final : public Constraint {
   MetadataValue _value;
 };
 
+class Substring final : public Constraint {
+ public:
+  explicit Substring(MetadataValue value) : _value(std::move(value)) {}
+
+  static std::shared_ptr<Substring> make(MetadataValue value) {
+    return std::make_shared<Substring>(std::move(value));
+  }
+
+  bool matches(const MetadataValue& value) const final {
+    std::string str = value.asStr();
+    return str.find(_value) != std::string::npos;
+  }
+
+ private:
+  MetadataValue _value;
+};
+
 class AnyOf final : public Constraint {
  public:
   explicit AnyOf(std::vector<MetadataValue> values)

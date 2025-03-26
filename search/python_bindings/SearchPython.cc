@@ -319,6 +319,12 @@ void createSearchSubmodule(py::module_& module) {
         return ndb::EqualTo::make(objToMetadataValue(value));
       }));
 
+  py::class_<ndb::Substring, ndb::Constraint, std::shared_ptr<ndb::Substring>>(
+      search_submodule, "Substring")
+      .def(py::init([](const py::object& value) {
+        return ndb::Substring::make(objToMetadataValue(value));
+      }));
+
   py::class_<ndb::AnyOf, ndb::Constraint, std::shared_ptr<ndb::AnyOf>>(
       search_submodule, "AnyOf")
       .def(py::init([](const std::vector<py::object>& py_values) {
