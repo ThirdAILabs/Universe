@@ -66,6 +66,11 @@ class MetadataValue {
     return _type == other._type && _value > other._value;
   }
 
+  bool substring(const MetadataValue& other) const {
+    return _type == MetadataType::Str && other._type == MetadataType::Str &&
+           asStr().find(other.asStr()) != std::string::npos;
+  }
+
  private:
   MetadataValue(MetadataType type,
                 std::variant<bool, int, float, std::string> value)
@@ -201,8 +206,7 @@ class Substring final : public Constraint {
   }
 
   bool matches(const MetadataValue& value) const final {
-    std::string str = value.asStr();
-    return str.find(_value) != std::string::npos;
+    return value.substring(_value);
   }
 
  private:
