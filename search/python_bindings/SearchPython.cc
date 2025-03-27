@@ -321,7 +321,7 @@ void createSearchSubmodule(py::module_& module) {
 
   py::class_<ndb::Substring, ndb::Constraint, std::shared_ptr<ndb::Substring>>(
       search_submodule, "Substring")
-      .def(py::init([](const std::string& value) {
+      .def(py::init([](const py::str& value) {
         return ndb::Substring::make(objToMetadataValue(value));
       }));
 
