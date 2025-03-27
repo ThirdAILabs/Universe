@@ -574,7 +574,7 @@ py::object UDTMachClassifier::entityEmbedding(const Label& label) {
     weight /= averaged_embedding.size();
   }
 
-  NumpyArray<float> np_weights(averaged_embedding.size());
+  NumpyArray<float> np_weights = make1DArray<float>(averaged_embedding.size());
 
   std::copy(averaged_embedding.begin(), averaged_embedding.end(),
             np_weights.mutable_data());

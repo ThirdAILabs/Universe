@@ -419,7 +419,7 @@ py::object UDTClassifier::entityEmbedding(
 
   auto weights = fc->kernel()->getWeightsByNeuron(neuron_id);
 
-  NumpyArray<float> np_weights(weights.size());
+  NumpyArray<float> np_weights = make1DArray<float>(weights.size());
 
   std::copy(weights.begin(), weights.end(), np_weights.mutable_data());
 

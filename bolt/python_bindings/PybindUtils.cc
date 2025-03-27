@@ -8,7 +8,8 @@ NumpyArray<float> getGradients(const ModelPtr& model) {
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+  return NumpyArray<float>(py::array::ShapeContainer{flattened_dim}, grads,
+                           free_when_done);
 }
 
 NumpyArray<float> getParameters(const ModelPtr& model) {
@@ -17,7 +18,8 @@ NumpyArray<float> getParameters(const ModelPtr& model) {
   py::capsule free_when_done(
       grads, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-  return NumpyArray<float>(flattened_dim, grads, free_when_done);
+  return NumpyArray<float>(py::array::ShapeContainer{flattened_dim}, grads,
+                           free_when_done);
 }
 
 void setGradients(const ModelPtr& model, NumpyArray<float>& new_values) {

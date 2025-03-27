@@ -158,7 +158,7 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 template <typename T, class COL>
 NumpyArray<T> getRowNumpy(const std::shared_ptr<COL>& column, size_t n) {
   RowView<T> row = column->row(n);
-  return NumpyArray<T>(row.size(), row.data());
+  return NumpyArray<T>(py::array::ShapeContainer{row.size()}, row.data());
 }
 
 template <typename T>

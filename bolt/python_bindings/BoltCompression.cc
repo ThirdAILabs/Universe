@@ -48,8 +48,9 @@ SerializedCompressedVector compress(const py::array_t<T>& data,
   py::capsule free_when_done(serialized_compressed_vector,
                              [](void* ptr) { delete static_cast<char*>(ptr); });
 
-  return SerializedCompressedVector(
-      serialized_size, serialized_compressed_vector, free_when_done);
+  return SerializedCompressedVector(py::array::ShapeContainer{serialized_size},
+                                    serialized_compressed_vector,
+                                    free_when_done);
 }
 
 template <typename T>
@@ -62,7 +63,8 @@ py::array_t<T> decompress(SerializedCompressedVector& compressed_vector) {
   std::vector<float> full_gradients = std::visit(
       thirdai::compression::DecompressVisitor<float>(), des_compressed_vector);
 
-  return py::array_t<T>(full_gradients.size(), full_gradients.data());
+  return py::array_t<T>(py::array::ShapeContainer{full_gradients.size()},
+                        full_gradients.data());
 }
 
 template <typename T>
@@ -86,8 +88,9 @@ py::array_t<T> concat(const py::object& compressed_vectors) {
   py::capsule free_when_done(serialized_compressed_vector,
                              [](void* ptr) { delete static_cast<char*>(ptr); });
 
-  return SerializedCompressedVector(
-      serialized_size, serialized_compressed_vector, free_when_done);
+  return SerializedCompressedVector(py::array::ShapeContainer{serialized_size},
+                                    serialized_compressed_vector,
+                                    free_when_done);
 }
 
 void createCompressionSubmodule(py::module_& module) {

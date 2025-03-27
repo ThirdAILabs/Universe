@@ -68,7 +68,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString)
       .def("to_numpy", [](const BoltVector& vector) -> py::object {
-        NumpyArray<float> activations_array(vector.len);
+        NumpyArray<float> activations_array(
+            py::array::ShapeContainer{vector.len});
         std::copy(vector.activations, vector.activations + vector.len,
                   activations_array.mutable_data());
 
@@ -76,7 +77,8 @@ void createDatasetSubmodule(py::module_& module) {
           return py::object(std::move(activations_array));
         }
 
-        NumpyArray<uint32_t> active_neurons_array(vector.len);
+        NumpyArray<uint32_t> active_neurons_array(
+            py::array::ShapeContainer{vector.len});
         std::copy(vector.active_neurons, vector.active_neurons + vector.len,
                   active_neurons_array.mutable_data());
 
