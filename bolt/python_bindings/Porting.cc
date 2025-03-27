@@ -37,7 +37,7 @@ template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 py::object copyArray(const float* data, const std::vector<size_t>& shape) {
-  NumpyArray<float> arr(py::array::ShapeContainer{shape});
+  NumpyArray<float> arr(shape);
 
   size_t total_dim =
       std::reduce(shape.begin(), shape.end(), 1, std::multiplies<size_t>{});
