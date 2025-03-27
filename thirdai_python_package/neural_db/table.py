@@ -76,7 +76,9 @@ class DaskDataFrameTable(Table):
             {}
         )  # store row_id_to_dict before hand for quick retrieval in future
         index_name = self.df.index.name
-        results = self.df.map_partitions(self._partition_to_dicts, meta=("data", "object"))
+        results = self.df.map_partitions(
+            self._partition_to_dicts, meta=("data", "object")
+        )
         row_id = 0  # We are maintaining a global row_id because each partition will have it's local index
         for batch in results.compute():
             for row_dict in batch:

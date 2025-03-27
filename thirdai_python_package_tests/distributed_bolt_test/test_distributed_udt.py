@@ -17,10 +17,7 @@ from thirdai import bolt, dataset
 from thirdai.demos import (
     download_amazon_kaggle_product_catalog_sampled as download_amazon_kaggle_product_catalog_sampled_wrapped,
 )
-from thirdai.demos import (
-    download_beir_dataset,
-    download_clinc_dataset,
-)
+from thirdai.demos import download_beir_dataset, download_clinc_dataset
 
 
 # TODO(pratik): Could we directly import it from global Universe module?
