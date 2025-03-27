@@ -156,7 +156,8 @@ py::object UDTRegression::predictBatch(const MapInputBatch& samples,
   auto outputs = _model->forward(_featurizer->featurizeInputBatch(samples),
                                  sparse_inference);
 
-  NumpyArray<float> predictions(outputs.at(0)->batchSize());
+  NumpyArray<float> predictions =
+      make1DArray<float>(outputs.at(0)->batchSize());
   for (uint32_t i = 0; i < outputs.at(0)->batchSize(); i++) {
     predictions.mutable_at(i) = unbinActivations(outputs.at(0)->getVector(i));
   }
