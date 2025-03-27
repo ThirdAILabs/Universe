@@ -260,7 +260,7 @@ py::object Classifier::predictedClasses(const bolt::TensorPtr& output,
     return py::cast(predictedClass(output->getVector(0)));
   }
 
-  NumpyArray<uint32_t> predictions(output->batchSize());
+  NumpyArray<uint32_t> predictions = make1DArray<uint32_t>(output->batchSize());
   for (uint32_t i = 0; i < output->batchSize(); i++) {
     predictions.mutable_at(i) = predictedClass(output->getVector(i));
   }

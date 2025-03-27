@@ -62,7 +62,7 @@ py::array_t<T> decompress(SerializedCompressedVector& compressed_vector) {
   std::vector<float> full_gradients = std::visit(
       thirdai::compression::DecompressVisitor<float>(), des_compressed_vector);
 
-  return py::array_t<T>(full_gradients.size(), full_gradients.data());
+  return py::array_t<T>(py::array::ShapeContainer{full_gradients.size()}, full_gradients.data());
 }
 
 template <typename T>

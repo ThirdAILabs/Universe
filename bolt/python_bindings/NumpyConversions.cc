@@ -22,10 +22,11 @@ py::array_t<T, py::array::c_style | py::array::forcecast> createArrayCopy(
   // sample.
   if (rows == 1 && single_row_to_vector) {
     return py::array_t<T, py::array::c_style | py::array::forcecast>(
-        cols, data_copy, free_when_done);
+        py::array::ShapeContainer{cols}, data_copy, free_when_done);
   }
+
   return py::array_t<T, py::array::c_style | py::array::forcecast>(
-      {rows, cols}, data_copy, free_when_done);
+      py::array::ShapeContainer{rows, cols}, data_copy, free_when_done);
 }
 
 void can_convert_tensor_to_numpy(const TensorPtr& tensor) {
