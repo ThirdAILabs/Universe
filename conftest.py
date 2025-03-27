@@ -17,7 +17,7 @@ def set_working_license():
                     universe_dir
                     / "licensing"
                     / "licenses"
-                    / "full_license_expires_mar_2025"
+                    / "full_license_expires_mar_2026"
                 ).resolve()
             )
         )

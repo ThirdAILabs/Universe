@@ -35,7 +35,7 @@ def this_should_require_a_license_query_reformulation():
 from pathlib import Path
 
 dir_path = Path(__file__).resolve().parent.parent / "licenses"
-valid_license_path = dir_path / "full_license_expires_mar_2025"
+valid_license_path = dir_path / "full_license_expires_mar_2026"
 nonexisting_license_path = dir_path / "nonexisting_license"
 expired_license_path = dir_path / "full_expired_license"
 invalid_license_1_path = dir_path / "invalid_license_1"
