@@ -66,6 +66,11 @@ class MetadataValue {
     return _type == other._type && _value > other._value;
   }
 
+  bool hasSubstring(const MetadataValue& other) const {
+    return _type == MetadataType::Str && other._type == MetadataType::Str &&
+           asStr().find(other.asStr()) != std::string::npos;
+  }
+
  private:
   MetadataValue(MetadataType type,
                 std::variant<bool, int, float, std::string> value)
@@ -186,6 +191,22 @@ class EqualTo final : public Constraint {
 
   bool matches(const MetadataValue& value) const final {
     return _value.equals(value);
+  }
+
+ private:
+  MetadataValue _value;
+};
+
+class Substring final : public Constraint {
+ public:
+  explicit Substring(MetadataValue value) : _value(std::move(value)) {}
+
+  static std::shared_ptr<Substring> make(MetadataValue value) {
+    return std::make_shared<Substring>(std::move(value));
+  }
+
+  bool matches(const MetadataValue& value) const final {
+    return value.hasSubstring(_value);
   }
 
  private:
