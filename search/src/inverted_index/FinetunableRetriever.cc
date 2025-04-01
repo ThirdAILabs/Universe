@@ -261,8 +261,6 @@ void FinetunableRetriever::autotuneFinetuningParameters(
         const auto& labels = doc_ids[i];
         const auto& result = results[i - start];
 
-        // Check if the first document in the result is in the list of
-        // document ids.
         if (!result.empty() && std::find(labels.begin(), labels.end(),
                                          result[0].first) != labels.end()) {
           correct++;
