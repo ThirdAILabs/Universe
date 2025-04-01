@@ -78,6 +78,8 @@ class FinetunableRetriever {
   static std::shared_ptr<FinetunableRetriever> load_stream(
       std::istream& istream);
 
+  void setLambda(float lambda) { _lambda = lambda; }
+
  private:
   explicit FinetunableRetriever(const std::string& save_path, bool read_only);
 

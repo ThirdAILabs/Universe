@@ -285,6 +285,7 @@ void createSearchSubmodule(py::module_& module) {
       .def_static("load", &FinetunableRetriever::load, py::arg("filename"),
                   py::arg("read_only") = false)
       // This is deprecated, it is only for compatability loading old models.
+      .def("set_lambda", &FinetunableRetriever::setLambda, py::arg("lambda"))
       .def(bolt::python::getPickleFunction<FinetunableRetriever>());
 
 #if !_WIN32
