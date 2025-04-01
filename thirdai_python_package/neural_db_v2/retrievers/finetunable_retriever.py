@@ -102,7 +102,7 @@ class FinetunableRetriever(Retriever):
     def supervised_train(
         self,
         samples: Iterable[SupervisedBatch],
-        validation: Optional[Iterable[SupervisedBatch]],
+        validation: Optional[Iterable[SupervisedBatch]] = None,
         **kwargs
     ):
         for batch in samples:
