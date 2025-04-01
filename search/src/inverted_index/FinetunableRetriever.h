@@ -65,6 +65,12 @@ class FinetunableRetriever {
 
   size_t size() const { return _doc_index->size(); }
 
+  void autotuneFinetuningParameters(
+      const std::vector<std::vector<DocId>>& doc_ids,
+      const std::vector<std::string>& queries);
+
+  void setLambda(float lambda) { _lambda = lambda; }
+
   void save(const std::string& save_path) const;
 
   static std::shared_ptr<FinetunableRetriever> load(

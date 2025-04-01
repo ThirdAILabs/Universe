@@ -141,10 +141,17 @@ class NeuralDB:
     def associate(self, sources: List[str], targets: List[str], **kwargs):
         self.retriever.associate(sources, targets, **kwargs)
 
-    def supervised_train(self, supervised: SupervisedDataset, **kwargs):
-        iterable = supervised.samples()
-
-        self.retriever.supervised_train(iterable, **kwargs)
+    def supervised_train(
+        self,
+        supervised: SupervisedDataset,
+        validation: Optional[SupervisedDataset] = None,
+        **kwargs,
+    ):
+        self.retriever.supervised_train(
+            samples=supervised.samples(),
+            validation=validation.samples() if validation else None,
+            **kwargs,
+        )
 
     def documents(self) -> List[dict]:
         return self.chunk_store.documents()

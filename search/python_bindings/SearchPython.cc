@@ -279,6 +279,10 @@ void createSearchSubmodule(py::module_& module) {
       .def("size", &FinetunableRetriever::size)
       .def("prune", &FinetunableRetriever::prune)
       .def("remove", &FinetunableRetriever::remove, py::arg("ids"))
+      .def("set_lambda", &FinetunableRetriever::setLambda, py::arg("lambda"))
+      .def("autotune_finetuning_parameters",
+           &FinetunableRetriever::autotuneFinetuningParameters,
+           py::arg("doc_ids"), py::arg("queries"))
       .def_static("train_from", &FinetunableRetriever::trainFrom,
                   py::arg("index"))
       .def("save", &FinetunableRetriever::save, py::arg("filename"))
