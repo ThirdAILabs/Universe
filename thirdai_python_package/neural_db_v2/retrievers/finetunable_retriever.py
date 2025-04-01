@@ -99,10 +99,23 @@ class FinetunableRetriever(Retriever):
                 texts = keywords + " " + text
                 self.retriever.index(ids=ids.to_list(), docs=texts.to_list())
 
-    def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
+    def supervised_train(
+        self,
+        samples: Iterable[SupervisedBatch],
+        validation: Optional[Iterable[SupervisedBatch]],
+        **kwargs
+    ):
         for batch in samples:
             self.retriever.finetune(
                 doc_ids=batch.chunk_id.to_list(), queries=batch.query.to_list()
+            )
+
+        if validation is not None:
+            validation_data = pd.concat(batch.to_df() for batch in validation)
+
+            self.retriever.autotune_finetuning_parameters(
+                doc_ids=validation_data["chunk_id"].to_list(),
+                queries=validation_data["query"].to_list(),
             )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):

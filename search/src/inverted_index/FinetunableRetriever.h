@@ -65,6 +65,12 @@ class FinetunableRetriever {
 
   size_t size() const { return _doc_index->size(); }
 
+  void autotuneFinetuningParameters(
+      const std::vector<std::vector<DocId>>& doc_ids,
+      const std::vector<std::string>& queries);
+
+  void setLambda(float lambda) { _lambda = lambda; }
+
   void save(const std::string& save_path) const;
 
   static std::shared_ptr<FinetunableRetriever> load(
@@ -77,8 +83,6 @@ class FinetunableRetriever {
   // This is deprecated, it is only for compatability loading old models.
   static std::shared_ptr<FinetunableRetriever> load_stream(
       std::istream& istream);
-
-  void setLambda(float lambda) { _lambda = lambda; }
 
  private:
   explicit FinetunableRetriever(const std::string& save_path, bool read_only);

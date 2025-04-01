@@ -236,6 +236,51 @@ void FinetunableRetriever::remove(const std::vector<DocId>& ids) {
   _query_index->remove(irrelevant_queries);
 }
 
+void FinetunableRetriever::autotuneFinetuningParameters(
+    const std::vector<std::vector<DocId>>& doc_ids,
+    const std::vector<std::string>& queries) {
+  if (doc_ids.size() != queries.size()) {
+    throw std::invalid_argument(
+        "Number of queries must match number of doc ids.");
+  }
+
+  std::vector<float> lambdas = {0.5, 0.6, 0.7, 0.8, 0.9, 0.99};
+
+  const size_t batch_size = 100;
+  float best_acc = 0, best_lambda = 0;
+  for (float lambda : lambdas) {
+    setLambda(lambda);
+
+    size_t correct = 0, total = 0;
+    for (size_t start = 0; start < doc_ids.size(); start += batch_size) {
+      size_t end = std::min(start + batch_size, doc_ids.size());
+      auto results =
+          queryBatch({queries.begin() + start, queries.begin() + end}, 1);
+
+      for (size_t i = start; i < end; i++) {
+        const auto& labels = doc_ids[i];
+        const auto& result = results[i - start];
+
+        // Check if the first document in the result is in the list of
+        // document ids.
+        if (!result.empty() && std::find(labels.begin(), labels.end(),
+                                         result[0].first) != labels.end()) {
+          correct++;
+        }
+        total++;
+      }
+    }
+
+    float acc = static_cast<float>(correct) / total;
+    if (acc > best_acc) {
+      best_acc = acc;
+      best_lambda = lambda;
+    }
+  }
+
+  setLambda(best_lambda);
+}
+
 ar::ConstArchivePtr FinetunableRetriever::metadataToArchive() const {
   auto map = ar::Map::make();
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from ndbv2_utils import CSV_FILE, PDF_FILE, clean_up_sql_lite_db, load_chunks
+from thirdai import demos
 from thirdai import neural_db_v2 as ndb
 from thirdai.neural_db_v2.chunk_stores import PandasChunkStore, SQLiteChunkStore
 from thirdai.neural_db_v2.retrievers import FinetunableRetriever, Mach, MachEnsemble
@@ -315,3 +316,58 @@ def test_neural_db_v2_with_splade():
 
     assert len(results) > 0
     assert results[0][0].chunk_id == 1
+
+
+@pytest.mark.release
+def test_neural_db_v2_scifact_finetuning():
+    def evaluate(
+        db: ndb.NeuralDB,
+        test_path: str,
+        query_col: str = "QUERY",
+        id_col: str = "DOC_ID",
+        id_delim: str = ":",
+    ):
+        queries = pd.read_csv(test_path)
+        queries[id_col] = queries[id_col].map(
+            lambda x: list(map(int, x.split(id_delim)))
+        )
+
+        correct = 0
+        for _, row in queries.iterrows():
+            results = db.search(row[query_col], top_k=2)
+
+            if len(results) > 0 and results[0][0].metadata[id_col] in row[id_col]:
+                correct += 1
+
+        p_at_1 = correct / len(queries)
+        print(f"p@1 = {p_at_1}")
+        return p_at_1
+
+    docs, train, test, _ = demos.download_beir_dataset("scifact")
+
+    db = ndb.NeuralDB()
+
+    db.insert([ndb.CSV(docs, text_columns=["TITLE", "TEXT"])])
+
+    acc_before = evaluate(db, test)
+    assert 0.54 < acc_before < 0.56  # should be 0.553
+
+    # This will make the accuracy after finetuning < 0.6
+    db.retriever.retriever.set_lambda(0.2)
+
+    db.supervised_train(
+        ndb.supervised.CsvSupervised(
+            train, query_column="QUERY", id_column="DOC_ID", id_delimiter=":"
+        ),
+        validation=ndb.supervised.CsvSupervised(
+            test, query_column="QUERY", id_column="DOC_ID", id_delimiter=":"
+        ),
+    )
+
+    # p@1 should be 0.767 (validation autotuning should fix lambda)
+    acc_after = evaluate(db, test)
+    assert 0.76 < acc_after < 0.78
+
+    # This is to verify that the autotuned value is not 0.2
+    db.retriever.retriever.set_lambda(0.2)
+    assert evaluate(db, test) < 0.6  # Should be 0.583

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from .types import ChunkBatch, ChunkId, Score, SupervisedBatch
 
@@ -39,7 +39,12 @@ class Retriever(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def supervised_train(self, samples: Iterable[SupervisedBatch], **kwargs):
+    def supervised_train(
+        self,
+        samples: Iterable[SupervisedBatch],
+        validation: Optional[Iterable[SupervisedBatch]],
+        **kwargs
+    ):
         raise NotImplementedError
 
     @abstractmethod
