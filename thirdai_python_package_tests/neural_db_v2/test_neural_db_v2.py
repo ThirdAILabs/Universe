@@ -1,6 +1,7 @@
 import os
 import random
 import shutil
+import numpy as np
 from pathlib import Path
 
 import pandas as pd
@@ -318,31 +319,30 @@ def test_neural_db_v2_with_splade():
     assert results[0][0].chunk_id == 1
 
 
+def evaluate(
+    db: ndb.NeuralDB,
+    test_path: str,
+    query_col: str = "QUERY",
+    id_col: str = "DOC_ID",
+    id_delim: str = ":",
+):
+    queries = pd.read_csv(test_path)
+    queries[id_col] = queries[id_col].map(lambda x: list(map(int, x.split(id_delim))))
+
+    correct = 0
+    for _, row in queries.iterrows():
+        results = db.search(row[query_col], top_k=2)
+
+        if len(results) > 0 and results[0][0].metadata[id_col] in row[id_col]:
+            correct += 1
+
+    p_at_1 = correct / len(queries)
+    print(f"p@1 = {p_at_1}")
+    return p_at_1
+
+
 @pytest.mark.release
-def test_neural_db_v2_scifact_finetuning():
-    def evaluate(
-        db: ndb.NeuralDB,
-        test_path: str,
-        query_col: str = "QUERY",
-        id_col: str = "DOC_ID",
-        id_delim: str = ":",
-    ):
-        queries = pd.read_csv(test_path)
-        queries[id_col] = queries[id_col].map(
-            lambda x: list(map(int, x.split(id_delim)))
-        )
-
-        correct = 0
-        for _, row in queries.iterrows():
-            results = db.search(row[query_col], top_k=2)
-
-            if len(results) > 0 and results[0][0].metadata[id_col] in row[id_col]:
-                correct += 1
-
-        p_at_1 = correct / len(queries)
-        print(f"p@1 = {p_at_1}")
-        return p_at_1
-
+def test_neural_db_v2_scifact_finetuning_explicit_validiation():
     docs, train, test, _ = demos.download_beir_dataset("scifact")
 
     db = ndb.NeuralDB()
@@ -371,3 +371,35 @@ def test_neural_db_v2_scifact_finetuning():
     # This is to verify that the autotuned value is not 0.2
     db.retriever.retriever.set_lambda(0.2)
     assert evaluate(db, test) < 0.6  # Should be 0.583
+
+
+@pytest.mark.release
+def test_neural_db_v2_scifact_finetuning_automatic_validation_subsampling():
+    docs, train, test, _ = demos.download_beir_dataset("scifact")
+
+    db = ndb.NeuralDB()
+
+    db.insert([ndb.CSV(docs, text_columns=["TITLE", "TEXT"])])
+
+    acc_before = evaluate(db, test)
+    assert 0.54 < acc_before < 0.56  # should be 0.553
+
+    # This will make the accuracy after finetuning < 0.6
+    db.retriever.retriever.set_lambda(0.2)
+
+
+    # validation will be subsampled from train data
+    db.supervised_train(
+        ndb.supervised.CsvSupervised(
+            train, query_column="QUERY", id_column="DOC_ID", id_delimiter=":"
+        ),
+    )
+
+    np.random.seed(42) # for validation subsampling
+    # p@1 should be ~0.74-0.75 (validation split can affect accuracy a little)
+    acc_after = evaluate(db, test)
+    assert 0.7 < acc_after
+
+    # This is to verify that the autotuned value is not 0.2
+    db.retriever.retriever.set_lambda(0.2)
+    assert evaluate(db, test) < 0.6  # Should be ~0.56-0.58

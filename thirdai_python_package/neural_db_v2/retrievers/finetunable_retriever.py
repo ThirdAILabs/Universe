@@ -105,18 +105,27 @@ class FinetunableRetriever(Retriever):
         validation: Optional[Iterable[SupervisedBatch]] = None,
         **kwargs
     ):
+        validation_data = []
         for batch in samples:
+            batch = batch.to_df()
+            if validation is None:
+                validation_samples = batch.sample(frac=0.1)
+                batch.drop(validation_samples.index, inplace=True)
+                validation_data.append(validation_samples.reset_index(drop=True))
+
             self.retriever.finetune(
-                doc_ids=batch.chunk_id.to_list(), queries=batch.query.to_list()
+                doc_ids=batch["chunk_id"].to_list(), queries=batch["query"].to_list()
             )
 
-        if validation is not None:
+        if validation is None:
+            validation_data = pd.concat(validation_data)
+        else:
             validation_data = pd.concat(batch.to_df() for batch in validation)
 
-            self.retriever.autotune_finetuning_parameters(
-                doc_ids=validation_data["chunk_id"].to_list(),
-                queries=validation_data["query"].to_list(),
-            )
+        self.retriever.autotune_finetuning_parameters(
+            doc_ids=validation_data["chunk_id"].to_list(),
+            queries=validation_data["query"].to_list(),
+        )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
