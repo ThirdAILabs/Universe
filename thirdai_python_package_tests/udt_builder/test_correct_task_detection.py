@@ -75,12 +75,18 @@ class CommonTemplate:
 
         model.train("temp.csv", epochs=1, learning_rate=1e-3)
 
+    # These tests can fail becuase of openai key issues.
+    @pytest.mark.xfail
     def test_automatic_task_inference(self, data_file, target_col):
         self.run_task_inference_and_training(data_file, target_col, None)
 
+    # These tests can fail becuase of openai key issues.
+    @pytest.mark.xfail
     def test_explicit_task_inference(self, data_file, target_col):
         self.run_task_inference_and_training(data_file, target_col, self.task)
 
+    # These tests can fail becuase of openai key issues.
+    @pytest.mark.xfail
     def test_task_inference_using_natural_language(self, data_file, target_col):
         detected_template = task_detector.get_template_from_query(
             query=self.query,
