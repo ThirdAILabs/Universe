@@ -103,16 +103,30 @@ class FinetunableRetriever(Retriever):
         self,
         samples: Iterable[SupervisedBatch],
         validation: Optional[Iterable[SupervisedBatch]] = None,
+        max_validation_samples: int = 1000,
         **kwargs
     ):
+        n_validation_samples = 0
+        validation_data = []
         for batch in samples:
+            batch = batch.to_df()
+            if validation is None and n_validation_samples < max_validation_samples:
+                n = min(max_validation_samples - n_validation_samples, len(batch) // 10)
+                validation_samples = batch.sample(n=n)
+                batch.drop(validation_samples.index, inplace=True)
+                validation_data.append(validation_samples.reset_index(drop=True))
+                n_validation_samples += len(validation_samples)
+
             self.retriever.finetune(
-                doc_ids=batch.chunk_id.to_list(), queries=batch.query.to_list()
+                doc_ids=batch["chunk_id"].to_list(), queries=batch["query"].to_list()
             )
 
-        if validation is not None:
+        if validation is None:
+            validation_data = pd.concat(validation_data)
+        else:
             validation_data = pd.concat(batch.to_df() for batch in validation)
 
+        if len(validation_data) > 0:
             self.retriever.autotune_finetuning_parameters(
                 doc_ids=validation_data["chunk_id"].to_list(),
                 queries=validation_data["query"].to_list(),
