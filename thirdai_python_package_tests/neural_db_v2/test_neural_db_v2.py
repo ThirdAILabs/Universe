@@ -1,9 +1,9 @@
 import os
 import random
 import shutil
-import numpy as np
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 from ndbv2_utils import CSV_FILE, PDF_FILE, clean_up_sql_lite_db, load_chunks
@@ -387,7 +387,6 @@ def test_neural_db_v2_scifact_finetuning_automatic_validation_subsampling():
     # This will make the accuracy after finetuning < 0.6
     db.retriever.retriever.set_lambda(0.2)
 
-
     # validation will be subsampled from train data
     db.supervised_train(
         ndb.supervised.CsvSupervised(
@@ -395,7 +394,7 @@ def test_neural_db_v2_scifact_finetuning_automatic_validation_subsampling():
         ),
     )
 
-    np.random.seed(42) # for validation subsampling
+    np.random.seed(42)  # for validation subsampling
     # p@1 should be ~0.74-0.75 (validation split can affect accuracy a little)
     acc_after = evaluate(db, test)
     assert 0.7 < acc_after
