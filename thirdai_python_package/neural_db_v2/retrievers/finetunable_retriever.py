@@ -126,10 +126,11 @@ class FinetunableRetriever(Retriever):
         else:
             validation_data = pd.concat(batch.to_df() for batch in validation)
 
-        self.retriever.autotune_finetuning_parameters(
-            doc_ids=validation_data["chunk_id"].to_list(),
-            queries=validation_data["query"].to_list(),
-        )
+        if len(validation_data) > 0:
+            self.retriever.autotune_finetuning_parameters(
+                doc_ids=validation_data["chunk_id"].to_list(),
+                queries=validation_data["query"].to_list(),
+            )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
