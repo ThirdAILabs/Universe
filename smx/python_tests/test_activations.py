@@ -104,8 +104,7 @@ def softmax_np(x):
 
 def softmax_grad_np(y, y_grad):
     gy = y * y_grad
-    jacobian = gy - y * np.sum(gy, axis=-1, keepdims=True)
-    return jacobian * y_grad
+    return gy - y * np.sum(gy, axis=-1, keepdims=True)
 
 
 def softmax_sparse_np(offsets, x):

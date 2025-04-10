@@ -188,8 +188,7 @@ DenseTensorPtr softmaxGrad(const DenseTensorPtr& out,
 
   auto gy = (y * y_grad).eval();
 
-  in_grad->eigenMatrix<float>().array() =
-      (gy - y.colwise() * gy.rowwise().sum()) * y_grad;
+  in_grad->eigenMatrix<float>().array() = gy - y.colwise() * gy.rowwise().sum();
 
   return in_grad;
 }
@@ -261,7 +260,7 @@ CsrTensorPtr softmaxGrad(const CsrTensorPtr& out,
     }
 
     for (size_t i = start; i < end; i++) {
-      x_grad[i] = y[i] * (y_grad[i] - sum_gy) * y_grad[i];
+      x_grad[i] = y[i] * (y_grad[i] - sum_gy);
     }
   }
 
