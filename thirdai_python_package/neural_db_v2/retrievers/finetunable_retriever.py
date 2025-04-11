@@ -103,34 +103,41 @@ class FinetunableRetriever(Retriever):
         self,
         samples: Iterable[SupervisedBatch],
         validation: Optional[Iterable[SupervisedBatch]] = None,
+        validation_split: Optional[float] = None,
         max_validation_samples: int = 1000,
         **kwargs
     ):
+        if validation_split is None:
+            validation_split = 0.1
+
         n_validation_samples = 0
-        validation_data = []
+        val_batches = []
         for batch in samples:
             batch = batch.to_df()
             if validation is None and n_validation_samples < max_validation_samples:
-                n = min(max_validation_samples - n_validation_samples, len(batch) // 10)
+                n = min(
+                    max_validation_samples - n_validation_samples,
+                    int(len(batch) * validation_split),
+                )
                 validation_samples = batch.sample(n=n)
                 batch.drop(validation_samples.index, inplace=True)
-                validation_data.append(validation_samples.reset_index(drop=True))
+                val_batches.append(validation_samples.reset_index(drop=True))
                 n_validation_samples += len(validation_samples)
 
             self.retriever.finetune(
                 doc_ids=batch["chunk_id"].to_list(), queries=batch["query"].to_list()
             )
 
-        if validation is None:
-            validation_data = pd.concat(validation_data)
-        else:
-            validation_data = pd.concat(batch.to_df() for batch in validation)
+        if validation is not None:
+            val_batches = [batch.to_df() for batch in validation]
 
-        if len(validation_data) > 0:
-            self.retriever.autotune_finetuning_parameters(
-                doc_ids=validation_data["chunk_id"].to_list(),
-                queries=validation_data["query"].to_list(),
-            )
+        if len(val_batches) > 0:
+            val_data = pd.concat(val_batches)
+            if len(val_data) > 0:
+                self.retriever.autotune_finetuning_parameters(
+                    doc_ids=val_data["chunk_id"].to_list(),
+                    queries=val_data["query"].to_list(),
+                )
 
     def delete(self, chunk_ids: List[ChunkId], **kwargs):
         self.retriever.remove(ids=chunk_ids)
