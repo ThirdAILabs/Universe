@@ -109,6 +109,8 @@ class FinetunableRetriever(Retriever):
     ):
         if validation_split is None:
             validation_split = 0.1
+        elif validation_split >= 1:
+            raise ValueError("validation split must be in [0, 1)")
 
         n_validation_samples = 0
         val_batches = []
