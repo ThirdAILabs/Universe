@@ -431,6 +431,7 @@ set(THIRDAI_SOURCES
     auto_ml/src/config/FlashConfig.cc
     auto_ml/src/config/Parameter.cc
     auto_ml/src/udt/backends/cpp/Flash.cc
+    auto_ml/src/udt/backends/cpp/NER.cc
     auto_ml/src/rlhf/BalancingSamples.cc
     auto_ml/src/rlhf/RLHFSampler.cc # Deprecate
     auto_ml/src/cpp_classifier/CppClassifier.cc
