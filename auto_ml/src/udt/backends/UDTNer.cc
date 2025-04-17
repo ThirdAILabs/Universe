@@ -71,7 +71,7 @@ py::object UDTNer::predict(const MapInput& sample, bool sparse_inference,
                            const py::kwargs& kwargs) {
   (void)return_predicted_class;
 
-  const auto& tokens_column = _model->tokensColumn();
+  const auto& tokens_column = _model->getTokensColumn();
 
   if (!sample.count(tokens_column)) {
     throw std::invalid_argument("Expected input to contain column '" +
@@ -103,7 +103,7 @@ py::object UDTNer::predictBatch(const MapInputBatch& samples,
                                 const py::kwargs& kwargs) {
   (void)return_predicted_class;
 
-  const auto& tokens_column = _model->tokensColumn();
+  const auto& tokens_column = _model->getTokensColumn();
 
   std::vector<std::string> sentences;
   sentences.reserve(samples.size());
