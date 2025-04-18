@@ -60,6 +60,8 @@ class MaxPool1D final : public Op,
 
   ComputationPtr apply(ComputationPtr input);
 
+  void useTorchInitialization() final{};
+
  private:
   size_t _output_dim = 0;
   size_t _window_size;

@@ -56,6 +56,9 @@ class LayerNorm final : public Op,
 
   static std::string type() { return "layer_norm"; }
 
+  // default initialization is same as torch
+  void useTorchInitialization() final{};
+
  private:
   LayerNorm();
 

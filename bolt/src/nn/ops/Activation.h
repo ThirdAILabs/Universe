@@ -64,6 +64,8 @@ class Activation final : public Op,
 
   static std::string type() { return "activation"; }
 
+  void useTorchInitialization() final{};
+
  private:
   Activation();
 

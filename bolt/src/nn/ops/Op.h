@@ -127,11 +127,17 @@ class Op {
    * training.
    */
   virtual std::vector<std::vector<float>*> gradients() = 0;
+
   /**
    * Returns references to all of the weights of the op. Used for distributed
    * training.
    */
   virtual std::vector<std::vector<float>*> parameters() = 0;
+
+  /**
+   * Uses torch's initialization for the ops.
+   */
+  virtual void useTorchInitialization() = 0;
 
   virtual ComputationPtr applyToInputs(const ComputationList& inputs) = 0;
 

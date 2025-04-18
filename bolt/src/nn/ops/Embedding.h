@@ -104,6 +104,8 @@ class Embedding final : public Op,
 
   void swapActivation(ActivationFunction new_act) { _act_func = new_act; }
 
+  void useTorchInitialization() final;
+
  private:
   inline void applyActivationFunction(float* activations) const;
 

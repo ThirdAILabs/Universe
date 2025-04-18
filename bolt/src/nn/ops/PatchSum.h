@@ -59,6 +59,8 @@ class PatchSum final : public Op,
 
   static std::string type() { return "patch_sum"; }
 
+  void useTorchInitialization() final{};
+
  private:
   size_t _n_patches, _patch_dim;
 

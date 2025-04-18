@@ -69,6 +69,8 @@ class QuantileMixing final
 
   static std::string type() { return "quantile_mixing"; }
 
+  void useTorchInitialization() final{};
+
  private:
   size_t _output_dim = 0;
   size_t _window_size;

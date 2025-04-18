@@ -48,6 +48,8 @@ class DotProduct final : public Op,
 
   static std::string type() { return "dot_product"; }
 
+  void useTorchInitialization() final {}
+
  private:
   DotProduct() {}
 

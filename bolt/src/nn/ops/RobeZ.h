@@ -65,6 +65,9 @@ class RobeZ final : public Op, public std::enable_shared_from_this<RobeZ> {
 
   static std::string type() { return "robez"; }
 
+  // skipping initialization for RobeZ, since there is no op in torch
+  void useTorchInitialization() final{};
+
  private:
   RobeZ(uint64_t num_embedding_lookups, uint64_t lookup_size,
         uint64_t log_embedding_block_size, const std::string& reduction,

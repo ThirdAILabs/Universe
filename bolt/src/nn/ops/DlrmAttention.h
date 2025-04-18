@@ -73,6 +73,8 @@ class DlrmAttention final : public Op,
 
   static std::string type() { return "dlrm_attention"; }
 
+  void useTorchInitialization() final {}
+
  private:
   DlrmAttention() {}
 

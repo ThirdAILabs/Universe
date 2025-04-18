@@ -44,13 +44,15 @@ class Model : public std::enable_shared_from_this<Model> {
   Model(ComputationList inputs, ComputationList outputs,
         std::vector<LossPtr> losses,
         const ComputationList& expected_labels = {},
-        OptimizerFactoryPtr optimizer = AdamFactory::make());
+        OptimizerFactoryPtr optimizer = AdamFactory::make(),
+        bool use_torch_initialization = false);
 
  public:
   static std::shared_ptr<Model> make(
       ComputationList inputs, ComputationList outputs,
       std::vector<LossPtr> losses, const ComputationList& expected_labels = {},
-      OptimizerFactoryPtr optimizer = AdamFactory::make());
+      OptimizerFactoryPtr optimizer = AdamFactory::make(),
+      bool use_torch_initialization = false);
 
   /**
    * Computes the forward pass through the model for the given batch.

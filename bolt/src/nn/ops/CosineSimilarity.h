@@ -52,6 +52,8 @@ class CosineSimilarity final
 
   static std::string type() { return "cosine_sim"; }
 
+  void useTorchInitialization() final{};
+
  private:
   CosineSimilarity() {}
 
