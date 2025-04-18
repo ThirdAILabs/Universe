@@ -11,6 +11,7 @@
 #include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/featurization/DataTypes.h>
+#include <auto_ml/src/udt/Defaults.h>
 #include <auto_ml/src/udt/TrainOptions.h>
 #include <auto_ml/src/udt/utils/Models.h>
 #include <data/src/Loader.h>
@@ -37,6 +38,13 @@ using Predictions =
 std::shared_ptr<data::NerTokenizerUnigram> extractNerTokenizerTransform(
     const data::TransformationPtr& transform, bool is_inference);
 
+struct LabeledEntity {
+  std::string label;
+  std::string text;
+  size_t start;
+  size_t end;
+};
+
 class NerModel {
  public:
   NerModel(const ColumnDataTypes& data_types,
@@ -57,6 +65,10 @@ class NerModel {
       const dataset::DataSourcePtr& data,
       const std::vector<std::string>& metrics, bool sparse_inference,
       bool verbose);
+
+  std::vector<std::vector<LabeledEntity>> predict(
+      const std::vector<std::string>& sentences, bool sparse_inference = false,
+      float o_threshold = defaults::NER_O_THRESHOLD, bool as_unicode = true);
 
   std::pair<std::vector<SentenceTags>,
             std::vector<std::vector<std::pair<size_t, size_t>>>>

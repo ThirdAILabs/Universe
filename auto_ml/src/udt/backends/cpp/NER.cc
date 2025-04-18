@@ -355,6 +355,30 @@ std::unordered_map<std::string, std::vector<float>> NerModel::evaluate(
   return history;
 }
 
+std::vector<std::vector<LabeledEntity>> NerModel::predict(
+    const std::vector<std::string>& sentences, bool sparse_inference,
+    float o_threshold, bool as_unicode) {
+  auto [tags, offsets] = predictTags(sentences, sparse_inference, /*top_k=*/1,
+                                     o_threshold, as_unicode);
+
+  std::vector<std::vector<LabeledEntity>> results(sentences.size());
+
+  for (size_t sent = 0; sent < sentences.size(); sent++) {
+    for (size_t token = 0; token < tags[sent].size(); ++token) {
+      if (!tags[sent][token].empty() && tags[sent][token][0].first != "O") {
+        auto [start, end] = offsets[sent][token];
+        results[sent].emplace_back(
+            LabeledEntity{/*label=*/tags[sent][token][0].first,
+                          /*text=*/sentences[sent].substr(start, end - start),
+                          /*start=*/start,
+                          /*end=*/end});
+      }
+    }
+  }
+
+  return results;
+}
+
 std::pair<std::vector<SentenceTags>,
           std::vector<std::vector<std::pair<size_t, size_t>>>>
 NerModel::predictTags(const std::vector<std::string>& sentences,
