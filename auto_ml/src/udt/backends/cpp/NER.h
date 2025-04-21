@@ -67,8 +67,7 @@ class NerModel {
       bool verbose);
 
   std::vector<std::vector<LabeledEntity>> predict(
-      const std::vector<std::string>& sentences, bool sparse_inference = false,
-      float o_threshold = defaults::NER_O_THRESHOLD, bool as_unicode = true);
+      const std::vector<std::string>& sentences);
 
   std::pair<std::vector<SentenceTags>,
             std::vector<std::vector<std::pair<size_t, size_t>>>>
@@ -197,6 +196,8 @@ class NerModel {
   static std::string type() { return "udt_ner"; }
 
   const auto& getTokensColumn() const { return _tokens_column; }
+
+  static std::unique_ptr<NerModel> load(const std::string& path);
 
  private:
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,

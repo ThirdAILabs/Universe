@@ -1,4 +1,5 @@
 #include "NER.h"
+#include <cereal/archives/binary.hpp>
 #include <bolt/src/NER/model/NerClassifier.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
@@ -28,6 +29,7 @@
 #include <data/src/transformations/ner/utils/TagTracker.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <utils/text/StringManipulation.h>
 #include <algorithm>
 #include <memory>
@@ -356,8 +358,11 @@ std::unordered_map<std::string, std::vector<float>> NerModel::evaluate(
 }
 
 std::vector<std::vector<LabeledEntity>> NerModel::predict(
-    const std::vector<std::string>& sentences, bool sparse_inference,
-    float o_threshold, bool as_unicode) {
+    const std::vector<std::string>& sentences) {
+  bool sparse_inference = false;
+  float o_threshold = defaults::NER_O_THRESHOLD;
+  bool as_unicode = true;
+
   auto [tags, offsets] = predictTags(sentences, sparse_inference, /*top_k=*/1,
                                      o_threshold, as_unicode);
 
@@ -550,6 +555,23 @@ data::LoaderPtr NerModel::getDataLoader(const dataset::DataSourcePtr& data,
                             /* batch_size= */ batch_size,
                             /* shuffle= */ shuffle, /* verbose= */ true,
                             /* shuffle_buffer_size= */ 20000);
+}
+
+std::unique_ptr<NerModel> NerModel::load(const std::string& path) {
+  auto input = dataset::SafeFileIO::ifstream(path);
+  cereal::BinaryInputArchive archive(input);
+
+  std::string thirdai_version;
+  archive(thirdai_version);
+
+  ar::ArchivePtr thirdai_archive;
+  archive(thirdai_archive);
+
+  if (thirdai_archive->str("type") != type()) {
+    throw std::invalid_argument("model is not bolt NER model");
+  }
+
+  return fromArchive(*thirdai_archive);
 }
 
 ar::ConstArchivePtr NerModel::toArchive(bool with_optimizer) const {
