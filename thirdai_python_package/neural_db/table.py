@@ -81,10 +81,9 @@ class DaskDataFrameTable(Table):
         )
         row_id = 0  # We are maintaining a global row_id because each partition will have it's local index
         for batch in results.compute():
-            for row_dict in batch:
-                row_dict[index_name] = row_id
-                self.row_id_to_dict[row_id] = row_dict
-                row_id += 1
+            batch[index_name] = row_id
+            self.row_id_to_dict[row_id] = batch
+            row_id += 1
 
     @property
     def columns(self) -> List[str]:
