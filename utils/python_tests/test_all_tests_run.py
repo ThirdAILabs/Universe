@@ -23,7 +23,7 @@ def test_all_tests_run():
 
     tests_we_run_buffer = io.StringIO()
     with redirect_stdout(tests_we_run_buffer):
-        for run in ["unit", "release", "distributed", "ignore"]:
+        for run in ["unit", "release", "distributed", "ignore", "skip"]:
             pytest.main([".", "--ignore-glob=deps", "--collect-only", f"-m {run}"])
     tests_we_run = [line.strip() for line in tests_we_run_buffer.getvalue().split("\n")]
 
