@@ -339,7 +339,7 @@ std::vector<std::pair<Chunk, float>> OnDiskNeuralDB::rank(
   auto sorted_candidates = sortCandidates(candidate_set);
 
   std::vector<ChunkId> topk_chunk_ids;
-  std::vector<ChunkId> topk_scores;
+  std::vector<float> topk_scores;
   std::vector<MetadataMap> topk_metadata;
 
   const size_t batch_size = 20;
