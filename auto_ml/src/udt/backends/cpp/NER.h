@@ -200,6 +200,8 @@ class NerModel {
   static std::unique_ptr<NerModel> load(const std::string& path);
 
  private:
+  NerModel() {}
+
   data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,
                                 size_t batch_size, bool shuffle) const;
 
@@ -208,6 +210,14 @@ class NerModel {
   static NerOptions fromPretrained(const NerModel* pretrained_model);
 
   static NerOptions fromScratch(const config::ArgumentMap& args);
+
+  friend class cereal::access;
+
+  template <class Archive>
+  void save(Archive& archive, uint32_t version) const;
+
+  template <class Archive>
+  void load(Archive& archive, uint32_t version);
 
   bolt::ModelPtr _model;
 

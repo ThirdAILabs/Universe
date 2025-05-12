@@ -30,7 +30,9 @@
 #include <data/src/transformations/ner/utils/utils.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <utils/Version.h>
 #include <utils/text/StringManipulation.h>
+#include <versioning/src/Versions.h>
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -559,19 +561,12 @@ data::LoaderPtr NerModel::getDataLoader(const dataset::DataSourcePtr& data,
 
 std::unique_ptr<NerModel> NerModel::load(const std::string& path) {
   auto input = dataset::SafeFileIO::ifstream(path);
-  cereal::BinaryInputArchive archive(input);
+  cereal::BinaryInputArchive iarchive(input);
 
-  std::string thirdai_version;
-  archive(thirdai_version);
+  std::unique_ptr<NerModel> deserialize_into(new NerModel());
+  iarchive(*deserialize_into);
 
-  ar::ArchivePtr thirdai_archive;
-  archive(thirdai_archive);
-
-  if (thirdai_archive->str("type") != type()) {
-    throw std::invalid_argument("model is not bolt NER model");
-  }
-
-  return fromArchive(*thirdai_archive);
+  return deserialize_into;
 }
 
 ar::ConstArchivePtr NerModel::toArchive(bool with_optimizer) const {
@@ -635,4 +630,35 @@ NerModel::NerModel(const ar::Archive& archive)
   }
 }
 
+template <class Archive>
+void NerModel::save(Archive& archive, uint32_t version) const {
+  (void)version;
+
+  std::string thirdai_version = thirdai::version();
+  archive(thirdai_version);
+
+  auto thirdai_archive = toArchive(/*with_optimizer=*/true);
+  archive(thirdai_archive);
+}
+
+template <class Archive>
+void NerModel::load(Archive& archive, uint32_t version) {
+  (void)version;
+
+  std::string thirdai_version;
+  archive(thirdai_version);
+
+  ar::ArchivePtr thirdai_archive;
+  archive(thirdai_archive);
+
+  if (thirdai_archive->str("type") != type()) {
+    throw std::invalid_argument("model is not bolt NER model");
+  }
+
+  *this = NerModel(*thirdai_archive);
+}
+
 }  // namespace thirdai::automl::udt
+
+CEREAL_CLASS_VERSION(thirdai::automl::udt::NerModel,
+                     thirdai::versions::UDT_BASE_VERSION)
