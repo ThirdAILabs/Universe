@@ -28,6 +28,12 @@ RulePtr ipAddressPattern();
 
 RulePtr datePattern();
 
+RulePtr timePattern();
+
+RulePtr dateTimePattern();
+
+RulePtr vinPattern();
+
 RulePtr getRuleForEntity(const std::string& entity);
 
 RulePtr getRuleForEntities(const std::vector<std::string>& entities);
