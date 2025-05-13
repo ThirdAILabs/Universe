@@ -4,6 +4,7 @@
 #include <utils/text/StringManipulation.h>
 #include <optional>
 #include <stdexcept>
+#include <map>
 
 namespace thirdai::data::ner {
 
@@ -363,6 +364,85 @@ RulePtr ipAddressPattern() {
       /*validator=*/ipAddressValidator);
 }
 
+RulePtr datePattern() {
+  std::vector<RulePtr> rules;
+  
+  // mm/dd/yyyy or mm/dd/yy
+  rules.push_back(Pattern::make(
+    /*entity=*/"DATE",
+    /*pattern=*/R"(\b(([1-9]|0[1-9]|1[0-2])/([1-9]|0[1-9]|[1-2][0-9]|3[0-1])/(\d{4}|\d{2}))\b)",
+    /*pattern_score=*/0.6
+  ));
+  // dd/mm/yyyy or dd/mm/yy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|[1-2][0-9]|3[0-1])/([1-9]|0[1-9]|1[0-2])/(\d{4}|\d{2}))\b)",
+    0.6
+  ));
+  // yyyy/mm/dd
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(\d{4}/([1-9]|0[1-9]|1[0-2])/([1-9]|0[1-9]|[1-2][0-9]|3[0-1]))\b)",
+    0.6
+  ));
+  // mm-dd-yyyy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|1[0-2])-([1-9]|0[1-9]|[1-2][0-9]|3[0-1])-\d{4})\b)",
+    0.6
+  ));
+  // dd-mm-yyyy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|[1-2][0-9]|3[0-1])-([1-9]|0[1-9]|1[0-2])-\d{4})\b)",
+    0.6
+  ));
+  // yyyy-mm-dd
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(\d{4}-([1-9]|0[1-9]|1[0-2])-([1-9]|0[1-9]|[1-2][0-9]|3[0-1]))\b)",
+    0.6
+  ));
+  // dd.mm.yyyy or dd.mm.yy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|[1-2][0-9]|3[0-1])\.([1-9]|0[1-9]|1[0-2])\.(\d{4}|\d{2}))\b)",
+    0.6
+  ));
+  // dd-MMM-yyyy or dd-MMM-yy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|[1-2][0-9]|3[0-1])-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{4}|\d{2}))\b)",
+    0.6
+  ));
+  // MMM-yyyy or MMM-yy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b((JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-(\d{4}|\d{2}))\b)",
+    0.6
+  ));
+  // dd-MMM (no year)
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|[1-2][0-9]|3[0-1])-(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))\b)",
+    0.6
+  ));
+  // mm/yyyy or m/yyyy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|1[0-2])/\d{4})\b)",
+    0.2
+  ));
+  // mm/yy or m/yy
+  rules.push_back(Pattern::make(
+    "DATE",
+    R"(\b(([1-9]|0[1-9]|1[0-2])/\d{2})\b)",
+    0.1
+  ));
+
+  return RuleCollection::make(rules);
+}
+
 RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDNUMBER") {
     return creditCardPattern();
@@ -396,6 +476,9 @@ RulePtr getRuleForEntity(const std::string& entity) {
   }
   if (entity == "IPADDRESS") {
     return ipAddressPattern();
+  }
+  if (entity == "DATE") {
+    return datePattern();
   }
 
   throw std::invalid_argument("No rule for entity '" + entity + "'.");

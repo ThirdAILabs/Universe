@@ -26,6 +26,8 @@ RulePtr usPassportPattern();
 
 RulePtr ipAddressPattern();
 
+RulePtr datePattern();
+
 RulePtr getRuleForEntity(const std::string& entity);
 
 RulePtr getRuleForEntities(const std::vector<std::string>& entities);
