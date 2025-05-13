@@ -28,6 +28,7 @@
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/TagTracker.h>
 #include <data/src/transformations/ner/utils/utils.h>
+#include <dataset/src/DataSource.h>
 #include <dataset/src/blocks/text/TextTokenizer.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <utils/Version.h>
@@ -311,6 +312,17 @@ NerModel::NerModel(const ColumnDataTypes& data_types,
 
   std::cout << "Initialized a UniversalDeepTransformer for Token Classification"
             << std::endl;
+}
+
+void NerModel::train(const std::string& filename, float learning_rate,
+                     uint32_t epochs) {
+  train(dataset::FileDataSource::make(filename), learning_rate, epochs,
+        /*train_metrics=*/{},
+        /*val_data=*/nullptr,
+        /*val_metrics=*/{},
+        /*callbacks=*/{},
+        /*options=*/TrainOptions(),
+        /*comm=*/nullptr);
 }
 
 std::unordered_map<std::string, std::vector<float>> NerModel::train(

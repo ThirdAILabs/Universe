@@ -53,6 +53,8 @@ class NerModel {
 
   explicit NerModel(const ar::Archive& archive);
 
+  void train(const std::string& filename, float learning_rate, uint32_t epochs);
+
   std::unordered_map<std::string, std::vector<float>> train(
       const dataset::DataSourcePtr& data, float learning_rate, uint32_t epochs,
       const std::vector<std::string>& train_metrics,
