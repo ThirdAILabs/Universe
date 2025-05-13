@@ -1,22 +1,9 @@
 #pragma once
 
-#include <bolt/src/layers/FullyConnectedLayer.h>
-#include <bolt/src/layers/LayerUtils.h>
-#include <bolt/src/nn/loss/CategoricalCrossEntropy.h>
-#include <bolt/src/nn/ops/Embedding.h>
-#include <bolt/src/nn/ops/FullyConnected.h>
-#include <bolt/src/nn/ops/Input.h>
 #include <archive/src/Archive.h>
 #include <auto_ml/src/config/ArgumentMap.h>
 #include <auto_ml/src/udt/UDTBackend.h>
-#include <auto_ml/src/udt/utils/Models.h>
-#include <data/src/transformations/ner/learned_tags/CommonLearnedTags.h>
-#include <data/src/transformations/ner/learned_tags/LearnedTag.h>
-#include <data/src/transformations/ner/rules/CommonPatterns.h>
-#include <data/src/transformations/ner/rules/Rule.h>
-#include <data/src/transformations/ner/utils/TagTracker.h>
-#include <data/src/transformations/ner/utils/TokenLabelCounter.h>
-#include <memory>
+#include <auto_ml/src/udt/backends/cpp/NER.h>
 #include <string>
 #include <variant>
 
@@ -25,8 +12,6 @@ namespace thirdai::automl::udt {
 using TokenTags = std::vector<std::pair<std::string, float>>;
 using SentenceTags = std::vector<TokenTags>;
 
-std::shared_ptr<data::NerTokenizerUnigram> extractNerTokenizerTransform(
-    const data::TransformationPtr& transform, bool is_inference);
 class UDTNer final : public UDTBackend {
  public:
   UDTNer(const ColumnDataTypes& data_types, const TokenTagsDataTypePtr& target,
@@ -59,118 +44,29 @@ class UDTNer final : public UDTBackend {
                           const py::kwargs& kwargs) final;
 
   std::vector<std::string> listNerTags() const final {
-    return _tag_tracker->listNerTags();
+    return _model->listNerTags();
   }
 
   void addNerRule(const std::string& rule_name) final {
-    if (_rule != nullptr) {
-      auto rule_collection =
-          std::dynamic_pointer_cast<data::ner::RuleCollection>(_rule);
-
-      for (const auto& existing_rule : rule_collection->entities()) {
-        if (existing_rule == rule_name) {
-          throw std::logic_error(
-              "Entity already present. Cannot add a new rule for the entity " +
-              existing_rule);
-        }
-      }
-      rule_collection->addRule(data::ner::getRuleForEntity(rule_name));
-
-    } else {
-      std::vector<data::ner::RulePtr> rule_vector = {
-          data::ner::getRuleForEntity(rule_name)};
-      _rule = std::make_shared<data::ner::RuleCollection>(rule_vector);
-    }
-
-    // if tag is not present in the tracker -> new tag and assign a label
-    // if tag is present -> old tag, do not update label
-    if (!_tag_tracker->tagExists(rule_name)) {
-      _tag_tracker->addTag(data::ner::getLearnedTagFromString(rule_name),
-                           /*add_new_label=*/false);
-    }
+    _model->addNerRule(rule_name);
   }
 
   void editNerLearnedTag(const data::ner::NerLearnedTagPtr& tag) final {
-    _tag_tracker->editTag(tag);
+    _model->editNerLearnedTag(tag);
   }
 
   void addNerEntitiesToModel(
       const std::vector<std::variant<std::string, data::ner::NerLearnedTag>>&
           entities) final {
-    std::vector<data::ner::NerTagPtr> tags;
-
-    {
-      // initialize the tags vector.
-      for (const auto& entity : entities) {
-        if (std::holds_alternative<std::string>(entity)) {
-          tags.emplace_back(data::ner::getLearnedTagFromString(
-              std::get<std::string>(entity)));
-        } else {
-          tags.emplace_back(std::make_shared<data::ner::NerLearnedTag>(
-              std::get<data::ner::NerLearnedTag>(entity)));
-        }
-      }
-
-      // check that none of the entities provided already exists
-      for (const auto& tag : tags) {
-        if (_tag_tracker->tagExists(tag->tag())) {
-          throw std::logic_error("Cannot add entity " + tag->tag() +
-                                 "to the model. Entity already exists");
-        }
-      }
-    }
-
-    auto supervised_unigram_transform =
-        extractNerTokenizerTransform(_supervised_transform, false);
-
-    auto fc_layer =
-        bolt::FullyConnected::cast(_model->opExecutionOrder().at(1));
-    auto embedding_layer =
-        bolt::Embedding::cast(_model->opExecutionOrder().at(0));
-
-    auto input = bolt::Input::make(embedding_layer->inputDim());
-    auto hidden = embedding_layer->apply(input);
-    auto output_layer = bolt::FullyConnected::make(
-        _tag_tracker->numLabels() + tags.size(), hidden->dim(),
-        fc_layer->getSparsity(),
-        bolt::activationFunctionToStr(
-            fc_layer->kernel()->getActivationFunction()),
-        nullptr, fc_layer->kernel()->useBias());
-
-    {
-      // copy the weights and biases to the new model
-      auto& new_weights = output_layer->kernel()->weights();
-      const auto& old_weights = fc_layer->kernel()->weights();
-      std::copy(old_weights.begin(), old_weights.end(), new_weights.begin());
-
-      auto& new_bias = output_layer->kernel()->biases();
-      const auto& old_bias = fc_layer->kernel()->biases();
-      std::copy(old_bias.begin(), old_bias.end(), new_bias.begin());
-    }
-
-    auto output = output_layer->apply(hidden);
-    auto labels = bolt::Input::make(output->dim());
-    auto loss = bolt::CategoricalCrossEntropy::make(output, labels);
-
-    _model = bolt::Model::make({input}, {output}, {loss});
-
-    for (const auto& tag : tags) {
-      _tag_tracker->addTag(tag, /*add_new_label=*/true);
-    }
+    _model->addNerEntitiesToModel(entities);
   }
 
-  ModelPtr model() const final { return _model; }
+  ModelPtr model() const final { return _model->model(); }
 
-  void setModel(const ModelPtr& model) final {
-    ModelPtr& curr_model = _model;
-
-    utils::verifyCanSetModel(curr_model, model);
-
-    curr_model = model;
-  }
+  void setModel(const ModelPtr& model) final { _model->setModel(model); }
 
   std::pair<std::string, std::string> sourceTargetCols() const final {
-    return {_tokens_column, _tags_column};
+    return _model->sourceTargetCols();
   }
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const final;
@@ -180,33 +76,7 @@ class UDTNer final : public UDTBackend {
   static std::string type() { return "udt_ner"; }
 
  private:
-  data::LoaderPtr getDataLoader(const dataset::DataSourcePtr& data,
-                                size_t batch_size, bool shuffle) const;
-
-  std::pair<std::vector<SentenceTags>,
-            std::vector<std::vector<std::pair<size_t, size_t>>>>
-  predictTags(const std::vector<std::string>& sentences, bool sparse_inference,
-              uint32_t top_k, float o_threshold, bool as_unicode);
-
-  struct NerOptions;
-
-  static NerOptions fromPretrained(const UDTNer* pretrained_model);
-
-  static NerOptions fromScratch(const config::ArgumentMap& args);
-
-  bolt::ModelPtr _model;
-
-  data::ner::RulePtr _rule;
-
-  data::TransformationPtr _supervised_transform;
-  data::TransformationPtr _inference_transform;
-
-  data::OutputColumnsList _bolt_inputs;
-
-  std::string _tokens_column;
-  std::string _tags_column;
-
-  data::ner::utils::TagTrackerPtr _tag_tracker;
+  std::unique_ptr<NerModel> _model;
 };
 
 }  // namespace thirdai::automl::udt

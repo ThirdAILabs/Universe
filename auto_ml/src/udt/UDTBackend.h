@@ -7,6 +7,7 @@
 #include <auto_ml/src/featurization/DataTypes.h>
 #include <auto_ml/src/featurization/Featurizer.h>
 #include <auto_ml/src/udt/Defaults.h>
+#include <auto_ml/src/udt/TrainOptions.h>
 #include <data/src/transformations/SpladeAugmentation.h>
 #include <data/src/transformations/cold_start/VariableLengthColdStart.h>
 #include <dataset/src/DataSource.h>
@@ -26,19 +27,6 @@ using bolt::callbacks::CallbackPtr;
 using bolt::ModelPtr;
 
 using Label = std::variant<uint32_t, std::string>;
-
-struct TrainOptions {
-  std::optional<size_t> batch_size = std::nullopt;
-  std::optional<size_t> max_in_memory_batches = std::nullopt;
-  std::optional<uint32_t> steps_per_validation = std::nullopt;
-  bool sparse_validation = false;
-  bool verbose = true;
-  std::optional<uint32_t> logging_interval = std::nullopt;
-  dataset::DatasetShuffleConfig shuffle_config =
-      dataset::DatasetShuffleConfig();
-
-  size_t batchSize() const { return batch_size.value_or(defaults::BATCH_SIZE); }
-};
 
 /**
  * This is an interface for the backends that are used in a UDT model. To
