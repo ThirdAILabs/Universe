@@ -18,9 +18,9 @@ UDTNer::UDTNer(const ColumnDataTypes& data_types,
                const TokenTagsDataTypePtr& target,
                const std::string& target_name, const UDTNer* pretrained_model,
                const config::ArgumentMap& args)
-    : _model(std::make_unique<NerModel>(data_types, target, target_name,
-                                        pretrained_model->_model.get(), args)) {
-}
+    : _model(std::make_unique<NerModel>(
+          data_types, target, target_name,
+          pretrained_model ? pretrained_model->_model.get() : nullptr, args)) {}
 
 py::object UDTNer::train(const dataset::DataSourcePtr& data,
                          float learning_rate, uint32_t epochs,
