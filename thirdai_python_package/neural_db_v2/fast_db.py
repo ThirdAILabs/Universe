@@ -20,6 +20,7 @@ class FastDB:
         save_path: str,
         splade: bool = False,
         preload_reranker: bool = False,
+        config: Optional[search.IndexConfig] = search.IndexConfig(),
         **kwargs,
     ):
         os.makedirs(save_path, exist_ok=True)
@@ -30,7 +31,7 @@ class FastDB:
         else:
             self.save_config(save_path, splade=splade)
 
-        self.db = search.OnDiskNeuralDB(save_path=save_path)
+        self.db = search.OnDiskNeuralDB(save_path=save_path, config=config)
 
         if preload_reranker:
             self.reranker: Optional[Reranker] = PretrainedReranker()
