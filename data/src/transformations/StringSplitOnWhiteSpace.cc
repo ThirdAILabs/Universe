@@ -48,17 +48,24 @@ splitOnWhiteSpaceWithOffsetsUnicode(const std::string& ascii_text) {
 
   bool last_is_word = false;
   size_t word_start = 0;
+  size_t word_start_bytes = 0;
+  size_t curr_offset_bytes = 0;
 
   for (size_t i = 0; i < text.size(); i++) {
+    const size_t char_width = text::unicodeWidth(text[i]);
+
     bool is_word = !text::isWhitespace(text[i]);
     if (!last_is_word && is_word) {
       word_start = i;
+      word_start_bytes = curr_offset_bytes;
     } else if (last_is_word && !is_word) {
       words.push_back(
           text::fromUnicode(text.substr(word_start, i - word_start)));
-      offsets.emplace_back(word_start, i);
+      offsets.emplace_back(word_start_bytes, curr_offset_bytes + char_width);
     }
     last_is_word = is_word;
+
+    curr_offset_bytes += char_width;
   }
   if (last_is_word) {
     words.push_back(text::fromUnicode(text.substr(word_start)));
