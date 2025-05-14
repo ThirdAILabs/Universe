@@ -581,6 +581,17 @@ std::unique_ptr<NerModel> NerModel::load(const std::string& path) {
   return deserialize_into;
 }
 
+std::pair<std::string, std::string> NerModel::sourceTargetCols() const {
+  return {_tokens_column, _tags_column};
+}
+
+void NerModel::save(const std::string& path) const {
+  auto output = dataset::SafeFileIO::ofstream(path, std::ios::binary);
+
+  cereal::BinaryOutputArchive oarchive(output);
+  oarchive(*this);
+}
+
 ar::ConstArchivePtr NerModel::toArchive(bool with_optimizer) const {
   auto map = ar::Map::make();
 
@@ -649,7 +660,7 @@ void NerModel::save(Archive& archive, uint32_t version) const {
   std::string thirdai_version = thirdai::version();
   archive(thirdai_version);
 
-  auto thirdai_archive = toArchive(/*with_optimizer=*/true);
+  auto thirdai_archive = toArchive(/*with_optimizer=*/false);
   archive(thirdai_archive);
 }
 
