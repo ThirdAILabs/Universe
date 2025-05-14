@@ -26,7 +26,6 @@ class FastDB:
 
         if word_k_gram and word_k_gram < 1:
             raise ValueError(f"word_k_gram must be greater than 0, got {word_k_gram}")
-        self.word_k_gram = word_k_gram
 
         os.makedirs(save_path, exist_ok=True)
 
@@ -53,6 +52,8 @@ class FastDB:
             self.splade = Splade()
         else:
             self.splade = None
+
+        self.word_k_gram = word_k_gram
 
     def insert(
         self, docs: List[Union[str, Document]], **kwargs
