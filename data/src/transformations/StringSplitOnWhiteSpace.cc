@@ -52,8 +52,6 @@ splitOnWhiteSpaceWithOffsetsUnicode(const std::string& ascii_text) {
   size_t curr_offset_bytes = 0;
 
   for (size_t i = 0; i < text.size(); i++) {
-    const size_t char_width = text::unicodeWidth(text[i]);
-
     bool is_word = !text::isWhitespace(text[i]);
     if (!last_is_word && is_word) {
       word_start = i;
@@ -61,11 +59,11 @@ splitOnWhiteSpaceWithOffsetsUnicode(const std::string& ascii_text) {
     } else if (last_is_word && !is_word) {
       words.push_back(
           text::fromUnicode(text.substr(word_start, i - word_start)));
-      offsets.emplace_back(word_start_bytes, curr_offset_bytes + char_width);
+      offsets.emplace_back(word_start_bytes, curr_offset_bytes);
     }
     last_is_word = is_word;
 
-    curr_offset_bytes += char_width;
+    curr_offset_bytes += text::unicodeWidth(text[i]);
   }
   if (last_is_word) {
     words.push_back(text::fromUnicode(text.substr(word_start)));
