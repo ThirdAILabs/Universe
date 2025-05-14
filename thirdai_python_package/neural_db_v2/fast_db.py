@@ -20,18 +20,23 @@ class FastDB:
         save_path: str,
         splade: bool = False,
         preload_reranker: bool = False,
-        config: Optional[search.IndexConfig] = search.IndexConfig(),
+        word_k_gram: int = 0,
         **kwargs,
     ):
+
         os.makedirs(save_path, exist_ok=True)
 
         if os.path.exists(self.config_path(save_path)):
             config = self.load_config(save_path)
             splade = config["splade"]
+            word_k_gram = config.get("word_k_gram", word_k_gram) 
         else:
-            self.save_config(save_path, splade=splade)
+            self.save_config(save_path, splade=splade, word_k_gram=word_k_gram)
 
-        self.db = search.OnDiskNeuralDB(save_path=save_path, config=config)
+        if word_k_gram:
+            self.db = search.OnDiskNeuralDB(save_path=save_path, config=search.IndexConfig(k=word_k_gram))
+        else:
+            self.db = search.OnDiskNeuralDB(save_path=save_path)
 
         if preload_reranker:
             self.reranker: Optional[Reranker] = PretrainedReranker()
@@ -194,7 +199,7 @@ class FastDB:
             os.makedirs(path)
 
         self.db.save(path)
-        self.save_config(path, splade=self.splade is not None)
+        self.save_config(path, splade=self.splade is not None, word_k_gram=self.word_k_gram)
 
     @staticmethod
     def load(path: str):
