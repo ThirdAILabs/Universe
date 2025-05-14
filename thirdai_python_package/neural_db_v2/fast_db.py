@@ -33,6 +33,7 @@ class FastDB:
         else:
             self.save_config(save_path, splade=splade, word_k_gram=word_k_gram)
 
+        self.word_k_gram = word_k_gram
         if word_k_gram:
             self.db = search.OnDiskNeuralDB(
                 save_path=save_path, config=search.IndexConfig(k=word_k_gram)
