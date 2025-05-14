@@ -112,6 +112,7 @@ std::string replaceNewlines(std::string string, char replace_char = ' ');
 
 std::wstring toUnicode(const std::string& text);
 std::string fromUnicode(const std::wstring& wText);
+size_t unicodeWidth(wchar_t wc);
 
 /**
  * Converts the given input string into a consistent normalized form in case of

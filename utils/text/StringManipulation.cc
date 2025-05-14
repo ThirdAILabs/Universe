@@ -413,6 +413,13 @@ std::string fromUnicode(const std::wstring& wText) {
   return result;
 }
 
+size_t unicodeWidth(wchar_t wc) {
+  char buffer[4];
+  const utf8proc_ssize_t bytes =
+      utf8proc_encode_char(wc, reinterpret_cast<utf8proc_uint8_t*>(buffer));
+  return bytes;
+}
+
 std::string normalize(const std::string& s) {
   // The utf8proc API takes in a const char *, and returns a new char * pointing
   // to the NFD normalized string. It is the responsibility of the client to
