@@ -20,9 +20,13 @@ class FastDB:
         save_path: str,
         splade: bool = False,
         preload_reranker: bool = False,
-        word_k_gram: int = 0,
+        word_k_gram: Optional[int] = None,
         **kwargs,
     ):
+
+        if word_k_gram and word_k_gram < 1:
+            raise ValueError(f"word_k_gram must be greater than 0, got {word_k_gram}")
+        self.word_k_gram = word_k_gram
 
         os.makedirs(save_path, exist_ok=True)
 
@@ -33,7 +37,6 @@ class FastDB:
         else:
             self.save_config(save_path, splade=splade, word_k_gram=word_k_gram)
 
-        self.word_k_gram = word_k_gram
         if word_k_gram:
             self.db = search.OnDiskNeuralDB(
                 save_path=save_path, config=search.IndexConfig(k=word_k_gram)
