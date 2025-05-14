@@ -187,9 +187,7 @@ class NerModel {
     curr_model = model;
   }
 
-  std::pair<std::string, std::string> sourceTargetCols() const {
-    return {_tokens_column, _tags_column};
-  }
+  std::pair<std::string, std::string> sourceTargetCols() const;
 
   ar::ConstArchivePtr toArchive(bool with_optimizer) const;
 
@@ -200,6 +198,8 @@ class NerModel {
   const auto& getTokensColumn() const { return _tokens_column; }
 
   static std::unique_ptr<NerModel> load(const std::string& path);
+
+  void save(const std::string& path) const;
 
  private:
   NerModel() {}
