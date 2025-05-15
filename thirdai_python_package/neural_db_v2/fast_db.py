@@ -23,7 +23,6 @@ class FastDB:
         word_k_gram: Optional[int] = None,
         **kwargs,
     ):
-
         if word_k_gram and word_k_gram < 1:
             raise ValueError(f"word_k_gram must be greater than 0, got {word_k_gram}")
 
@@ -36,12 +35,11 @@ class FastDB:
         else:
             self.save_config(save_path, splade=splade, word_k_gram=word_k_gram)
 
+        index_config_args = {}
         if word_k_gram:
-            self.db = search.OnDiskNeuralDB(
-                save_path=save_path, config=search.IndexConfig(tokenizer=search.WordKGrams(k=word_k_gram))
-            )
-        else:
-            self.db = search.OnDiskNeuralDB(save_path=save_path)
+            index_config_args["tokenizer"] = search.WordKGrams(k=word_k_gram)
+
+        self.db = search.OnDiskNeuralDB(save_path=search.IndexConfig(**index_config_args))
 
         if preload_reranker:
             self.reranker: Optional[Reranker] = PretrainedReranker()
