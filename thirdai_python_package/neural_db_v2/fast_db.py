@@ -39,7 +39,9 @@ class FastDB:
         if word_k_gram:
             index_config_args["tokenizer"] = search.WordKGrams(k=word_k_gram)
 
-        self.db = search.OnDiskNeuralDB(save_path=save_path, config=search.IndexConfig(**index_config_args))
+        self.db = search.OnDiskNeuralDB(
+            save_path=save_path, config=search.IndexConfig(**index_config_args)
+        )
 
         if preload_reranker:
             self.reranker: Optional[Reranker] = PretrainedReranker()
