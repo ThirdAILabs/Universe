@@ -38,7 +38,7 @@ class FastDB:
 
         if word_k_gram:
             self.db = search.OnDiskNeuralDB(
-                save_path=save_path, config=search.IndexConfig(k=word_k_gram)
+                save_path=save_path, config=search.IndexConfig(tokenizer=search.WordKGrams(k=word_k_gram))
             )
         else:
             self.db = search.OnDiskNeuralDB(save_path=save_path)
