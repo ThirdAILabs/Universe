@@ -1,10 +1,11 @@
 #pragma once
 
 #include <data/src/transformations/ner/rules/Rule.h>
+#include <string>
 
 namespace thirdai::data::ner {
 
-RulePtr creditCardPattern();
+RulePtr creditCardPattern(const std::string& name = "CREDITCARDNUMBER");
 
 RulePtr emailPattern();
 

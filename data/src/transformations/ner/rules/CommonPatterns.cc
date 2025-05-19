@@ -159,11 +159,11 @@ std::optional<ValidatorSubMatch> phoneNumberValidator(
   return ValidatorSubMatch(0, number.size());
 }
 
-RulePtr creditCardPattern() {
+RulePtr creditCardPattern(const std::string& name) {
   // https://baymard.com/checkout-usability/credit-card-patterns
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
-      /*entity=*/"CREDITCARDNUMBER",
+      /*entity=*/name,
       /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
@@ -567,6 +567,9 @@ RulePtr urlPattern() {
 RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDNUMBER") {
     return creditCardPattern();
+  }
+  if (entity == "CARD_NUMBER") {
+    return creditCardPattern("CARD_NUMBER");
   }
   if (entity == "EMAIL") {
     return emailPattern();
