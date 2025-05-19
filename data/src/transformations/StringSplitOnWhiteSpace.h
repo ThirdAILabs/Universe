@@ -35,4 +35,7 @@ class StringSplitOnWhiteSpace final : public Transformation {
   bool _as_unicode;
 };
 
+std::pair<std::vector<std::string>, std::vector<std::pair<size_t, size_t>>>
+splitOnWhiteSpaceWithOffsetsUnicode(const std::string& ascii_text);
+
 }  // namespace thirdai::data

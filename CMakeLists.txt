@@ -396,6 +396,7 @@ set(THIRDAI_SOURCES
     data/src/transformations/ner/utils/utils.cc
     data/src/transformations/ner/rules/Rule.cc
     data/src/transformations/ner/rules/Pattern.cc
+    data/src/transformations/ner/rules/KeywordRule.cc
     data/src/transformations/ner/rules/CommonPatterns.cc
     data/src/transformations/ner/rules/IBANPattern.cc
     data/src/transformations/ner/learned_tags/LearnedTag.cc

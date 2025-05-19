@@ -1,4 +1,5 @@
 #include "CommonPatterns.h"
+#include <data/src/transformations/ner/rules/KeywordRule.h>
 #include <data/src/transformations/ner/rules/Pattern.h>
 #include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/utils.h>
@@ -533,19 +534,27 @@ RulePtr vinPattern() {
 }
 
 RulePtr genderPattern() {
-  return Pattern::make(
+  return KeywordRule::make(
       /*entity=*/"GENDER",
-      /*pattern=*/
-      R"(Male|Female|Cisgender|cis|Transgender|trans|Bigender|Agender|Demiboy|Demigirl|Androgynous|Waria|Fa'afafine|Hijra|Two-Spirit|Two-spirited|Genderfluid|Genderqueer)",
-      /*pattern_score=*/1.0);
+      /*keywords=*/{"male", "female", "cisgender", "cis", "transgender",
+                    "trans", "bigender", "agender", "demiboy", "demigirl",
+                    "androgynous", "waria", "fa\'afafine", "hijra",
+                    "two-spirit", "two-spirited", "genderfluid",
+                    "genderqueer"});
 }
 
 RulePtr sexualOrientationPattern() {
-  return Pattern::make(
+  return KeywordRule::make(
       /*entity=*/"SEXUAL_ORIENTATION",
-      /*pattern=*/
-      R"(lesbian|gay|asexual|a-sexual|bisexual|bi-sexual|demisexual|transsexual|Heterosexual|Homosexual|Bisexual|Pansexual|queer|Skoliosexual|Androsexual|Gynosexual|Polysexual|Heteroromantic|Homoromantic|Biromantic|Panromantic|Aromantic|LGBT|LGBTQ|LGBTQIA)",
-      /*pattern_score=*/1.0);
+      /*keywords=*/{"lesbian",      "gay",          "asexual",
+                    "a-sexual",     "bisexual",     "bi-sexual",
+                    "demisexual",   "transsexual",  "heterosexual",
+                    "homosexual",   "bisexual",     "pansexual",
+                    "queer",        "skoliosexual", "androsexual",
+                    "gynosexual",   "polysexual",   "heteroromantic",
+                    "homoromantic", "biromantic",   "panromantic",
+                    "aromantic",    "lgbt",         "lgbtq",
+                    "lgbtqia"});
 }
 
 RulePtr urlPattern() {
