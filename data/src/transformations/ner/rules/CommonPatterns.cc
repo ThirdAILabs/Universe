@@ -548,6 +548,22 @@ RulePtr sexualOrientationPattern() {
       /*pattern_score=*/1.0);
 }
 
+RulePtr urlPattern() {
+  // This is a placeholder, we need to add the presido patterns here.
+  return Pattern::make(
+      /*entity=*/"URL",
+      /*pattern=*/
+      R"((https?:\/\/[^\s]+)|(www\.[^\s]+))",
+      /*pattern_score=*/0.5,
+      /*context_keywords=*/
+      {
+          {"url", 0.3},
+          {"website", 0.2},
+          {"link", 0.2},
+          {"web", 0.1},
+      });
+}
+
 RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDNUMBER") {
     return creditCardPattern();
@@ -599,6 +615,9 @@ RulePtr getRuleForEntity(const std::string& entity) {
   }
   if (entity == "SEXUAL_ORIENTATION") {
     return sexualOrientationPattern();
+  }
+  if (entity == "URL") {
+    return urlPattern();
   }
 
   throw std::invalid_argument("No rule for entity '" + entity + "'.");
