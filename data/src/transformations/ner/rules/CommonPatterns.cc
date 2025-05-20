@@ -164,11 +164,10 @@ RulePtr creditCardPattern(const std::string& name) {
   // https://baymard.com/checkout-usability/credit-card-patterns
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
-      /* entity = */ name,
-      /* pattern = */
-      R"(\b(?:\d[ -]?){13,19}\b)",
-      /* pattern_score = */ 0.6,
-      /* context_keywords = */
+      /*entity=*/name,
+      /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
+      /*pattern_score=*/1.8,
+      /*context_keywords=*/
       {
           {"credit", 0.2},
           {"card", 0.2},
@@ -178,7 +177,7 @@ RulePtr creditCardPattern(const std::string& name) {
           {"amex", 0.2},
           {"debit", 0.2},
       },
-      /* validator = */ creditCardLuhnCheck);
+      /*validator=*/creditCardLuhnCheck);
 }
 
 RulePtr emailPattern() {
