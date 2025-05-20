@@ -165,7 +165,7 @@ RulePtr creditCardPattern(const std::string& name) {
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
       /*entity=*/name,
-      /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
+      /*pattern=*/R"(\b(?:\d[ -]*){13,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
       {
@@ -536,40 +536,78 @@ RulePtr vinPattern() {
 RulePtr genderPattern() {
   return KeywordRule::make(
       /*entity=*/"GENDER",
-      /*keywords=*/{"male", "female", "cisgender", "cis", "transgender",
-                    "trans", "bigender", "agender", "demiboy", "demigirl",
-                    "androgynous", "waria", "fa\'afafine", "hijra",
-                    "two-spirit", "two-spirited", "genderfluid",
-                    "genderqueer"});
+      /*keywords=*/{
+          // Binary
+          "male", "man", "female", "woman",
+          // Cis/trans
+          "cisgender", "cis", "transgender", "trans", "trans man",
+          "trans woman",
+          // Non-binary umbrella
+          "non-binary", "nonbinary", "genderqueer", "genderfluid", "agender",
+          "bigender", "pangender", "polygender", "demiboy", "demigirl",
+          "neutrois", "androgyne", "androgynous", "demigender", "demi-boy",
+          "demi-girl", "genderflux", "genderfae", "maverique", "intergender",
+          "xenogender", "novigender", "two-spirit", "two-spirited",
+          // Culturally specific
+          "hijra", "fa'afafine", "waria", "kathoey", "bakla", "sistergirl",
+          "travesti",
+          // Others / in-between
+          "gender questioning", "third gender", "omni-gender"});
 }
 
 RulePtr sexualOrientationPattern() {
   return KeywordRule::make(
       /*entity=*/"SEXUAL_ORIENTATION",
-      /*keywords=*/{"lesbian",      "gay",          "asexual",
-                    "a-sexual",     "bisexual",     "bi-sexual",
-                    "demisexual",   "transsexual",  "heterosexual",
-                    "homosexual",   "bisexual",     "pansexual",
-                    "queer",        "skoliosexual", "androsexual",
-                    "gynosexual",   "polysexual",   "heteroromantic",
-                    "homoromantic", "biromantic",   "panromantic",
-                    "aromantic",    "lgbt",         "lgbtq",
-                    "lgbtqia"});
+      /*keywords=*/{
+          // Common labels
+          "heterosexual", "straight", "homosexual", "gay", "lesbian",
+          "bisexual", "bi", "pansexual", "pan", "asexual", "ace", "aromantic",
+          "aro",
+
+          // Split-term variants
+          "bi-sexual", "pan-sexual", "a-sexual", "aromantic-ace", "aceflux",
+
+          // Gray/gray-ace spectrum
+          "gray-asexual", "grey-asexual", "gray-aro", "grey-aro",
+
+          // Demi- spectrum
+          "demisexual", "demi-sexual", "demiromantic", "demi-romantic",
+
+          // Poly- spectrum
+          "polysexual", "poly-sexual", "omnisexual", "omni-sexual",
+
+          // Identity-first terms
+          "queer", "questioning", "skoliosexual", "androsexual", "gynosexual",
+          "sapiosexual",
+
+          // Romantic orientations
+          "heteroromantic", "homoromantic", "biromantic", "panromantic",
+          "aromantic", "lithromantic",
+
+          // Umbrella and community tags
+          "lgbt", "lgbtq", "lgbtqi", "lgbtqia", "lgbtqiaplus"});
 }
 
 RulePtr urlPattern() {
-  // This is a placeholder, we need to add the presido patterns here.
+  static const std::string regex =
+      R"((https?://|ftps?://|www\.))"  // scheme or www.
+      R"(([A-Za-z0-9\-\u00a1-\uffff]+(\.[A-Za-z0-9\-\u00a1-\uffff]+)*)\.[A-Za-z\u00a1-\uffff]{2,})"
+      // domain + TLD
+      R"((:\d{1,5})?)"
+      R"((/[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;=%]*)?)";
+
   return Pattern::make(
-      /*entity=*/"URL",
-      /*pattern=*/
-      R"((https?:\/\/[^\s]+)|(www\.[^\s]+))",
-      /*pattern_score=*/0.5,
-      /*context_keywords=*/
+      /* entity          */ "URL",
+      /* pattern         */ regex,
+      /* pattern_score   */ 0.8,
+      /* context_keywords*/
       {
           {"url", 0.3},
-          {"website", 0.2},
           {"link", 0.2},
-          {"web", 0.1},
+          {"website", 0.1},
+          {"http", 0.1},
+          {"ftp", 0.05},
+          {"www", 0.05},
       });
 }
 
