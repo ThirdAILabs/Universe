@@ -165,7 +165,7 @@ RulePtr creditCardPattern(const std::string& name) {
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
       /*entity=*/name,
-      /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
+      /*pattern=*/R"(\b(?:\d[ -]*){13,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
       {
