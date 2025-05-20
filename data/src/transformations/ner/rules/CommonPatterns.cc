@@ -558,29 +558,25 @@ RulePtr sexualOrientationPattern() {
 }
 
 RulePtr urlPattern() {
-  // Simplified URL regex (ECMAScript):
-  // - http:// or https:// or www.
-  // - one or more domain labels (letters, digits, hyphens) separated by dots
-  // - optional :port
-  // - optional /path (anything but whitespace)
-  static const std::string regex = R"(
-      (?:https?://|www\.)            # scheme or www.
-      [A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+  # domain + TLD
-      (?:\:\d{1,5})?                 # optional port
-      (?:/[^\s]*)?                   # optional path/query/fragment
-  )";
+  static const std::string regex =
+      R"((https?://|ftps?://|www\.))"  // scheme or www.
+      R"(([A-Za-z0-9\-\u00a1-\uffff]+(\.[A-Za-z0-9\-\u00a1-\uffff]+)*)\.[A-Za-z\u00a1-\uffff]{2,})"
+      // domain + TLD
+      R"((:\d{1,5})?)"
+      R"((/[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;=%]*)?)";
 
   return Pattern::make(
-      /* entity */ "URL",
-      /* pattern */ regex,
-      /* pattern_score */ 0.5,
-      /* context_keywords */
+      /* entity          */ "URL",
+      /* pattern         */ regex,
+      /* pattern_score   */ 0.8,
+      /* context_keywords*/
       {
           {"url", 0.3},
           {"link", 0.2},
-          {"website", 0.2},
+          {"website", 0.1},
           {"http", 0.1},
-          {"www", 0.1},
+          {"ftp", 0.05},
+          {"www", 0.05},
       });
 }
 
