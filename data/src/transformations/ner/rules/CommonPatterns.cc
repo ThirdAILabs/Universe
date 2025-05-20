@@ -558,18 +558,29 @@ RulePtr sexualOrientationPattern() {
 }
 
 RulePtr urlPattern() {
-  // This is a placeholder, we need to add the presido patterns here.
+  // Simplified URL regex (ECMAScript):
+  // - http:// or https:// or www.
+  // - one or more domain labels (letters, digits, hyphens) separated by dots
+  // - optional :port
+  // - optional /path (anything but whitespace)
+  static const std::string regex = R"(
+      (?:https?://|www\.)            # scheme or www.
+      [A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+  # domain + TLD
+      (?:\:\d{1,5})?                 # optional port
+      (?:/[^\s]*)?                   # optional path/query/fragment
+  )";
+
   return Pattern::make(
-      /*entity=*/"URL",
-      /*pattern=*/
-      R"((https?:\/\/[^\s]+)|(www\.[^\s]+))",
-      /*pattern_score=*/0.5,
-      /*context_keywords=*/
+      /* entity */ "URL",
+      /* pattern */ regex,
+      /* pattern_score */ 0.5,
+      /* context_keywords */
       {
           {"url", 0.3},
-          {"website", 0.2},
           {"link", 0.2},
-          {"web", 0.1},
+          {"website", 0.2},
+          {"http", 0.1},
+          {"www", 0.1},
       });
 }
 
