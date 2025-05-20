@@ -454,6 +454,13 @@ NerModel::predictTags(const std::vector<std::string>& sentences,
     rule_results = _rule->applyBatch(tokens);
   }
 
+  std::unordered_set<std::string> ruleEntities;
+  if (_rule) {
+    for (auto& e : _rule->entities()) {
+      ruleEntities.insert(e);
+    }
+  }
+
   for (const auto& batch : tensors) {
     auto scores = _model->forward(batch, sparse_inference).at(0);
 
@@ -491,16 +498,15 @@ NerModel::predictTags(const std::vector<std::string>& sentences,
             _tag_tracker->labelToTag(0)->tag());
 
         for (const auto& [tag, score] : model_tags) {
-          // if the default tag is the top prediction of the model but rules
-          // have predicted a tag, then we do not consider the model prediction
+          if (ruleEntities.count(tag)) {
+            continue;
+          }
+
           if (tag == _tag_tracker->labelToTag(0)->tag() && !rule_tags.empty()) {
             continue;
           }
-          if (tags_to_score.find(tag) == tags_to_score.end()) {
-            tags_to_score[tag] = score;
-          } else {
-            tags_to_score[tag] += score;
-          }
+
+          tags_to_score[tag] += score;
         }
       }
 

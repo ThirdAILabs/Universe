@@ -536,25 +536,56 @@ RulePtr vinPattern() {
 RulePtr genderPattern() {
   return KeywordRule::make(
       /*entity=*/"GENDER",
-      /*keywords=*/{"male", "female", "cisgender", "cis", "transgender",
-                    "trans", "bigender", "agender", "demiboy", "demigirl",
-                    "androgynous", "waria", "fa\'afafine", "hijra",
-                    "two-spirit", "two-spirited", "genderfluid",
-                    "genderqueer"});
+      /*keywords=*/{
+          // Binary
+          "male", "man", "female", "woman",
+          // Cis/trans
+          "cisgender", "cis", "transgender", "trans", "trans man",
+          "trans woman",
+          // Non-binary umbrella
+          "non-binary", "nonbinary", "genderqueer", "genderfluid", "agender",
+          "bigender", "pangender", "polygender", "demiboy", "demigirl",
+          "neutrois", "androgyne", "androgynous", "demigender", "demi-boy",
+          "demi-girl", "genderflux", "genderfae", "maverique", "intergender",
+          "xenogender", "novigender", "two-spirit", "two-spirited",
+          // Culturally specific
+          "hijra", "fa'afafine", "waria", "kathoey", "bakla", "sistergirl",
+          "travesti",
+          // Others / in-between
+          "gender questioning", "third gender", "omni-gender"});
 }
 
 RulePtr sexualOrientationPattern() {
   return KeywordRule::make(
       /*entity=*/"SEXUAL_ORIENTATION",
-      /*keywords=*/{"lesbian",      "gay",          "asexual",
-                    "a-sexual",     "bisexual",     "bi-sexual",
-                    "demisexual",   "transsexual",  "heterosexual",
-                    "homosexual",   "bisexual",     "pansexual",
-                    "queer",        "skoliosexual", "androsexual",
-                    "gynosexual",   "polysexual",   "heteroromantic",
-                    "homoromantic", "biromantic",   "panromantic",
-                    "aromantic",    "lgbt",         "lgbtq",
-                    "lgbtqia"});
+      /*keywords=*/{
+          // Common labels
+          "heterosexual", "straight", "homosexual", "gay", "lesbian",
+          "bisexual", "bi", "pansexual", "pan", "asexual", "ace", "aromantic",
+          "aro",
+
+          // Split-term variants
+          "bi-sexual", "pan-sexual", "a-sexual", "aromantic-ace", "aceflux",
+
+          // Gray/gray-ace spectrum
+          "gray-asexual", "grey-asexual", "gray-aro", "grey-aro",
+
+          // Demi- spectrum
+          "demisexual", "demi-sexual", "demiromantic", "demi-romantic",
+
+          // Poly- spectrum
+          "polysexual", "poly-sexual", "omnisexual", "omni-sexual",
+
+          // Identity-first terms
+          "queer", "questioning", "skoliosexual", "androsexual", "gynosexual",
+          "sapiosexual",
+
+          // Romantic orientations
+          "heteroromantic", "homoromantic", "biromantic", "panromantic",
+          "aromantic", "lithromantic",
+
+          // Umbrella and community tags
+          "lgbt", "lgbtq", "lgbtqi", "lgbtqia", "lgbtqiaplus"});
 }
 
 RulePtr urlPattern() {
