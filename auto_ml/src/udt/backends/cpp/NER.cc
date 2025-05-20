@@ -457,8 +457,13 @@ NerModel::predictTags(const std::vector<std::string>& sentences,
   std::unordered_set<std::string> ruleEntities;
   if (_rule) {
     for (auto& e : _rule->entities()) {
+      std::cout << "Rule entity: " << e << std::endl;
+
       ruleEntities.insert(e);
     }
+  }
+  for (const auto& e : ruleEntities) {
+    std::cout << "Rule entity: " << e << std::endl;
   }
 
   for (const auto& batch : tensors) {
@@ -498,15 +503,22 @@ NerModel::predictTags(const std::vector<std::string>& sentences,
             _tag_tracker->labelToTag(0)->tag());
 
         for (const auto& [tag, score] : model_tags) {
+          std::cout << "Tag: " << tag << " Score: " << score << std::endl;
           if (ruleEntities.count(tag)) {
             continue;
           }
+          std::cout << "After rule entity: " << tag << std::endl;
 
           if (tag == _tag_tracker->labelToTag(0)->tag() && !rule_tags.empty()) {
             continue;
           }
 
-          tags_to_score[tag] += score;
+          std::cout << "Updating tag scores: " << tag << std::endl;
+          if (tags_to_score.count(tag)) {
+            tags_to_score[tag] += score;
+          } else {
+            tags_to_score[tag] = score;
+          }
         }
       }
 
