@@ -10,7 +10,6 @@ __all__ = [
     "licensing",
     "demos",
     "gen",
-    "telemetry",
     "set_global_num_threads",
     "logging",
 ]
@@ -24,7 +23,6 @@ import thirdai.gen as gen
 import thirdai.hashing as hashing
 import thirdai.licensing as licensing
 import thirdai.search as search
-import thirdai.telemetry as telemetry
 
 # Relay __version__ from C++
 from thirdai._thirdai import __version__, logging, set_seed
