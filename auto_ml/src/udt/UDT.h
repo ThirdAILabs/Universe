@@ -27,8 +27,8 @@ namespace thirdai::automl::udt {
  * pattern of composition allows us to have different backends for different
  * model types, but without exposing that implementation detail to the user and
  * presenting a single class for them to interact with. This class also act as a
- * common point where we can implement common features, for instance telemetry,
- * that we want for all types of models.
+ * common point where we can implement common features that we want for all
+ * types of models.
  */
 class UDT {
  public:

@@ -12,7 +12,6 @@
 #include <licensing/python_bindings/LicensingPython.h>
 #include <mach/python_bindings/MachPython.h>
 #include <search/python_bindings/DocSearchPython.h>
-#include <telemetry/python_bindings/TelemetryPython.h>
 #include <utils/Logging.h>
 #include <utils/Random.h>
 #include <utils/Version.h>
@@ -121,9 +120,6 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   // Licensing Submodule
   // Licensing methods will be noops if THIRDAI_CHECK_LICENSE is false.
   thirdai::licensing::python::createLicensingSubmodule(m);
-
-  // Telemetry submodule
-  thirdai::telemetry::python::createTelemetrySubmodule(m);
 
   // Data Submodule
   auto data_submodule = m.def_submodule("data");
