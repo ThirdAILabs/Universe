@@ -472,8 +472,8 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(
-  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal utf8proc)
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal utf8proc)
 if(NOT WIN32)
   target_link_libraries(thirdai PUBLIC rocksdb)
 endif()
@@ -487,9 +487,8 @@ target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
 target_link_libraries(
-  thirdai_core
-  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-         utf8proc nlohmann_json::nlohmann_json)
+  thirdai_core PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal utf8proc
+                      nlohmann_json::nlohmann_json)
 if(NOT WIN32)
   target_link_libraries(thirdai_core PUBLIC rocksdb)
 endif()
