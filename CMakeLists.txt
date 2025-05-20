@@ -171,12 +171,6 @@ add_subdirectory(deps/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(deps/spdlog EXCLUDE_FROM_ALL)
 add_subdirectory(deps/utf8proc EXCLUDE_FROM_ALL)
 
-# Turn off prometheus-cpp's testing build so that we don't try to build two
-# copies of gmock
-set(ENABLE_TESTING OFF)
-set(ENABLE_PUSH OFF)
-add_subdirectory(deps/prometheus-cpp EXCLUDE_FROM_ALL)
-
 # PERFORMANCE_COMPARISON is always enabled by default in cereal CMakeLists which
 # requires the boost and we dont want to add the boost dependencies, hence
 # skipping the performance comparison. Earlier we use to include only header(so
@@ -354,7 +348,6 @@ set(THIRDAI_SOURCES
     dataset/src/mach/MachBlock.cc
     dataset/src/ranking/KeywordOverlapRanker.cc
     dataset/src/utils/GraphInfo.cc
-    telemetry/src/PrometheusClient.cc
     data/src/transformations/Transformation.cc
     data/src/transformations/State.cc
     data/src/transformations/Binning.cc
@@ -479,9 +472,8 @@ endif()
 
 add_library(thirdai STATIC ${THIRDAI_SOURCES})
 
-target_link_libraries(
-  thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal
-                 prometheus-cpp::pull utf8proc)
+target_link_libraries(thirdai PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog
+                                     cereal::cereal utf8proc)
 if(NOT WIN32)
   target_link_libraries(thirdai PUBLIC rocksdb)
 endif()
@@ -495,9 +487,8 @@ target_link_libraries(thirdai PUBLIC nlohmann_json::nlohmann_json)
 
 add_library(thirdai_core SHARED ${THIRDAI_SOURCES})
 target_link_libraries(
-  thirdai_core
-  PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal prometheus-cpp::pull
-         utf8proc nlohmann_json::nlohmann_json)
+  thirdai_core PUBLIC OpenMP::OpenMP_CXX spdlog::spdlog cereal::cereal utf8proc
+                      nlohmann_json::nlohmann_json)
 if(NOT WIN32)
   target_link_libraries(thirdai_core PUBLIC rocksdb)
 endif()
@@ -544,7 +535,6 @@ pybind11_add_module(
   auto_ml/src/udt/utils/Classifier.cc
   auto_ml/src/udt/utils/KwargUtils.cc
   mach/python_bindings/MachPython.cc
-  telemetry/python_bindings/TelemetryPython.cc
   licensing/python_bindings/LicensingPython.cc)
 
 target_link_libraries(_thirdai PUBLIC thirdai)
