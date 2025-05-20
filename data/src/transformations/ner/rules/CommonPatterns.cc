@@ -200,7 +200,7 @@ RulePtr phonePattern() {
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      R"((?:\+?(\d{1,3}[ ]?))?[-.(]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
+      R"(\b(?:\+?\d{1,3}\s?)?(?:\d{1,3}[-.\s]?){2,5}\d{1,4}(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
       /*pattern_score=*/0.5,
       /*context_keywords=*/
       {
