@@ -564,11 +564,11 @@ void createTransformationsSubmodule(py::module_& dataset_submodule) {
   py::class_<FeatureEnhancementConfig,
              std::shared_ptr<FeatureEnhancementConfig>>(
       transformations_submodule, "NerFeatureConfig")
-      .def(py::init<bool, bool, bool, bool, bool, bool, bool>(),
+      .def(py::init<bool, bool, bool, bool, bool, bool, bool, bool>(),
            py::arg("names"), py::arg("location_features"),
            py::arg("organization_features"), py::arg("case_features"),
            py::arg("numerical_features"), py::arg("emails"),
-           py::arg("phone_numbers"));
+           py::arg("phone_numbers"), py::arg("use_char_4_input_featurization"));
 
   py::class_<ner::NerTag, std::shared_ptr<ner::NerTag>>(  // NOLINT
       transformations_submodule, "NerTag");
