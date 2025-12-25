@@ -1,5 +1,7 @@
 #include "CommonPatterns.h"
+#include <data/src/transformations/ner/rules/KeywordRule.h>
 #include <data/src/transformations/ner/rules/Pattern.h>
+#include <data/src/transformations/ner/rules/Rule.h>
 #include <data/src/transformations/ner/utils/utils.h>
 #include <utils/text/StringManipulation.h>
 #include <map>
@@ -158,12 +160,12 @@ std::optional<ValidatorSubMatch> phoneNumberValidator(
   return ValidatorSubMatch(0, number.size());
 }
 
-RulePtr creditCardPattern() {
+RulePtr creditCardPattern(const std::string& name) {
   // https://baymard.com/checkout-usability/credit-card-patterns
   // https://en.wikipedia.org/wiki/Payment_card_number
   return Pattern::make(
-      /*entity=*/"CREDITCARDNUMBER",
-      /*pattern=*/R"(\b(?:\d[ -]*){12,19}\b)",
+      /*entity=*/name,
+      /*pattern=*/R"(\b(?:\d[ -]*){13,19}\b)",
       /*pattern_score=*/1.8,
       /*context_keywords=*/
       {
@@ -198,7 +200,7 @@ RulePtr phonePattern() {
   return Pattern::make(
       /*entity=*/"PHONENUMBER",
       /*pattern=*/
-      R"((?:\+?(\d{1,3}[ ]?))?[-.(]*(\d{2,3})[-. )]*(\d{2,3})[-. ]*(\d{4,6})(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
+      R"(\b(?:\+?\d{1,3}\s?)?(?:\d{1,3}[-.\s]?){2,5}\d{1,4}(?:\s*(?:x|ext|extension)\s*\d{1,6})?\b)",
       /*pattern_score=*/0.5,
       /*context_keywords=*/
       {
@@ -531,9 +533,90 @@ RulePtr vinPattern() {
       });
 }
 
+RulePtr genderPattern() {
+  return KeywordRule::make(
+      /*entity=*/"GENDER",
+      /*keywords=*/{
+          // Binary
+          "male", "man", "female", "woman",
+          // Cis/trans
+          "cisgender", "cis", "transgender", "trans", "trans man",
+          "trans woman",
+          // Non-binary umbrella
+          "non-binary", "nonbinary", "genderqueer", "genderfluid", "agender",
+          "bigender", "pangender", "polygender", "demiboy", "demigirl",
+          "neutrois", "androgyne", "androgynous", "demigender", "demi-boy",
+          "demi-girl", "genderflux", "genderfae", "maverique", "intergender",
+          "xenogender", "novigender", "two-spirit", "two-spirited",
+          // Culturally specific
+          "hijra", "fa'afafine", "waria", "kathoey", "bakla", "sistergirl",
+          "travesti",
+          // Others / in-between
+          "gender questioning", "third gender", "omni-gender"});
+}
+
+RulePtr sexualOrientationPattern() {
+  return KeywordRule::make(
+      /*entity=*/"SEXUAL_ORIENTATION",
+      /*keywords=*/{
+          // Common labels
+          "heterosexual", "straight", "homosexual", "gay", "lesbian",
+          "bisexual", "bi", "pansexual", "pan", "asexual", "ace", "aromantic",
+          "aro",
+
+          // Split-term variants
+          "bi-sexual", "pan-sexual", "a-sexual", "aromantic-ace", "aceflux",
+
+          // Gray/gray-ace spectrum
+          "gray-asexual", "grey-asexual", "gray-aro", "grey-aro",
+
+          // Demi- spectrum
+          "demisexual", "demi-sexual", "demiromantic", "demi-romantic",
+
+          // Poly- spectrum
+          "polysexual", "poly-sexual", "omnisexual", "omni-sexual",
+
+          // Identity-first terms
+          "queer", "questioning", "skoliosexual", "androsexual", "gynosexual",
+          "sapiosexual",
+
+          // Romantic orientations
+          "heteroromantic", "homoromantic", "biromantic", "panromantic",
+          "aromantic", "lithromantic",
+
+          // Umbrella and community tags
+          "lgbt", "lgbtq", "lgbtqi", "lgbtqia", "lgbtqiaplus"});
+}
+
+RulePtr urlPattern() {
+  static const std::string regex =
+      R"((https?://|ftps?://|www\.))"  // scheme or www.
+      R"(([A-Za-z0-9\-\u00a1-\uffff]+(\.[A-Za-z0-9\-\u00a1-\uffff]+)*)\.[A-Za-z\u00a1-\uffff]{2,})"
+      // domain + TLD
+      R"((:\d{1,5})?)"
+      R"((/[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;=%]*)?)";
+
+  return Pattern::make(
+      /* entity          */ "URL",
+      /* pattern         */ regex,
+      /* pattern_score   */ 0.8,
+      /* context_keywords*/
+      {
+          {"url", 0.3},
+          {"link", 0.2},
+          {"website", 0.1},
+          {"http", 0.1},
+          {"ftp", 0.05},
+          {"www", 0.05},
+      });
+}
+
 RulePtr getRuleForEntity(const std::string& entity) {
   if (entity == "CREDITCARDNUMBER") {
     return creditCardPattern();
+  }
+  if (entity == "CARD_NUMBER") {
+    return creditCardPattern("CARD_NUMBER");
   }
   if (entity == "EMAIL") {
     return emailPattern();
@@ -576,6 +659,15 @@ RulePtr getRuleForEntity(const std::string& entity) {
   }
   if (entity == "VIN") {
     return vinPattern();
+  }
+  if (entity == "GENDER") {
+    return genderPattern();
+  }
+  if (entity == "SEXUAL_ORIENTATION") {
+    return sexualOrientationPattern();
+  }
+  if (entity == "URL") {
+    return urlPattern();
   }
 
   throw std::invalid_argument("No rule for entity '" + entity + "'.");
