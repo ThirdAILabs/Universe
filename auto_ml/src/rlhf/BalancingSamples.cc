@@ -53,10 +53,6 @@ BalancingSamples::BalancingSamples(std::string indices_col,
 }
 
 data::ColumnMap BalancingSamples::balancingSamples(size_t num_samples) {
-  if (num_samples == 0) {
-    return data::ColumnMap({});
-  }
-
   if (_samples_per_doc.empty()) {
     throw std::runtime_error(
         "Cannot call associate before training, coldstarting, or introducing "
