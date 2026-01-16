@@ -68,4 +68,14 @@ void QueryToChunks::deleteChunks(TxnPtr& txn,
   }
 }
 
+size_t QueryToChunks::size() {
+  size_t count = 0;
+  std::unique_ptr<rocksdb::Iterator> iter(
+      _db->NewIterator(rocksdb::ReadOptions(), _column));
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    ++count;
+  }
+  return count;
+}
+
 }  // namespace thirdai::search::ndb
