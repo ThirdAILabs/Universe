@@ -28,8 +28,11 @@ using TokenizerPtr = std::shared_ptr<Tokenizer>;
 
 class DefaultTokenizer final : public Tokenizer {
  public:
-  explicit DefaultTokenizer(bool stem = true, bool lowercase = true)
-      : _stem(stem), _lowercase(lowercase) {}
+  explicit DefaultTokenizer(bool stem = true, bool lowercase = true,
+                            bool ignore_stopwords = false)
+      : _stem(stem),
+        _lowercase(lowercase),
+        _ignore_stopwords(ignore_stopwords) {}
 
   Tokens tokenize(const std::string& input) const final;
 
@@ -41,10 +44,10 @@ class DefaultTokenizer final : public Tokenizer {
       const ar::Archive& archive);
 
  private:
-  bool _stem, _lowercase;
-
   std::regex _punct_word_re =
       std::regex(R"(\b([a-zA-Z]+)[\.\-&+]([a-zA-Z]+)\b)");
+
+  bool _stem, _lowercase, _ignore_stopwords;
 };
 
 /**
