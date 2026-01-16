@@ -67,6 +67,9 @@ class WeightedSum final : public Op,
 
   static std::string type() { return "weighted_sum"; }
 
+  // There isn't a weighted sum op in torch
+  void useTorchInitialization() final{};
+
  private:
   size_t _n_chunks, _chunk_size;
 

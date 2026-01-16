@@ -44,6 +44,8 @@ class Input final : public Op, public std::enable_shared_from_this<Input> {
   void summary(std::ostream& summary, const ComputationList& inputs,
                const Computation* output) const final;
 
+  void useTorchInitialization() final {}
+
  private:
   Input(uint32_t dim, std::optional<uint32_t> nonzeros);
 

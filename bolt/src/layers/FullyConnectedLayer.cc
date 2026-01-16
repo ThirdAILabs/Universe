@@ -89,6 +89,24 @@ FullyConnectedLayer::FullyConnectedLayer(const ar::Archive& archive)
   initActiveNeuronsTrackers();
 }
 
+void FullyConnectedLayer::useTorchInitialization() {
+  std::mt19937 rng(global_random::nextSeed());
+
+  float limit = 1 / sqrt(_prev_dim);
+  std::uniform_real_distribution<float> weight_dist(-limit, limit);
+  std::generate(_weights.begin(), _weights.end(),
+                [&]() { return weight_dist(rng); });
+
+  if (_use_bias) {
+    float bias_limit = 1 / sqrt(_prev_dim);
+    std::uniform_real_distribution<float> bias_dist(-bias_limit, bias_limit);
+    std::generate(_biases.begin(), _biases.end(),
+                  [&]() { return bias_dist(rng); });
+  } else {
+    std::fill(_biases.begin(), _biases.end(), 0.0);
+  }
+}
+
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {

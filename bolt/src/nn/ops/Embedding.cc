@@ -46,6 +46,17 @@ Embedding::Embedding(size_t dim, size_t input_dim,
   }
 }
 
+void Embedding::useTorchInitialization() {
+  std::mt19937 rng(global_random::nextSeed());
+  std::normal_distribution<float> dist(0.0, 1);
+
+  auto gen = [&]() { return dist(rng); };
+  std::generate(_embeddings.begin(), _embeddings.end(), gen);
+  if (_bias) {
+    std::generate(_biases.begin(), _biases.end(), gen);
+  }
+}
+
 void Embedding::forward(const ComputationList& inputs, TensorPtr& output,
                         uint32_t index_in_batch, bool training) {
   (void)training;
