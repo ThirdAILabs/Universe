@@ -6,26 +6,26 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Run on pushes and releases. The actual upload will only happen on a 
+# Run on pushes and releases. The actual upload will only happen on a
 # release.
 # Note this action does not ever upload to the main Pypi repo. For now, do that
-# by downloading the build artifacts and doing it manually. See 
+# by downloading the build artifacts and doing it manually. See
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
-on: 
-  push: 
+on:
+  push:
     branches: [main]
-    tags: [ 'v*.*.*' ]
-  workflow_dispatch:  
+    tags: ["v*.*.*"]
+  workflow_dispatch:
 
 jobs:
   build_wheels:
-    runs-on: ubuntu-22.04-8-cores
+    runs-on: ubuntu-22.04-8-cores-arm
 
     steps:
       - uses: actions/checkout@v2
-        with:           
-          submodules: 'recursive'
+        with:
+          submodules: "recursive"
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Inject local version identifier for non tag builds
@@ -37,21 +37,20 @@ jobs:
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
-
-          # We need this to get Openssl working on Manylinux (which has a 
+          # We need this to get Openssl working on Manylinux (which has a
           # CentOS base image). See
           # https://github.com/facebook/folly/issues/1762
           CIBW_ENVIRONMENT_LINUX: >
             CMAKE_ARGS="-DOPENSSL_ROOT_DIR:PATH=/usr/bin/openssl;/usr/local/ssl"
             THIRDAI_BUILD_IDENTIFIER=${{ env.THIRDAI_BUILD_IDENTIFIER }}
             OPENAI_API_KEY=${{secrets.OPENAI_API_KEY}}
-         
+
           # TODO: Upgrade distro to supported version.
           # CentOS 7 is deprecated, and the sed commmands are a workaround to still use that version.
           # https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve
           #
           # We install OpenSSL 3 since OpenSSL 1.1.1 is not FIPS certified. This
-          # allows us to run on FIPS enabled machines. 
+          # allows us to run on FIPS enabled machines.
           # https://github.com/openssl/openssl/issues/20465
           # To make sure that we use the new version we update the system links:
           # https://webhostinggeeks.com/howto/install-update-openssl-centos/
@@ -73,7 +72,7 @@ jobs:
             ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
             yum install -y libxslt-devel libxml2-devel
 
-          # Online compile cpython wheels (pytorch does this too), no big 
+          # Online compile cpython wheels (pytorch does this too), no big
           # advantage to JIT compilation of python since most of our processing
           # happens in C++ (it can actually make it slower!). Also, on some
           # platforms numpy isn't available so our tests don't work.
@@ -94,12 +93,11 @@ jobs:
           # TODO(any): A more future proof solution when stuff starts working.
           CIBW_SKIP: "cp36-* cp37-*"
 
-
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
-      
+
       - name: Notify slack fail
         if: failure() && github.event_name == 'release' && github.event.action == 'published'
         env:
@@ -110,7 +108,6 @@ jobs:
           status: FAILED
           color: danger
 
-
   upload_to_test_pypi:
     name: Upload to test pypi
     needs: [build_wheels]
@@ -118,29 +115,29 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
-    - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2
 
-    - uses: actions/download-artifact@v4
-      with:
-        name: artifact
-        path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
-        verbose: true
-    
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+          verbose: true
+
+      - name: Notify slack fail
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
 
   upload_to_real_pypi:
     name: Upload to real pypi
@@ -149,35 +146,35 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     steps:
-    - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2
 
-    - uses: actions/download-artifact@v4
-      with:
-        name: artifact
-        path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
-        verbose: true
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+          verbose: true
 
-    - name: Notify slack success  # Ref: https://github.com/marketplace/actions/slack-notify-build
-      if: success()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: SUCCESS
-        color: good
+      - name: Notify slack success # Ref: https://github.com/marketplace/actions/slack-notify-build
+        if: success()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: SUCCESS
+          color: good
 
-    - name: Notify slack fail
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel_id: pypi_package_releases
-        status: FAILED
-        color: danger
+      - name: Notify slack fail
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel_id: pypi_package_releases
+          status: FAILED
+          color: danger
